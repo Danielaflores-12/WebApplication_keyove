@@ -1,0 +1,165 @@
+use DB_keyove_Inventario
+create table Personas(),
+create table Cliente(),
+
+create table Usuarios(
+	id_Usuario int identity (1,1) primary key ,
+	Nombres nvarchar(100),
+	Apellidos nvarchar (100),
+	Nombre_Usuario nvarchar(100),
+	Contraseña nvarchar(50),
+	Correo nvarchar(100),
+	Telefono varchar(9),
+	Fecha_Registro datetime2 not null default sysdatetime(),
+
+	constraint UQ_Usuarios_Nombre_Usuario unique (Nombre_Usuario)
+
+);
+
+
+create table Categorias(
+	id_Categoria int identity (1,1) primary key,
+	Nombre nvarchar (200),
+	Descripcion nvarchar(500),
+	Estado bit not null default 1,
+	Fecha_Registro datetime2 not null default sysdatetime(),
+	constraint UQ_Categorias_Nombre unique (Nombre)
+
+
+);
+
+create table Proveedores(
+	id_Proveedor int identity (1,1) primary key,
+	Ruc varchar(11) not null,
+	Razon_Social nvarchar(150) not  null,
+	Representante nvarchar(100)null,
+	Telefono varchar (9),
+	Correo nvarchar (100),
+	Direccion nvarchar (150),
+	Estado bit not null default 1,
+	Fecha_Registro datetime2 not null default sysdatetime(),
+	constraint UQ_Proveedores_Ruc unique (Ruc)
+
+);
+
+create table Productos(
+	id_Producto int identity(1,1) primary key,
+	id_Categoria int not null,
+	Codigo nvarchar (50),
+	Nombre nvarchar (100),
+	Descripcion nvarchar(500),
+	Marca nvarchar(100),
+	Modelo nvarchar(100) null,
+	Precio_Compra Decimal (18,2)not null default 0,
+	Precio_Venta decimal (18,2)not null default 0,
+	Stock_Actual int not null default 0,
+	Stock_Minimo int not null default 5,
+	Unidad_Medida nvarchar (30) not null default 'UNIDAD',
+	Estado bit not null default 1,
+	Fecha_Registro datetime2 not null default sysdatetime(),
+	constraint UQ_Productos_Codigo unique (Codigo),
+	constraint FK_Productos_Categorias foreign key (id_Categoria) references Categorias(id_Categoria),
+	constraint CK_Productos_Precio_Compra check (Precio_Compra >=0),
+	constraint CK_Precio_Venta check (Precio_Venta >=0),
+	constraint CK_Productos_Stock_Actual check (Stock_Actual >=0),
+	constraint CK_Productos_Stock_Minimo check (Stock_Minimo >=0)
+
+);
+
+create table Compras (
+	id_Compra int identity (1,1) primary key,
+	id_Proveedor int not null,
+	id_Usuario int not null,
+	Tipo_Comprobante nvarchar (30) not null,
+	Numero_Comprobante nvarchar(50) not null,
+	Fecha_Compra datetime2 not null default sysdatetime(),
+	Sub_Total decimal (18,2) not null default 0,
+	Igv decimal (18,2) not null default 0,
+	Total decimal (18,2) not null default 0,
+	Observacion nvarchar (300) null,
+	Estado nvarchar(20) not null default 'REGISTRADA',
+	constraint FK_Compras_Proveedores foreign key (id_Proveedor) references Proveedores(id_Proveedor),
+	constraint FK_Compras_Usuarios foreign key (id_Usuario) rEferences Usuarios(id_Usuario),
+	constraint CK_Compras_Estado check (Estado in ('REGISTRADA','ANULADA')),
+	constraint CK_Compras_Montos check (Sub_Total >=0 and Igv >=0 and Total >=0)
+);
+create unique index UQ_Compras_Comprobante on Compras(id_Proveedor,Tipo_Comprobante,Numero_Comprobante);
+
+create table Detalle_Compra(
+	id_Detalle_Compra int identity (1,1) primary key,
+	id_Compra int not null,
+	id_Producto int not null,
+	Cantidad int not null,
+	Precio_Compra decimal (18,2) not null,
+	Sub_Total as(convert(decimal (18,2),Cantidad*Precio_Compra))PERSISTED,
+
+	constraint FK_Detalle_Compra_Compras foreign key (id_Compra)references Compras(id_Compra),
+	constraint FK_Detalle_Compra_Productos foreign key (id_Producto)references Productos(id_Producto),
+	constraint CK_Detalle_Compra_Cantidad check (Cantidad >0),
+	constraint CK_Detalle_Compra_Precio check (Precio_Compra >=0),
+	Constraint UQ_Detalle_Compra_Producto unique (id_Compra,Id_Producto)
+);
+
+create table Ventas (
+	id_Venta int identity (1,1) primary key,
+	id_Usuario int not null,
+	Tipo_Comprobante nvarchar(30) not null default 'BOLETA',
+	Documento_Cliente nvarchar(11)null,
+	Numero_Celular varchar(9),
+	Numero_Comprobante nvarchar(50) not null,
+	Fecha_Venta datetime2 not null default sysdatetime(),
+	Sub_Total decimal (18,2) not null default 0,
+	Igv decimal (18,2) not null default 0,
+	Total decimal (18,2) not null default 0,
+	Metodo_Pago nvarchar(50) not null default 'EFECTIVO',
+	Observacion nvarchar(300) null,
+	Estado nvarchar(20) not null default 'REGISTRADA',
+	CONSTRAINT FK_Ventas_Usuarios foreign key (id_Usuario) references Usuarios(id_Usuario),
+	constraint CK_Ventas_Estado check (Estado in ('REGISTRADA', 'ANULADA')),
+	constraint CK_Ventas_Metodo_Pago check (Metodo_Pago in ('EFECTIVO','YAPE','PLIN','TRANSFERENCIA')),
+	constraint CK_Ventas_Montos check (Sub_Total >=0 and Igv >=0 and Total >=0)
+);
+
+create unique index UQ_Ventas_Comprobante on Ventas (Tipo_Comprobante, Numero_Comprobante);
+
+create table Detalle_Venta(
+	id_Detalle_Venta int identity(1,1) primary key,
+	id_Venta int not null,
+	id_Producto int not null,
+	Cantidad int not null,
+	Precio_Venta decimal (18,2) not null,
+	Descuento decimal(18,2) not null default 0,
+	Sub_total as (convert(decimal(18,2),(Cantidad*Precio_Venta)-Descuento))PERSISTED,
+	CONSTRAINT FK_Detalle_Venta_Ventas foreign key (id_Venta)references Ventas(id_Venta),
+	constraint FK_Detalle_Venta_Productos foreign key (id_Producto)references Productos(id_Producto),
+	constraint CK_Detalle_Venta_Cantidad check (Cantidad >=0),
+	constraint CK_Detalle_Venta_Precio check (Precio_Venta >=0),
+	constraint CK_Detalle_Venta_Descuento check (Descuento >=0 and Descuento <=Cantidad*Precio_Venta),
+	constraint UQ_Detalle_Venta_Producto unique (id_Venta,id_Producto),
+
+	
+);
+
+create table Movimientos_Inventario(
+	id_Movimiento int identity (1,1) primary key,
+	id_Producto int not null,
+	id_Usuario int not null,
+	id_Compra int null,
+	id_Venta int null,
+	Tipo_Movimiento nvarchar (30) not null,
+	Cantidad int not null,
+	Stock_Anterior int not null,
+	Stock_Nuevo int not null,
+	Motivo nvarchar (500) null,
+	Fecha_Movimiento datetime2 not null default sysdatetime(),
+	constraint FK_Movimientos_Productos foreign key (id_Producto)references Productos(id_Producto),
+	constraint FK_Movimientos_Usuarios foreign key (id_Usuario)references Usuarios(id_Usuario),
+	constraint FK_Movimientos_Compras foreign key (id_Compra) references Compras(id_Compra),
+	constraint FK_Movimientos_Ventas foreign key (id_Venta)references Ventas(id_Venta),
+	constraint CK_Movimientos_Tipo check (Tipo_Movimiento in ('ENTRADA','SALIDA','AJUSTE_ENTRADA','AJUSTE_SALIDA')),
+	CONSTRAINT CK_Movimientos_Cantidad check (Cantidad >0),
+	constraint CK_Movimientos_Stock check(Stock_Anterior >=0 and Stock_Nuevo >=0)
+);
+SELECT *FROM Ventas
+
+
