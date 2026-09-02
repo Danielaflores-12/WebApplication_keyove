@@ -1,9 +1,6 @@
+create database DB_keyove_Inventario
 USE DB_keyove_Inventario;
 GO
-
-/* =========================================================
-   1. PERSONAS
-   ========================================================= */
 
 CREATE TABLE Personas (
     id_Personas INT IDENTITY(1,1) PRIMARY KEY,
@@ -29,11 +26,6 @@ CREATE TABLE Personas (
 );
 GO
 
-
-/* =========================================================
-   2. ROLES
-   ========================================================= */
-
 CREATE TABLE Roles (
     id_Rol INT IDENTITY(1,1) PRIMARY KEY,
     Nombre NVARCHAR(50) NOT NULL,
@@ -45,11 +37,6 @@ CREATE TABLE Roles (
         UNIQUE (Nombre)
 );
 GO
-
-
-/* =========================================================
-   3. USUARIOS
-   ========================================================= */
 
 CREATE TABLE Usuarios (
     id_Usuario INT IDENTITY(1,1) PRIMARY KEY,
@@ -73,11 +60,6 @@ CREATE TABLE Usuarios (
 );
 GO
 
-
-/* =========================================================
-   4. CATEGORIAS
-   ========================================================= */
-
 CREATE TABLE Categorias (
     id_Categoria INT IDENTITY(1,1) PRIMARY KEY,
     Nombre NVARCHAR(200) NOT NULL,
@@ -89,11 +71,6 @@ CREATE TABLE Categorias (
         UNIQUE (Nombre)
 );
 GO
-
-
-/* =========================================================
-   5. PROVEEDORES
-   ========================================================= */
 
 CREATE TABLE Proveedores (
     id_Proveedor INT IDENTITY(1,1) PRIMARY KEY,
@@ -125,11 +102,6 @@ CREATE TABLE Proveedores (
         )
 );
 GO
-
-
-/* =========================================================
-   6. PRODUCTOS
-   ========================================================= */
 
 CREATE TABLE Productos (
     id_Producto INT IDENTITY(1,1) PRIMARY KEY,
@@ -167,11 +139,6 @@ CREATE TABLE Productos (
         CHECK (Stock_Minimo >= 0)
 );
 GO
-
-
-/* =========================================================
-   7. COMPRAS
-   ========================================================= */
 
 CREATE TABLE Compras (
     id_Compra INT IDENTITY(1,1) PRIMARY KEY,
@@ -216,11 +183,6 @@ ON Compras (
 );
 GO
 
-
-/* =========================================================
-   8. DETALLE DE COMPRAS
-   ========================================================= */
-
 CREATE TABLE Detalle_Compra (
     id_Detalle_Compra INT IDENTITY(1,1) PRIMARY KEY,
     id_Compra INT NOT NULL,
@@ -251,10 +213,6 @@ CREATE TABLE Detalle_Compra (
 );
 GO
 
-
-/* =========================================================
-   9. VENTAS
-   ========================================================= */
 
 CREATE TABLE Ventas (
     id_Venta INT IDENTITY(1,1) PRIMARY KEY,
@@ -324,11 +282,6 @@ ON Ventas (
 );
 GO
 
-
-/* =========================================================
-   10. DETALLE DE VENTAS
-   ========================================================= */
-
 CREATE TABLE Detalle_Venta (
     id_Detalle_Venta INT IDENTITY(1,1) PRIMARY KEY,
     id_Venta INT NOT NULL,
@@ -368,11 +321,6 @@ CREATE TABLE Detalle_Venta (
         UNIQUE (id_Venta, id_Producto)
 );
 GO
-
-
-/* =========================================================
-   11. MOVIMIENTOS DE INVENTARIO
-   ========================================================= */
 
 CREATE TABLE Movimientos_Inventario (
     id_Movimiento INT IDENTITY(1,1) PRIMARY KEY,
@@ -449,11 +397,6 @@ CREATE TABLE Movimientos_Inventario (
 );
 GO
 
-
-/* =========================================================
-   12. ÍNDICES PARA MEJORAR CONSULTAS
-   ========================================================= */
-
 CREATE INDEX IX_Usuarios_id_Personas
 ON Usuarios(id_Personas);
 GO
@@ -493,11 +436,6 @@ GO
 CREATE INDEX IX_Movimientos_Fecha
 ON Movimientos_Inventario(Fecha_Movimiento);
 GO
-
-
-/* =========================================================
-   13. ROLES INICIALES
-   ========================================================= */
 
 INSERT INTO Roles (Nombre, Descripcion)
 VALUES

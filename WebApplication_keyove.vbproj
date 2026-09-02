@@ -97,7 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\ConexionBD.vb" />
-    <Compile Include="Model\Usuarios.vb" />
+    <Compile Include="Model\Personas.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -122,8 +122,9 @@
     </Compile>
     <Compile Include="prueba conexion.aspx.vb">
       <DependentUpon>prueba conexion.aspx</DependentUpon>
-      <SubType>ASPXCodebehind</SubType>
+      <SubType>ASPXCodeBehind</SubType>
     </Compile>
+    <Compile Include="System.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">
