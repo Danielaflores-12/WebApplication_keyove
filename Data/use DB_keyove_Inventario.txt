@@ -20,8 +20,6 @@ create table Usuarios(
 	id_Personas int null,
 	Nombre_Usuario nvarchar(100),
 	Contraseña nvarchar(50),
-	Correo nvarchar(100),
-	Telefono varchar(9),
 	Fecha_Registro datetime2 not null default sysdatetime(),
 
 	constraint UQ_Usuarios_Nombre_Usuario unique (Nombre_Usuario),
