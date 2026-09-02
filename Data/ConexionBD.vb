@@ -13,7 +13,7 @@ Namespace WebApplication_Keyove.Data
         '==================================================
 
         Private ReadOnly Servidor As String =
-        ".\SQLEXPRESS"
+        "DESKTOP-U8H3H3L\SQLEXPRESS"
 
         Private ReadOnly BaseDatos As String =
         "DB_keyove_inventario"
