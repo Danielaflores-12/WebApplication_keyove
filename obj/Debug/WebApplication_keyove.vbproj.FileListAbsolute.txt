@@ -38,3 +38,43 @@ C:\Users\KEYOVE\source\repos\WebApplication_keyove\obj\Debug\WebApplication_keyo
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\obj\Debug\WebApplication_keyove.dll
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\obj\Debug\WebApplication_keyove.xml
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\obj\Debug\WebApplication_keyove.pdb
+E:\PROYECTO FINALES\WebApplication_keyove\bin\WebApplication_keyove.dll.config
+E:\PROYECTO FINALES\WebApplication_keyove\bin\WebApplication_keyove.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\WebApplication_keyove.pdb
+E:\PROYECTO FINALES\WebApplication_keyove\bin\WebApplication_keyove.xml
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\csc.exe
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\csc.exe.config
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\csc.rsp
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\csi.exe
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\csi.rsp
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.Build.Tasks.CodeAnalysis.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.CodeAnalysis.CSharp.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.CodeAnalysis.CSharp.Scripting.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.CodeAnalysis.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.CodeAnalysis.Scripting.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.CodeAnalysis.VisualBasic.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.CSharp.Core.targets
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.DiaSymReader.Native.amd64.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.DiaSymReader.Native.x86.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\Microsoft.VisualBasic.Core.targets
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\System.AppContext.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\System.Collections.Immutable.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\System.Diagnostics.StackTrace.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\System.IO.FileSystem.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\System.IO.FileSystem.Primitives.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\System.Reflection.Metadata.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\vbc.exe
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\vbc.exe.config
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\vbc.rsp
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\VBCSCompiler.exe
+E:\PROYECTO FINALES\WebApplication_keyove\bin\roslyn\VBCSCompiler.exe.config
+E:\PROYECTO FINALES\WebApplication_keyove\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll
+E:\PROYECTO FINALES\WebApplication_keyove\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml
+E:\PROYECTO FINALES\WebApplication_keyove\obj\Debug\WebApplication_keyove.vbproj.AssemblyReference.cache
+E:\PROYECTO FINALES\WebApplication_keyove\obj\Debug\WebApplication_keyove.Resources.resources
+E:\PROYECTO FINALES\WebApplication_keyove\obj\Debug\WebApplication_keyove.vbproj.GenerateResource.cache
+E:\PROYECTO FINALES\WebApplication_keyove\obj\Debug\WebApplication_keyove.vbproj.CoreCompileInputs.cache
+E:\PROYECTO FINALES\WebApplication_keyove\obj\Debug\WebAppli.78A14AB3.Up2Date
+E:\PROYECTO FINALES\WebApplication_keyove\obj\Debug\WebApplication_keyove.dll
+E:\PROYECTO FINALES\WebApplication_keyove\obj\Debug\WebApplication_keyove.xml
+E:\PROYECTO FINALES\WebApplication_keyove\obj\Debug\WebApplication_keyove.pdb
