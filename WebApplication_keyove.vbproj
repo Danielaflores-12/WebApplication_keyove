@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\ConexionBD.vb" />
+    <Compile Include="Model\Usuarios.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -157,7 +158,6 @@
     <Folder Include="Business\" />
     <Folder Include="Helpers\" />
     <Folder Include="JScript\" />
-    <Folder Include="Model\" />
     <Folder Include="SQLScripts\" />
     <Folder Include="Views\Compras\" />
     <Folder Include="Views\Inventario\" />

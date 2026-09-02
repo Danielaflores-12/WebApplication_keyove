@@ -2,20 +2,31 @@ use DB_keyove_Inventario
 create table Personas(),
 create table Cliente(),
 
+
+create table Personas(
+	id_Personas int identity (1,1) primary key,
+	Nombres nvarchar (100) not null,
+	Apellidos nvarchar (100) not null,
+	Genero char(1) not null check (Genero in ('F','M')),
+	Correo nvarchar (100) null,
+	Teléfono varchar (9) null,
+	Fecha_Nac date null
+	Fecha_Registro datetime2 not null default sysdatetime(),
+	constraint UQ_Personas_Nombres unique (Nombres)
+);
+
 create table Usuarios(
 	id_Usuario int identity (1,1) primary key ,
-	Nombres nvarchar(100),
-	Apellidos nvarchar (100),
+	id_Personas int null,
 	Nombre_Usuario nvarchar(100),
 	Contraseña nvarchar(50),
 	Correo nvarchar(100),
 	Telefono varchar(9),
 	Fecha_Registro datetime2 not null default sysdatetime(),
 
-	constraint UQ_Usuarios_Nombre_Usuario unique (Nombre_Usuario)
-
+	constraint UQ_Usuarios_Nombre_Usuario unique (Nombre_Usuario),
+	constraint FK_Usuarios_Personas foreign key (id_Personas) references Personas(id_Personas)
 );
-
 
 create table Categorias(
 	id_Categoria int identity (1,1) primary key,
