@@ -30,7 +30,6 @@ C:\Users\KEYOVE\source\repos\WebApplication_keyove\bin\roslyn\VBCSCompiler.exe
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\bin\roslyn\VBCSCompiler.exe.config
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml
-C:\Users\KEYOVE\source\repos\WebApplication_keyove\obj\Debug\WebApplication_keyove.vbprojAssemblyReference.cache
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\obj\Debug\WebApplication_keyove.Resources.resources
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\obj\Debug\WebApplication_keyove.vbproj.GenerateResource.cache
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\obj\Debug\WebApplication_keyove.vbproj.CoreCompileInputs.cache
@@ -118,3 +117,4 @@ C:\Users\KEYOVE\source\repos\WebApplication_keyove\WebApplication_keyove\obj\Deb
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\WebApplication_keyove\obj\Debug\WebApplication_keyove.dll
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\WebApplication_keyove\obj\Debug\WebApplication_keyove.xml
 C:\Users\KEYOVE\source\repos\WebApplication_keyove\WebApplication_keyove\obj\Debug\WebApplication_keyove.pdb
+C:\Users\KEYOVE\Source\Repos\WebApplication_keyove\obj\Debug\WebApplication_keyove.vbproj.AssemblyReference.cache

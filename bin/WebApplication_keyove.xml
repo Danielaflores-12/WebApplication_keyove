@@ -53,6 +53,15 @@ WebApplication_keyove
   búsquedas de recursos mediante esta clase de recurso fuertemente tipado.
 </summary>
 </member>
+<member name="F:WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Personas.Persona1._form1">
+<summary>
+Control form1.
+</summary>
+<remarks>
+Campo generado automáticamente.
+Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+</remarks>
+</member>
 <member name="F:WebApplication_keyove.prueba_conexion._form1">
 <summary>
 Control form1.

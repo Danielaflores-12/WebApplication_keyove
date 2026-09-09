@@ -92,7 +92,10 @@
     <Import Include="System.Web.UI.HtmlControls" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Data\use DB_keyove_Inventario.txt" />
+    <Content Include="JScript\Personas.js" />
     <Content Include="prueba conexion.aspx" />
+    <Content Include="Views\Mantenimiento\Personas\Personas.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -135,7 +138,14 @@
       <DependentUpon>prueba conexion.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="System.vb" />
+    <Compile Include="IniciarSistema.vb" />
+    <Compile Include="Views\Mantenimiento\Personas\Personas.aspx.designer.vb">
+      <DependentUpon>Personas.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Personas\Personas.aspx.vb">
+      <DependentUpon>Personas.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">
@@ -169,14 +179,7 @@
     <Folder Include="Assets\img\" />
     <Folder Include="Business\" />
     <Folder Include="Helpers\" />
-    <Folder Include="JScript\" />
     <Folder Include="SQLScripts\" />
-    <Folder Include="Views\Compras\" />
-    <Folder Include="Views\Inventario\" />
-    <Folder Include="Views\Mantenimientos\" />
-    <Folder Include="Views\Reportes\" />
-    <Folder Include="Views\Seguridad\" />
-    <Folder Include="Views\Ventas\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

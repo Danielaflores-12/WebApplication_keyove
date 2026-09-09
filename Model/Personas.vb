@@ -7,7 +7,7 @@ Public Class Personas
     ' PROPIEDADES
     '==================================================
 
-    Public iCodPersonas As Integer
+    Public iCodPersona As Integer
     Public cNombres As String
     Public cApellidos As String
     Public cGenero As String
@@ -143,7 +143,7 @@ Public Class Personas
         If resultado IsNot Nothing AndAlso
            Not IsDBNull(resultado) Then
 
-            Me.iCodPersonas = Convert.ToInt32(resultado)
+            Me.iCodPersona = Convert.ToInt32(resultado)
 
         End If
 
@@ -220,7 +220,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.iCodPersonas
+                .Value = Me.iCodPersona
             }
         )
 
@@ -299,7 +299,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.iCodPersonas
+                .Value = Me.iCodPersona
             }
         )
 
@@ -324,7 +324,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.iCodPersonas
+                .Value = Me.iCodPersona
             }
         )
 
@@ -349,7 +349,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.iCodPersonas
+                .Value = Me.iCodPersona
             }
         )
 
@@ -383,7 +383,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.iCodPersonas
+                .Value = Me.iCodPersona
             }
         )
 
@@ -396,7 +396,7 @@ Public Class Personas
                 Return False
             End If
 
-            Me.iCodPersonas =
+            Me.iCodPersona =
                 Convert.ToInt32(readers("id_Personas"))
 
             Me.cNombres =
