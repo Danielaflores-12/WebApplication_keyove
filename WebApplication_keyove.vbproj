@@ -97,8 +97,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\ConexionBD.vb" />
+    <Compile Include="Model\Categorias.vb" />
     <Compile Include="Model\Personas.vb" />
     <Compile Include="Model\Proveedores.vb" />
+    <Compile Include="Model\Roles.vb" />
+    <Compile Include="Model\Usuarios.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>

@@ -7,14 +7,14 @@ Public Class Personas
     ' PROPIEDADES
     '==================================================
 
-    Public idPersonas As Integer
-    Public Nombres As String
-    Public Apellidos As String
-    Public Genero As String
-    Public Correo As String
-    Public Telefono As String
-    Public Fecha_Nac As Date?
-    Public Fecha_Registro As DateTime
+    Public iCodPersonas As Integer
+    Public cNombres As String
+    Public cApellidos As String
+    Public cGenero As String
+    Public cCorreo As String
+    Public cTelefono As String
+    Public dFecha_Nac As Date?
+    Public dFecha_Registro As DateTime
 
     'Consulta personalizada
     Public qSelect As String
@@ -84,9 +84,9 @@ Public Class Personas
         parametros.Add(
             New SqlParameter("@Nombres", SqlDbType.NVarChar, 100) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Nombres),
+                    String.IsNullOrWhiteSpace(Me.cNombres),
                     CType(DBNull.Value, Object),
-                    Me.Nombres.Trim()
+                    Me.cNombres.Trim()
                 )
             }
         )
@@ -94,25 +94,25 @@ Public Class Personas
         parametros.Add(
             New SqlParameter("@Apellidos", SqlDbType.NVarChar, 100) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Apellidos),
+                    String.IsNullOrWhiteSpace(Me.cApellidos),
                     CType(DBNull.Value, Object),
-                    Me.Apellidos.Trim()
+                    Me.cApellidos.Trim()
                 )
             }
         )
 
         parametros.Add(
             New SqlParameter("@Genero", SqlDbType.Char, 1) With {
-                .Value = Me.Genero
+                .Value = Me.cGenero
             }
         )
 
         parametros.Add(
             New SqlParameter("@Correo", SqlDbType.NVarChar, 100) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Correo),
+                    String.IsNullOrWhiteSpace(Me.cCorreo),
                     CType(DBNull.Value, Object),
-                    Me.Correo.Trim()
+                    Me.cCorreo.Trim()
                 )
             }
         )
@@ -120,9 +120,9 @@ Public Class Personas
         parametros.Add(
             New SqlParameter("@Telefono", SqlDbType.VarChar, 9) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Telefono),
+                    String.IsNullOrWhiteSpace(Me.cTelefono),
                     CType(DBNull.Value, Object),
-                    Me.Telefono.Trim()
+                    Me.cTelefono.Trim()
                 )
             }
         )
@@ -130,8 +130,8 @@ Public Class Personas
         parametros.Add(
             New SqlParameter("@Fecha_Nac", SqlDbType.Date) With {
                 .Value = If(
-                    Me.Fecha_Nac.HasValue,
-                    CType(Me.Fecha_Nac.Value, Object),
+                    Me.dFecha_Nac.HasValue,
+                    CType(Me.dFecha_Nac.Value, Object),
                     CType(DBNull.Value, Object)
                 )
             }
@@ -143,7 +143,7 @@ Public Class Personas
         If resultado IsNot Nothing AndAlso
            Not IsDBNull(resultado) Then
 
-            Me.idPersonas = Convert.ToInt32(resultado)
+            Me.iCodPersonas = Convert.ToInt32(resultado)
 
         End If
 
@@ -172,28 +172,28 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@Nombres", SqlDbType.NVarChar, 100) With {
-                .Value = Me.Nombres.Trim()
+                .Value = Me.cNombres.Trim()
             }
         )
 
         parametros.Add(
             New SqlParameter("@Apellidos", SqlDbType.NVarChar, 100) With {
-                .Value = Me.Apellidos.Trim()
+                .Value = Me.cApellidos.Trim()
             }
         )
 
         parametros.Add(
             New SqlParameter("@Genero", SqlDbType.Char, 1) With {
-                .Value = Me.Genero
+                .Value = Me.cGenero
             }
         )
 
         parametros.Add(
             New SqlParameter("@Correo", SqlDbType.NVarChar, 100) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Correo),
+                    String.IsNullOrWhiteSpace(Me.cCorreo),
                     CType(DBNull.Value, Object),
-                    Me.Correo.Trim()
+                    Me.cCorreo.Trim()
                 )
             }
         )
@@ -201,9 +201,9 @@ Public Class Personas
         parametros.Add(
             New SqlParameter("@Telefono", SqlDbType.VarChar, 9) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Telefono),
+                    String.IsNullOrWhiteSpace(Me.cTelefono),
                     CType(DBNull.Value, Object),
-                    Me.Telefono.Trim()
+                    Me.cTelefono.Trim()
                 )
             }
         )
@@ -211,8 +211,8 @@ Public Class Personas
         parametros.Add(
             New SqlParameter("@Fecha_Nac", SqlDbType.Date) With {
                 .Value = If(
-                    Me.Fecha_Nac.HasValue,
-                    CType(Me.Fecha_Nac.Value, Object),
+                    Me.dFecha_Nac.HasValue,
+                    CType(Me.dFecha_Nac.Value, Object),
                     CType(DBNull.Value, Object)
                 )
             }
@@ -220,7 +220,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.idPersonas
+                .Value = Me.iCodPersonas
             }
         )
 
@@ -251,28 +251,28 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@Nombres", SqlDbType.NVarChar, 100) With {
-                .Value = Me.Nombres.Trim()
+                .Value = Me.cNombres.Trim()
             }
         )
 
         parametros.Add(
             New SqlParameter("@Apellidos", SqlDbType.NVarChar, 100) With {
-                .Value = Me.Apellidos.Trim()
+                .Value = Me.cApellidos.Trim()
             }
         )
 
         parametros.Add(
             New SqlParameter("@Genero", SqlDbType.Char, 1) With {
-                .Value = Me.Genero
+                .Value = Me.cGenero
             }
         )
 
         parametros.Add(
             New SqlParameter("@Correo", SqlDbType.NVarChar, 100) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Correo),
+                    String.IsNullOrWhiteSpace(Me.cCorreo),
                     CType(DBNull.Value, Object),
-                    Me.Correo.Trim()
+                    Me.cCorreo.Trim()
                 )
             }
         )
@@ -280,9 +280,9 @@ Public Class Personas
         parametros.Add(
             New SqlParameter("@Telefono", SqlDbType.VarChar, 9) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Telefono),
+                    String.IsNullOrWhiteSpace(Me.cTelefono),
                     CType(DBNull.Value, Object),
-                    Me.Telefono.Trim()
+                    Me.cTelefono.Trim()
                 )
             }
         )
@@ -290,8 +290,8 @@ Public Class Personas
         parametros.Add(
             New SqlParameter("@Fecha_Nac", SqlDbType.Date) With {
                 .Value = If(
-                    Me.Fecha_Nac.HasValue,
-                    CType(Me.Fecha_Nac.Value, Object),
+                    Me.dFecha_Nac.HasValue,
+                    CType(Me.dFecha_Nac.Value, Object),
                     CType(DBNull.Value, Object)
                 )
             }
@@ -299,7 +299,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.idPersonas
+                .Value = Me.iCodPersonas
             }
         )
 
@@ -324,7 +324,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.idPersonas
+                .Value = Me.iCodPersonas
             }
         )
 
@@ -349,7 +349,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.idPersonas
+                .Value = Me.iCodPersonas
             }
         )
 
@@ -383,7 +383,7 @@ Public Class Personas
 
         parametros.Add(
             New SqlParameter("@idPersonas", SqlDbType.Int) With {
-                .Value = Me.idPersonas
+                .Value = Me.iCodPersonas
             }
         )
 
@@ -396,40 +396,40 @@ Public Class Personas
                 Return False
             End If
 
-            Me.idPersonas =
+            Me.iCodPersonas =
                 Convert.ToInt32(readers("id_Personas"))
 
-            Me.Nombres =
+            Me.cNombres =
                 Convert.ToString(readers("Nombres"))
 
-            Me.Apellidos =
+            Me.cApellidos =
                 Convert.ToString(readers("Apellidos"))
 
-            Me.Genero =
+            Me.cGenero =
                 Convert.ToString(readers("Genero"))
 
             If IsDBNull(readers("Correo")) Then
-                Me.Correo = ""
+                Me.cCorreo = ""
             Else
-                Me.Correo =
+                Me.cCorreo =
                     Convert.ToString(readers("Correo"))
             End If
 
             If IsDBNull(readers("Teléfono")) Then
-                Me.Telefono = ""
+                Me.cTelefono = ""
             Else
-                Me.Telefono =
+                Me.cTelefono =
                     Convert.ToString(readers("Teléfono"))
             End If
 
             If IsDBNull(readers("Fecha_Nac")) Then
-                Me.Fecha_Nac = Nothing
+                Me.dFecha_Nac = Nothing
             Else
-                Me.Fecha_Nac =
+                Me.dFecha_Nac =
                     Convert.ToDateTime(readers("Fecha_Nac"))
             End If
 
-            Me.Fecha_Registro =
+            Me.dFecha_Registro =
                 Convert.ToDateTime(
                     readers("Fecha_Registro")
                 )

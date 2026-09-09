@@ -7,11 +7,11 @@ Public Class Roles
     ' PROPIEDADES
     '==================================================
 
-    Public idRol As Integer
-    Public Nombre As String
-    Public Descripcion As String
-    Public Estado As Boolean
-    Public Fecha_Registro As DateTime
+    Public iCodRol As Integer
+    Public cNombre As String
+    Public cDescripcion As String
+    Public bEstado As Boolean
+    Public dFecha_Registro As DateTime
 
     'Consulta personalizada
     Public qSelect As String
@@ -77,23 +77,23 @@ Public Class Roles
 
         parametros.Add(
             New SqlParameter("@Nombre", SqlDbType.NVarChar, 50) With {
-                .Value = Me.Nombre.Trim()
+                .Value = Me.cNombre.Trim()
             }
         )
 
         parametros.Add(
             New SqlParameter("@Descripcion", SqlDbType.NVarChar, 200) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Descripcion),
+                    String.IsNullOrWhiteSpace(Me.cDescripcion),
                     CType(DBNull.Value, Object),
-                    Me.Descripcion.Trim()
+                    Me.cDescripcion.Trim()
                 )
             }
         )
 
         parametros.Add(
             New SqlParameter("@Estado", SqlDbType.Bit) With {
-                .Value = Me.Estado
+                .Value = Me.bEstado
             }
         )
 
@@ -103,7 +103,7 @@ Public Class Roles
         If resultado IsNot Nothing AndAlso
            Not IsDBNull(resultado) Then
 
-            Me.idRol = Convert.ToInt32(resultado)
+            Me.iCodRol = Convert.ToInt32(resultado)
 
         End If
 
@@ -129,29 +129,29 @@ Public Class Roles
 
         parametros.Add(
             New SqlParameter("@Nombre", SqlDbType.NVarChar, 50) With {
-                .Value = Me.Nombre.Trim()
+                .Value = Me.cNombre.Trim()
             }
         )
 
         parametros.Add(
             New SqlParameter("@Descripcion", SqlDbType.NVarChar, 200) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Descripcion),
+                    String.IsNullOrWhiteSpace(Me.cDescripcion),
                     CType(DBNull.Value, Object),
-                    Me.Descripcion.Trim()
+                    Me.cDescripcion.Trim()
                 )
             }
         )
 
         parametros.Add(
             New SqlParameter("@Estado", SqlDbType.Bit) With {
-                .Value = Me.Estado
+                .Value = Me.bEstado
             }
         )
 
         parametros.Add(
             New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.idRol
+                .Value = Me.iCodRol
             }
         )
 
@@ -179,29 +179,29 @@ Public Class Roles
 
         parametros.Add(
             New SqlParameter("@Nombre", SqlDbType.NVarChar, 50) With {
-                .Value = Me.Nombre.Trim()
+                .Value = Me.cNombre.Trim()
             }
         )
 
         parametros.Add(
             New SqlParameter("@Descripcion", SqlDbType.NVarChar, 200) With {
                 .Value = If(
-                    String.IsNullOrWhiteSpace(Me.Descripcion),
+                    String.IsNullOrWhiteSpace(Me.cDescripcion),
                     CType(DBNull.Value, Object),
-                    Me.Descripcion.Trim()
+                    Me.cDescripcion.Trim()
                 )
             }
         )
 
         parametros.Add(
             New SqlParameter("@Estado", SqlDbType.Bit) With {
-                .Value = Me.Estado
+                .Value = Me.bEstado
             }
         )
 
         parametros.Add(
             New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.idRol
+                .Value = Me.iCodRol
             }
         )
 
@@ -226,7 +226,7 @@ Public Class Roles
 
         parametros.Add(
             New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.idRol
+                .Value = Me.iCodRol
             }
         )
 
@@ -251,7 +251,7 @@ Public Class Roles
 
         parametros.Add(
             New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.idRol
+                .Value = Me.iCodRol
             }
         )
 
@@ -282,7 +282,7 @@ Public Class Roles
 
         parametros.Add(
             New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.idRol
+                .Value = Me.iCodRol
             }
         )
 
@@ -295,31 +295,31 @@ Public Class Roles
                 Return False
             End If
 
-            Me.idRol =
+            Me.iCodRol =
                 Convert.ToInt32(
                     readers("id_Rol")
                 )
 
-            Me.Nombre =
+            Me.cNombre =
                 Convert.ToString(
                     readers("Nombre")
                 )
 
             If IsDBNull(readers("Descripcion")) Then
-                Me.Descripcion = ""
+                Me.cDescripcion = ""
             Else
-                Me.Descripcion =
+                Me.cDescripcion =
                     Convert.ToString(
                         readers("Descripcion")
                     )
             End If
 
-            Me.Estado =
+            Me.bEstado =
                 Convert.ToBoolean(
                     readers("Estado")
                 )
 
-            Me.Fecha_Registro =
+            Me.dFecha_Registro =
                 Convert.ToDateTime(
                     readers("Fecha_Registro")
                 )

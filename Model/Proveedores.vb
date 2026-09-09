@@ -5,15 +5,15 @@ Namespace WebApplication_Keyove.Model
 
     Public Class Proveedores
 
-        Public idProveedor As Integer
-        Public Ruc As String
-        Public Razon_Social As String
-        Public Representante As String
-        Public Telefono As String
-        Public Correo As String
-        Public Direccion As String
-        Public Estado As Boolean = True
-        Public Fecha_Registro As DateTime
+        Public iCodProveedor As Integer
+        Public cRuc As String
+        Public cRazon_Social As String
+        Public cRepresentante As String
+        Public cTelefono As String
+        Public cCorreo As String
+        Public cDireccion As String
+        Public bEstado As Boolean = True
+        Public dFecha_Registro As DateTime
 
         Public qSelect As String
         Public db As New ConexionBD()
@@ -44,43 +44,43 @@ Namespace WebApplication_Keyove.Model
 
             parametros.Add(
                 New SqlParameter("@Ruc", SqlDbType.VarChar, 11) With {
-                    .Value = Me.Ruc
+                    .Value = Me.cRuc
                 }
             )
 
             parametros.Add(
                 New SqlParameter("@Razon_Social", SqlDbType.NVarChar, 150) With {
-                    .Value = Me.Razon_Social
+                    .Value = Me.cRazon_Social
                 }
             )
 
             parametros.Add(
                 New SqlParameter("@Representante", SqlDbType.NVarChar, 100) With {
-                    .Value = ValorONull(Me.Representante)
+                    .Value = ValorONull(Me.cRepresentante)
                 }
             )
 
             parametros.Add(
                 New SqlParameter("@Telefono", SqlDbType.VarChar, 9) With {
-                    .Value = ValorONull(Me.Telefono)
+                    .Value = ValorONull(Me.cTelefono)
                 }
             )
 
             parametros.Add(
                 New SqlParameter("@Correo", SqlDbType.NVarChar, 100) With {
-                    .Value = ValorONull(Me.Correo)
+                    .Value = ValorONull(Me.cCorreo)
                 }
             )
 
             parametros.Add(
                 New SqlParameter("@Direccion", SqlDbType.NVarChar, 150) With {
-                    .Value = ValorONull(Me.Direccion)
+                    .Value = ValorONull(Me.cDireccion)
                 }
             )
 
             parametros.Add(
                 New SqlParameter("@Estado", SqlDbType.Bit) With {
-                    .Value = Me.Estado
+                    .Value = Me.bEstado
                 }
             )
 
@@ -88,7 +88,7 @@ Namespace WebApplication_Keyove.Model
 
                 parametros.Add(
                     New SqlParameter("@idProveedor", SqlDbType.Int) With {
-                        .Value = Me.idProveedor
+                        .Value = Me.iCodProveedor
                     }
                 )
 
@@ -171,7 +171,7 @@ Namespace WebApplication_Keyove.Model
             Dim parametros As List(Of SqlParameter) =
                 CrearParametros(False)
 
-            Me.idProveedor =
+            Me.iCodProveedor =
                 Convert.ToInt32(
                     db.ExecuteScalar(Query, parametros)
                 )
@@ -223,7 +223,7 @@ Namespace WebApplication_Keyove.Model
 
             parametros.Add(
                 New SqlParameter("@idProveedor", SqlDbType.Int) With {
-                    .Value = Me.idProveedor
+                    .Value = Me.iCodProveedor
                 }
             )
 
@@ -246,7 +246,7 @@ Namespace WebApplication_Keyove.Model
 
             parametros.Add(
                 New SqlParameter("@idProveedor", SqlDbType.Int) With {
-                    .Value = Me.idProveedor
+                    .Value = Me.iCodProveedor
                 }
             )
 
@@ -278,7 +278,7 @@ Namespace WebApplication_Keyove.Model
 
             parametros.Add(
                 New SqlParameter("@idProveedor", SqlDbType.Int) With {
-                    .Value = Me.idProveedor
+                    .Value = Me.iCodProveedor
                 }
             )
 
@@ -289,31 +289,31 @@ Namespace WebApplication_Keyove.Model
 
                 If readers.Read() Then
 
-                    Me.idProveedor =
+                    Me.iCodProveedor =
                         Convert.ToInt32(readers("id_Proveedor"))
 
-                    Me.Ruc =
+                    Me.cRuc =
                         Convert.ToString(readers("Ruc"))
 
-                    Me.Razon_Social =
+                    Me.cRazon_Social =
                         Convert.ToString(readers("Razon_Social"))
 
-                    Me.Representante =
+                    Me.cRepresentante =
                         Convert.ToString(readers("Representante"))
 
-                    Me.Telefono =
+                    Me.cTelefono =
                         Convert.ToString(readers("Telefono"))
 
-                    Me.Correo =
+                    Me.cCorreo =
                         Convert.ToString(readers("Correo"))
 
-                    Me.Direccion =
+                    Me.cDireccion =
                         Convert.ToString(readers("Direccion"))
 
-                    Me.Estado =
+                    Me.bEstado =
                         Convert.ToBoolean(readers("Estado"))
 
-                    Me.Fecha_Registro =
+                    Me.dFecha_Registro =
                         Convert.ToDateTime(readers("Fecha_Registro"))
 
                 End If
