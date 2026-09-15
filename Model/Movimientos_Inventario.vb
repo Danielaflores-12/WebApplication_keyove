@@ -11,7 +11,9 @@ Namespace WebApplication_Keyove.Model
 
         Public iCodMovimiento As Integer
         Public iCodProducto As Integer
+        Public cNombreProducto As String
         Public iCodUsuario As Integer
+        Public cNombreUsuario As String
 
         Public iCodCompra As Integer?
         Public iCodVenta As Integer?

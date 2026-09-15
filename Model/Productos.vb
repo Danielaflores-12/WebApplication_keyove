@@ -8,6 +8,7 @@ Namespace WebApplication_Keyove.Model
 
         Public iCodProducto As Integer
         Public iCodCategoria As Integer
+        Public cNombreCategoria As String
         Public cCodigo As String
         Public cNombre As String
         Public cDescripcion As String

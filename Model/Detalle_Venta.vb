@@ -9,6 +9,8 @@ Namespace WebApplication_Keyove.Model
         Public iCodDetalleVenta As Integer
         Public iCodVenta As Integer
         Public iCodProducto As Integer
+        Public cCodigo As String
+        Public cNombreProducto As String
         Public iCantidad As Integer
         Public nPrecioVenta As Decimal
         Public nDescuento As Decimal = 0D

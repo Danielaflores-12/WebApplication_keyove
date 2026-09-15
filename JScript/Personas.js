@@ -13,7 +13,7 @@ function listarPersonas() {
 
     $.ajax({
         type: "POST",
-        url: "Views/Mantenimientos/Personas/Personas.aspx/ListarPersonas",
+        url: "/Views/Mantenimiento/Personas/Personas.aspx/ListarPersonas",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -83,13 +83,13 @@ function guardarPersona() {
         cGenero: $("#ddlGenero").val(),
         cCorreo: $("#txtCorreo").val(),
         cTelefono: $("#txtTelefono").val(),
-        dFechaNacimiento: $("#txtFechaNacimiento").val()
+        dFechaNacimiento: $("#txtFechaNacimiento").val() || null
 
     };
 
     $.ajax({
         type: "POST",
-        url: "Views/Mantenimientos/Personas/Personas.aspx/GuardarPersona",
+        url: "/Views/Mantenimiento/Personas/Personas.aspx/GuardarPersona",
         data: JSON.stringify({
             persona: persona
         }),
@@ -133,7 +133,7 @@ function seleccionarPersona(idPersona) {
 
     $.ajax({
         type: "POST",
-        url: "Views/Mantenimientos/Personas/Personas.aspx/ObtenerPersona",
+        url: "/Views/Mantenimiento/Personas/Personas.aspx/ObtenerPersona",
         data: JSON.stringify({
             idPersona: idPersona
         }),
@@ -191,13 +191,13 @@ function modificarPersona() {
         cGenero: $("#ddlGenero").val(),
         cCorreo: $("#txtCorreo").val(),
         cTelefono: $("#txtTelefono").val(),
-        dFechaNacimiento: $("#txtFechaNacimiento").val()
+        dFechaNacimiento: $("#txtFechaNacimiento").val() || null
 
     };
 
     $.ajax({
         type: "POST",
-        url: "Views/Mantenimientos/Personas/Personas.aspx/ModificarPersona",
+        url: "/Views/Mantenimiento/Personas/Personas.aspx/ModificarPersona",
         data: JSON.stringify({
             persona: persona
         }),
@@ -251,7 +251,7 @@ function eliminarPersona(idPersona) {
 
     $.ajax({
         type: "POST",
-        url: "Views/Mantenimientos/Personas/Personas.aspx/EliminarPersona",
+        url: "/Views/Mantenimiento/Personas/Personas.aspx/EliminarPersona",
         data: JSON.stringify({
             idPersona: idPersona
         }),

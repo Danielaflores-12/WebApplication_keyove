@@ -1,421 +1,407 @@
 ﻿Imports System.Data
 Imports System.Data.SqlClient
+Imports WebApplication_Keyove.WebApplication_Keyove.Data
 
-Public Class Roles
+Namespace WebApplication_Keyove.Model
 
-    '==================================================
-    ' PROPIEDADES
-    '==================================================
+    Public Class Roles
 
-    Public iCodRol As Integer
-    Public cNombre As String
-    Public cDescripcion As String
-    Public bEstado As Boolean
-    Public dFecha_Registro As DateTime
+        '==================================================
+        ' VARIABLES
+        '==================================================
 
-    'Consulta personalizada
-    Public qSelect As String
+        Public iCodRol As Integer
+        Public cNombre As String
+        Public cDescripcion As String
+        Public bEstado As Boolean = True
+        Public dFechaRegistro As DateTime
 
-    'Conexión
-    Public db As New WebApplication_Keyove.Data.ConexionBD
+        Public qSelect As String
+        Public db As New ConexionBD()
 
 
-    '==================================================
-    ' LISTAR DATOS
-    '==================================================
+        '==================================================
+        ' CONVERTIR CAMPOS VACÍOS EN NULL PARA SQL SERVER
+        '==================================================
 
-    Public Function ListaDatosTable() As DataTable
+        Private Function ValorONull(valor As String) As Object
 
-        Dim Query As String
-
-        Query = Me.qSelect
-
-        Return db.ExecuteDataTable(Query)
-
-    End Function
-
-
-    '==================================================
-    ' LISTAR TODOS LOS ROLES
-    '==================================================
-
-    Public Function ListaDatosShort() As DataTable
-
-        Dim Query As String
-
-        Query =
-            "SELECT " &
-            "id_Rol, " &
-            "Nombre, " &
-            "Descripcion, " &
-            "Estado, " &
-            "Fecha_Registro " &
-            "FROM Roles " &
-            "ORDER BY id_Rol DESC"
-
-        Return db.ExecuteDataTable(Query)
-
-    End Function
-
-
-    '==================================================
-    ' INSERTAR
-    '==================================================
-
-    Public Sub Insertar()
-
-        Dim Query As String
-
-        Query =
-            "INSERT INTO Roles " &
-            "(Nombre, Descripcion, Estado) " &
-            "VALUES " &
-            "(@Nombre, @Descripcion, @Estado); " &
-            "SELECT CAST(SCOPE_IDENTITY() AS INT);"
-
-        Dim parametros As New List(Of SqlParameter)
-
-        parametros.Add(
-            New SqlParameter("@Nombre", SqlDbType.NVarChar, 50) With {
-                .Value = Me.cNombre.Trim()
-            }
-        )
-
-        parametros.Add(
-            New SqlParameter("@Descripcion", SqlDbType.NVarChar, 200) With {
-                .Value = If(
-                    String.IsNullOrWhiteSpace(Me.cDescripcion),
-                    CType(DBNull.Value, Object),
-                    Me.cDescripcion.Trim()
-                )
-            }
-        )
-
-        parametros.Add(
-            New SqlParameter("@Estado", SqlDbType.Bit) With {
-                .Value = Me.bEstado
-            }
-        )
-
-        Dim resultado As Object =
-            db.ExecuteScalar(Query, parametros)
-
-        If resultado IsNot Nothing AndAlso
-           Not IsDBNull(resultado) Then
-
-            Me.iCodRol = Convert.ToInt32(resultado)
-
-        End If
-
-    End Sub
-
-
-    '==================================================
-    ' MODIFICAR
-    '==================================================
-
-    Public Sub Modificar()
-
-        Dim Query As String
-
-        Query =
-            "UPDATE Roles SET " &
-            "Nombre = @Nombre, " &
-            "Descripcion = @Descripcion, " &
-            "Estado = @Estado " &
-            "WHERE id_Rol = @idRol"
-
-        Dim parametros As New List(Of SqlParameter)
-
-        parametros.Add(
-            New SqlParameter("@Nombre", SqlDbType.NVarChar, 50) With {
-                .Value = Me.cNombre.Trim()
-            }
-        )
-
-        parametros.Add(
-            New SqlParameter("@Descripcion", SqlDbType.NVarChar, 200) With {
-                .Value = If(
-                    String.IsNullOrWhiteSpace(Me.cDescripcion),
-                    CType(DBNull.Value, Object),
-                    Me.cDescripcion.Trim()
-                )
-            }
-        )
-
-        parametros.Add(
-            New SqlParameter("@Estado", SqlDbType.Bit) With {
-                .Value = Me.bEstado
-            }
-        )
-
-        parametros.Add(
-            New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.iCodRol
-            }
-        )
-
-        db.ExecuteQuery(Query, parametros)
-
-    End Sub
-
-
-    '==================================================
-    ' MODIFICAR EN TRANSACCIÓN
-    '==================================================
-
-    Public Sub ModificarTransact()
-
-        Dim Query As String
-
-        Query =
-            "UPDATE Roles SET " &
-            "Nombre = @Nombre, " &
-            "Descripcion = @Descripcion, " &
-            "Estado = @Estado " &
-            "WHERE id_Rol = @idRol"
-
-        Dim parametros As New List(Of SqlParameter)
-
-        parametros.Add(
-            New SqlParameter("@Nombre", SqlDbType.NVarChar, 50) With {
-                .Value = Me.cNombre.Trim()
-            }
-        )
-
-        parametros.Add(
-            New SqlParameter("@Descripcion", SqlDbType.NVarChar, 200) With {
-                .Value = If(
-                    String.IsNullOrWhiteSpace(Me.cDescripcion),
-                    CType(DBNull.Value, Object),
-                    Me.cDescripcion.Trim()
-                )
-            }
-        )
-
-        parametros.Add(
-            New SqlParameter("@Estado", SqlDbType.Bit) With {
-                .Value = Me.bEstado
-            }
-        )
-
-        parametros.Add(
-            New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.iCodRol
-            }
-        )
-
-        db.ExecuteQueryTransact(Query, parametros)
-
-    End Sub
-
-
-    '==================================================
-    ' ELIMINAR
-    '==================================================
-
-    Public Sub Eliminar()
-
-        Dim Query As String
-
-        Query =
-            "DELETE FROM Roles " &
-            "WHERE id_Rol = @idRol"
-
-        Dim parametros As New List(Of SqlParameter)
-
-        parametros.Add(
-            New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.iCodRol
-            }
-        )
-
-        db.ExecuteQuery(Query, parametros)
-
-    End Sub
-
-
-    '==================================================
-    ' ELIMINAR EN TRANSACCIÓN
-    '==================================================
-
-    Public Sub EliminarTransact()
-
-        Dim Query As String
-
-        Query =
-            "DELETE FROM Roles " &
-            "WHERE id_Rol = @idRol"
-
-        Dim parametros As New List(Of SqlParameter)
-
-        parametros.Add(
-            New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.iCodRol
-            }
-        )
-
-        db.ExecuteQueryTransact(Query, parametros)
-
-    End Sub
-
-
-    '==================================================
-    ' OBTENER UN ROL
-    '==================================================
-
-    Public Function getRecord() As Boolean
-
-        Dim Query As String
-
-        Query =
-            "SELECT " &
-            "id_Rol, " &
-            "Nombre, " &
-            "Descripcion, " &
-            "Estado, " &
-            "Fecha_Registro " &
-            "FROM Roles " &
-            "WHERE id_Rol = @idRol"
-
-        Dim parametros As New List(Of SqlParameter)
-
-        parametros.Add(
-            New SqlParameter("@idRol", SqlDbType.Int) With {
-                .Value = Me.iCodRol
-            }
-        )
-
-        Dim readers As IDataReader =
-            db.ExecuteGetRecord(Query, parametros)
-
-        Try
-
-            If Not readers.Read() Then
-                Return False
+            If String.IsNullOrWhiteSpace(valor) Then
+                Return DBNull.Value
             End If
+
+            Return valor.Trim()
+
+        End Function
+
+
+        '==================================================
+        ' CREAR PARÁMETROS DEL ROL
+        '==================================================
+
+        Private Function CrearParametros(
+            incluirId As Boolean
+        ) As List(Of SqlParameter)
+
+            Dim parametros As New List(Of SqlParameter)
+
+            parametros.Add(
+                New SqlParameter("@cNombre", SqlDbType.NVarChar, 50) With {
+                    .Value = Me.cNombre.Trim()
+                }
+            )
+
+            parametros.Add(
+                New SqlParameter("@cDescripcion", SqlDbType.NVarChar, 200) With {
+                    .Value = ValorONull(Me.cDescripcion)
+                }
+            )
+
+            parametros.Add(
+                New SqlParameter("@bEstado", SqlDbType.Bit) With {
+                    .Value = Me.bEstado
+                }
+            )
+
+            If incluirId Then
+
+                parametros.Add(
+                    New SqlParameter("@iCodRol", SqlDbType.Int) With {
+                        .Value = Me.iCodRol
+                    }
+                )
+
+            End If
+
+            Return parametros
+
+        End Function
+
+
+        '==================================================
+        ' CONSULTA PARA MODIFICAR
+        '==================================================
+
+        Private Function ConsultaModificar() As String
+
+            Dim Query As String =
+                "UPDATE Roles SET " &
+                "cNombre = @cNombre, " &
+                "cDescripcion = @cDescripcion, " &
+                "bEstado = @bEstado " &
+                "WHERE iCodRol = @iCodRol"
+
+            Return Query
+
+        End Function
+
+
+        '==================================================
+        ' LISTAR DATOS SEGÚN qSelect
+        '==================================================
+
+        Public Function ListaDatosTable() As DataTable
+
+            Return db.ExecuteDataTable(Me.qSelect)
+
+        End Function
+
+
+        '==================================================
+        ' LISTAR TODOS LOS ROLES
+        '==================================================
+
+        Public Function ListaDatosShort() As DataTable
+
+            Dim Query As String =
+                "SELECT " &
+                "iCodRol, " &
+                "cNombre, " &
+                "cDescripcion, " &
+                "bEstado, " &
+                "dFechaRegistro " &
+                "FROM Roles " &
+                "ORDER BY iCodRol DESC"
+
+            Return db.ExecuteDataTable(Query)
+
+        End Function
+
+
+        '==================================================
+        ' INSERTAR ROL
+        '==================================================
+
+        Public Sub Insertar()
+
+            Dim Query As String =
+                "INSERT INTO Roles " &
+                "(cNombre, cDescripcion, bEstado) " &
+                "VALUES " &
+                "(@cNombre, @cDescripcion, @bEstado); " &
+                "SELECT CAST(SCOPE_IDENTITY() AS INT);"
+
+            Dim parametros As List(Of SqlParameter) =
+                CrearParametros(False)
 
             Me.iCodRol =
                 Convert.ToInt32(
-                    readers("id_Rol")
+                    db.ExecuteScalar(Query, parametros)
                 )
 
-            Me.cNombre =
-                Convert.ToString(
-                    readers("Nombre")
-                )
+        End Sub
 
-            If IsDBNull(readers("Descripcion")) Then
-                Me.cDescripcion = ""
-            Else
-                Me.cDescripcion =
-                    Convert.ToString(
-                        readers("Descripcion")
+
+        '==================================================
+        ' MODIFICAR ROL
+        '==================================================
+
+        Public Sub Modificar()
+
+            Dim Query As String = ConsultaModificar()
+
+            Dim parametros As List(Of SqlParameter) =
+                CrearParametros(True)
+
+            db.ExecuteQuery(Query, parametros)
+
+        End Sub
+
+
+        '==================================================
+        ' MODIFICAR ROL EN TRANSACCIÓN
+        '==================================================
+
+        Public Sub ModificarTransact()
+
+            Dim Query As String = ConsultaModificar()
+
+            Dim parametros As List(Of SqlParameter) =
+                CrearParametros(True)
+
+            db.ExecuteQueryTransact(Query, parametros)
+
+        End Sub
+
+
+        '==================================================
+        ' DESACTIVAR ROL
+        '==================================================
+
+        Public Sub Eliminar()
+
+            Dim Query As String =
+                "UPDATE Roles " &
+                "SET bEstado = 0 " &
+                "WHERE iCodRol = @iCodRol"
+
+            Dim parametros As New List(Of SqlParameter)
+
+            parametros.Add(
+                New SqlParameter("@iCodRol", SqlDbType.Int) With {
+                    .Value = Me.iCodRol
+                }
+            )
+
+            db.ExecuteQuery(Query, parametros)
+
+        End Sub
+
+
+        '==================================================
+        ' DESACTIVAR ROL EN TRANSACCIÓN
+        '==================================================
+
+        Public Sub EliminarTransact()
+
+            Dim Query As String =
+                "UPDATE Roles " &
+                "SET bEstado = 0 " &
+                "WHERE iCodRol = @iCodRol"
+
+            Dim parametros As New List(Of SqlParameter)
+
+            parametros.Add(
+                New SqlParameter("@iCodRol", SqlDbType.Int) With {
+                    .Value = Me.iCodRol
+                }
+            )
+
+            db.ExecuteQueryTransact(Query, parametros)
+
+        End Sub
+
+
+        '==================================================
+        ' ACTIVAR ROL
+        '==================================================
+
+        Public Sub Activar()
+
+            Dim Query As String =
+                "UPDATE Roles " &
+                "SET bEstado = 1 " &
+                "WHERE iCodRol = @iCodRol"
+
+            Dim parametros As New List(Of SqlParameter)
+
+            parametros.Add(
+                New SqlParameter("@iCodRol", SqlDbType.Int) With {
+                    .Value = Me.iCodRol
+                }
+            )
+
+            db.ExecuteQuery(Query, parametros)
+
+        End Sub
+
+
+        '==================================================
+        ' OBTENER UN ROL POR SU ID
+        '==================================================
+
+        Public Function getRecord() As Boolean
+
+            Dim Query As String =
+                "SELECT " &
+                "iCodRol, " &
+                "cNombre, " &
+                "cDescripcion, " &
+                "bEstado, " &
+                "dFechaRegistro " &
+                "FROM Roles " &
+                "WHERE iCodRol = @iCodRol"
+
+            Dim parametros As New List(Of SqlParameter)
+
+            parametros.Add(
+                New SqlParameter("@iCodRol", SqlDbType.Int) With {
+                    .Value = Me.iCodRol
+                }
+            )
+
+            Dim readers As IDataReader =
+                db.ExecuteGetRecord(Query, parametros)
+
+            Try
+
+                If Not readers.Read() Then
+                    Return False
+                End If
+
+                Me.iCodRol =
+                    Convert.ToInt32(readers("iCodRol"))
+
+                Me.cNombre =
+                    Convert.ToString(readers("cNombre"))
+
+                If IsDBNull(readers("cDescripcion")) Then
+                    Me.cDescripcion = ""
+                Else
+                    Me.cDescripcion =
+                        Convert.ToString(readers("cDescripcion"))
+                End If
+
+                Me.bEstado =
+                    Convert.ToBoolean(readers("bEstado"))
+
+                Me.dFechaRegistro =
+                    Convert.ToDateTime(readers("dFechaRegistro"))
+
+                Return True
+
+            Finally
+
+                readers.Close()
+
+            End Try
+
+        End Function
+
+
+        '==================================================
+        ' LISTAR ROLES ACTIVOS PARA COMBOBOX
+        '==================================================
+
+        Public Function ListaDatosCombo() As DataTable
+
+            Dim miDataTable As New DataTable()
+
+            miDataTable.Columns.Add("ValueMember")
+            miDataTable.Columns.Add("DisplayMember")
+
+            Dim Query As String =
+                "SELECT " &
+                "iCodRol, " &
+                "cNombre " &
+                "FROM Roles " &
+                "WHERE bEstado = 1 " &
+                "ORDER BY cNombre"
+
+            Dim readers As IDataReader =
+                db.ExecuteReader(Query)
+
+            Try
+
+                While readers.Read()
+
+                    miDataTable.Rows.Add(
+                        Convert.ToString(
+                            readers("iCodRol")
+                        ),
+                        Convert.ToString(
+                            readers("cNombre")
+                        )
                     )
-            End If
 
-            Me.bEstado =
-                Convert.ToBoolean(
-                    readers("Estado")
-                )
+                End While
 
-            Me.dFecha_Registro =
-                Convert.ToDateTime(
-                    readers("Fecha_Registro")
-                )
+            Finally
 
-            Return True
+                readers.Close()
 
-        Finally
+            End Try
 
-            readers.Close()
+            Return miDataTable
 
-        End Try
-
-    End Function
+        End Function
 
 
-    '==================================================
-    ' LISTAR PARA COMBOBOX
-    '==================================================
+        '==================================================
+        ' BUSCAR POR NOMBRE O DESCRIPCIÓN
+        '==================================================
 
-    Public Function ListaDatosCombo() As DataTable
+        Public Function Buscar(
+            ByVal texto As String
+        ) As DataTable
 
-        Dim miDataTable As New DataTable()
+            Dim Query As String =
+                "SELECT " &
+                "iCodRol, " &
+                "cNombre, " &
+                "cDescripcion, " &
+                "bEstado, " &
+                "dFechaRegistro " &
+                "FROM Roles " &
+                "WHERE cNombre LIKE @Texto " &
+                "OR cDescripcion LIKE @Texto " &
+                "ORDER BY cNombre"
 
-        miDataTable.Columns.Add("ValueMember")
-        miDataTable.Columns.Add("DisplayMember")
+            Dim parametros As New List(Of SqlParameter)
 
-        Dim Query As String =
-            "SELECT " &
-            "id_Rol, " &
-            "Nombre " &
-            "FROM Roles " &
-            "WHERE Estado = 1 " &
-            "ORDER BY Nombre"
+            parametros.Add(
+                New SqlParameter("@Texto", SqlDbType.NVarChar, 200) With {
+                    .Value = "%" & texto.Trim() & "%"
+                }
+            )
 
-        Dim readers As IDataReader =
-            db.ExecuteReader(Query)
+            Return db.ExecuteDataTable(
+                Query,
+                parametros
+            )
 
-        Try
+        End Function
 
-            While readers.Read()
+    End Class
 
-                miDataTable.Rows.Add(
-                    Convert.ToString(
-                        readers("id_Rol")
-                    ),
-                    Convert.ToString(
-                        readers("Nombre")
-                    )
-                )
-
-            End While
-
-        Finally
-
-            readers.Close()
-
-        End Try
-
-        Return miDataTable
-
-    End Function
-
-
-    '==================================================
-    ' BUSCAR POR NOMBRE O DESCRIPCIÓN
-    '==================================================
-
-    Public Function Buscar(
-        ByVal texto As String
-    ) As DataTable
-
-        Dim Query As String =
-            "SELECT " &
-            "id_Rol, " &
-            "Nombre, " &
-            "Descripcion, " &
-            "Estado, " &
-            "Fecha_Registro " &
-            "FROM Roles " &
-            "WHERE Nombre LIKE @Texto " &
-            "OR Descripcion LIKE @Texto " &
-            "ORDER BY Nombre"
-
-        Dim parametros As New List(Of SqlParameter)
-
-        parametros.Add(
-            New SqlParameter("@Texto", SqlDbType.NVarChar, 200) With {
-                .Value = "%" & texto.Trim() & "%"
-            }
-        )
-
-        Return db.ExecuteDataTable(
-            Query,
-            parametros
-        )
-
-    End Function
-
-End Class
+End Namespace

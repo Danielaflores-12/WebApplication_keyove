@@ -11,6 +11,7 @@ Namespace WebApplication_Keyove.Model
 
         Public iCodVenta As Integer
         Public iCodUsuario As Integer
+        Public cNombreUsuario As String
         Public cTipoComprobante As String = "BOLETA"
         Public cDocumentoCliente As String
         Public cNumeroCelular As String
