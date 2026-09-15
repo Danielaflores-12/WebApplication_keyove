@@ -1,4 +1,4 @@
-﻿<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Personas.aspx.vb" Inherits="WebApplication_Keyove.Views.Mantenimiento.Personas.Persona1" %>
+﻿<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Personas.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Personas.Persona1" %>
 
 <!DOCTYPE html>
 

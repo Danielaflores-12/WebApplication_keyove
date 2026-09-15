@@ -12,6 +12,7 @@ Namespace WebApplication_Keyove.Model
         Public iCodUsuario As Integer
         Public iCodPersona As Integer?
         Public iCodRol As Integer
+        Public cNombreRol As String
         Public cNombreUsuario As String
         Public cContrasenaHash As String
         Public dFechaRegistro As DateTime

@@ -1,111 +1,169 @@
 ﻿Imports System.Web.Services
 Imports System.Web.Script.Services
-Imports WebApplication_keyove.Model
+Imports WebApplication_keyove.WebApplication_Keyove.Model
+Imports ModeloPersonas = WebApplication_keyove.WebApplication_Keyove.Model.Personas
 
-Public Class Persona1
-    Inherits Global.System.Web.UI.Page
+Namespace WebApplication_Keyove.Views.Mantenimiento.Personas
 
-    Protected Sub Page_Load(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles Me.Load
+    Partial Public Class Persona1
+        Inherits Global.System.Web.UI.Page
 
-    End Sub
+        Protected Sub Page_Load(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles Me.Load
 
-
-    '==================================================
-    ' LISTAR PERSONAS
-    '==================================================
-
-    <WebMethod()>
-    <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
-    Public Shared Function ListarPersonas() As Object
-
-        Dim objPersona As New Personas()
-
-        Return objPersona.ListaDatosShort()
-
-    End Function
+        End Sub
 
 
-    '==================================================
-    ' GUARDAR PERSONA
-    '==================================================
+        '==================================================
+        ' LISTAR PERSONAS
+        '==================================================
 
-    <WebMethod()>
-    Public Shared Function GuardarPersona(persona As Personas) As String
+        <WebMethod()>
+        <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
+        Public Shared Function ListarPersonas() As List(Of ModeloPersonas)
 
-        Try
+            Dim lista As New List(Of ModeloPersonas)()
 
-            persona.Insertar()
+            Dim tabla As DataTable =
+                New ModeloPersonas().ListaDatosShort()
 
-            Return "OK"
+            For Each fila As DataRow In tabla.Rows
 
-        Catch ex As Exception
+                Dim obj As New ModeloPersonas()
 
-            Return "ERROR: " & ex.Message
+                obj.iCodPersona =
+                    Convert.ToInt32(fila("iCodPersona"))
 
-        End Try
+                obj.cNombres =
+                    Convert.ToString(fila("cNombres"))
 
-    End Function
+                obj.cApellidos =
+                    Convert.ToString(fila("cApellidos"))
+
+                obj.cGenero =
+                    Convert.ToString(fila("cGenero"))
+
+                If IsDBNull(fila("cCorreo")) Then
+                    obj.cCorreo = Nothing
+                Else
+                    obj.cCorreo =
+                        Convert.ToString(fila("cCorreo"))
+                End If
+
+                If IsDBNull(fila("cTelefono")) Then
+                    obj.cTelefono = Nothing
+                Else
+                    obj.cTelefono =
+                        Convert.ToString(fila("cTelefono"))
+                End If
+
+                If IsDBNull(fila("dFechaNacimiento")) Then
+                    obj.dFechaNacimiento = Nothing
+                Else
+                    obj.dFechaNacimiento =
+                        Convert.ToDateTime(
+                            fila("dFechaNacimiento")
+                        )
+                End If
+
+                obj.dFechaRegistro =
+                    Convert.ToDateTime(
+                        fila("dFechaRegistro")
+                    )
+
+                lista.Add(obj)
+
+            Next
+
+            Return lista
+
+        End Function
 
 
-    '==================================================
-    ' MODIFICAR PERSONA
-    '==================================================
+        '==================================================
+        ' GUARDAR PERSONA
+        '==================================================
 
-    <WebMethod()>
-    Public Shared Function ModificarPersona(persona As Personas) As String
+        <WebMethod()>
+        Public Shared Function GuardarPersona(persona As ModeloPersonas) As String
 
-        Try
+            Try
 
-            persona.Modificar()
+                persona.Insertar()
 
-            Return "OK"
+                Return "OK"
 
-        Catch ex As Exception
+            Catch ex As Exception
 
-            Return "ERROR: " & ex.Message
+                Return "ERROR: " & ex.Message
 
-        End Try
+            End Try
 
-    End Function
+        End Function
 
 
-    '==================================================
-    ' ELIMINAR PERSONA
-    '==================================================
+        '==================================================
+        ' MODIFICAR PERSONA
+        '==================================================
 
-    <WebMethod()>
-    Public Shared Function EliminarPersona(idPersona As Integer) As String
+        <WebMethod()>
+        Public Shared Function ModificarPersona(persona As ModeloPersonas) As String
 
-        Try
+            Try
 
-            Dim objPersona As New Personas()
+                persona.Modificar()
+
+                Return "OK"
+
+            Catch ex As Exception
+
+                Return "ERROR: " & ex.Message
+
+            End Try
+
+        End Function
+
+
+        '==================================================
+        ' ELIMINAR PERSONA
+        '==================================================
+
+        <WebMethod()>
+        Public Shared Function EliminarPersona(idPersona As Integer) As String
+
+            Try
+
+                Dim objPersona As New ModeloPersonas()
+
+                objPersona.iCodPersona = idPersona
+                objPersona.Eliminar()
+
+                Return "OK"
+
+            Catch ex As Exception
+
+                Return "ERROR: " & ex.Message
+
+            End Try
+
+        End Function
+
+
+        '==================================================
+        ' OBTENER PERSONA POR ID
+        '==================================================
+
+        <WebMethod()>
+        Public Shared Function ObtenerPersona(idPersona As Integer) As ModeloPersonas
+
+            Dim objPersona As New ModeloPersonas()
 
             objPersona.iCodPersona = idPersona
-            objPersona.Eliminar()
+            objPersona.getRecord()
 
-            Return "OK"
+            Return objPersona
 
-        Catch ex As Exception
+        End Function
 
-            Return "ERROR: " & ex.Message
+    End Class
 
-        End Try
-
-    End Function
-    '==================================================
-    ' OBTENER PERSONA POR ID
-    '==================================================
-
-    <WebMethod()>
-    Public Shared Function ObtenerPersona(idPersona As Integer) As Personas
-
-        Dim objPersona As New Personas()
-
-        objPersona.iCodPersona = idPersona
-        objPersona.getRecord()
-
-        Return objPersona
-
-    End Function
-
-End Class
+End Namespace

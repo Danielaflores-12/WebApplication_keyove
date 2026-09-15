@@ -93,9 +93,29 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Data\use DB_keyove_Inventario.txt" />
+    <Content Include="JScript\Categorias.js" />
+    <Content Include="JScript\Compras.js" />
+    <Content Include="JScript\Detalle_Compra.js" />
+    <Content Include="JScript\Detalle_Venta.js" />
+    <Content Include="JScript\Movimientos_Inventario.js" />
     <Content Include="JScript\Personas.js" />
+    <Content Include="JScript\Productos.js" />
+    <Content Include="JScript\Proveedores.js" />
+    <Content Include="JScript\Roles.js" />
+    <Content Include="JScript\Usuarios.js" />
+    <Content Include="JScript\Ventas.js" />
     <Content Include="prueba conexion.aspx" />
+    <Content Include="Views\Mantenimiento\Categorias\Categorias.aspx" />
+    <Content Include="Views\Mantenimiento\Compras\Compras.aspx" />
+    <Content Include="Views\Mantenimiento\Detalle_Compra\Detalle_Compra.aspx" />
+    <Content Include="Views\Mantenimiento\Detalle_Venta\Detalle_Venta.aspx" />
+    <Content Include="Views\Mantenimiento\Movimientos_Inventario\Movimientos_Inventario.aspx" />
     <Content Include="Views\Mantenimiento\Personas\Personas.aspx" />
+    <Content Include="Views\Mantenimiento\Productos\Productos.aspx" />
+    <Content Include="Views\Mantenimiento\Proveedores\Proveedores.aspx" />
+    <Content Include="Views\Mantenimiento\Roles\Roles.aspx" />
+    <Content Include="Views\Mantenimiento\Usuarios\Usuarios.aspx" />
+    <Content Include="Views\Mantenimiento\Ventas\Ventas.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -144,6 +164,76 @@
     </Compile>
     <Compile Include="Views\Mantenimiento\Personas\Personas.aspx.vb">
       <DependentUpon>Personas.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Roles\Roles.aspx.designer.vb">
+      <DependentUpon>Roles.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Roles\Roles.aspx.vb">
+      <DependentUpon>Roles.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Categorias\Categorias.aspx.designer.vb">
+      <DependentUpon>Categorias.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Categorias\Categorias.aspx.vb">
+      <DependentUpon>Categorias.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Compras\Compras.aspx.designer.vb">
+      <DependentUpon>Compras.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Compras\Compras.aspx.vb">
+      <DependentUpon>Compras.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Detalle_Compra\Detalle_Compra.aspx.designer.vb">
+      <DependentUpon>Detalle_Compra.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Detalle_Compra\Detalle_Compra.aspx.vb">
+      <DependentUpon>Detalle_Compra.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Detalle_Venta\Detalle_Venta.aspx.designer.vb">
+      <DependentUpon>Detalle_Venta.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Detalle_Venta\Detalle_Venta.aspx.vb">
+      <DependentUpon>Detalle_Venta.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Movimientos_Inventario\Movimientos_Inventario.aspx.designer.vb">
+      <DependentUpon>Movimientos_Inventario.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Movimientos_Inventario\Movimientos_Inventario.aspx.vb">
+      <DependentUpon>Movimientos_Inventario.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Productos\Productos.aspx.designer.vb">
+      <DependentUpon>Productos.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Productos\Productos.aspx.vb">
+      <DependentUpon>Productos.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Proveedores\Proveedores.aspx.designer.vb">
+      <DependentUpon>Proveedores.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Proveedores\Proveedores.aspx.vb">
+      <DependentUpon>Proveedores.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Usuarios\Usuarios.aspx.designer.vb">
+      <DependentUpon>Usuarios.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Usuarios\Usuarios.aspx.vb">
+      <DependentUpon>Usuarios.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Ventas\Ventas.aspx.designer.vb">
+      <DependentUpon>Ventas.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Mantenimiento\Ventas\Ventas.aspx.vb">
+      <DependentUpon>Ventas.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
     </Compile>
   </ItemGroup>
