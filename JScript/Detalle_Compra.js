@@ -4,8 +4,24 @@ $(document).ready(function () {
     listarProductosCombo();
     listarDetallesCompra();
 
-});
+    $("#txtCantidad, #txtPrecioCompra").on("input", function () {
+        calcularSubtotalDetalle();
+    });
 
+});
+//==================================================
+// CALCULAR EL SUBTOTAL PARA DETALLE
+//==================================================
+
+function calcularSubtotalDetalle() {
+
+    var cantidad = parseFloat($("#txtCantidad").val()) || 0;
+    var precio = parseFloat($("#txtPrecioCompra").val()) || 0;
+
+    var subtotal = cantidad * precio;
+
+    $("#txtSubTotal").val(subtotal.toFixed(2));
+}
 
 //==================================================
 // LISTAR COMPRAS PARA COMBOBOX
@@ -15,7 +31,7 @@ function listarComprasCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Compra/Detalle_Compra.aspx/ListarComprasCombo",
+        url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ListarComprasCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -59,7 +75,7 @@ function listarProductosCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Compra/Detalle_Compra.aspx/ListarProductosCombo",
+        url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ListarProductosCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -103,7 +119,7 @@ function listarDetallesCompra() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Compra/Detalle_Compra.aspx/ListarDetallesCompra",
+        url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ListarDetallesCompra",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -177,7 +193,7 @@ function guardarDetalleCompra() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Compra/Detalle_Compra.aspx/GuardarDetalleCompra",
+        url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/GuardarDetalleCompra",
         data: JSON.stringify({
             detalle: detalle
         }),
@@ -221,7 +237,7 @@ function seleccionarDetalleCompra(idDetalleCompra) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Compra/Detalle_Compra.aspx/ObtenerDetalleCompra",
+        url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ObtenerDetalleCompra",
         data: JSON.stringify({
             idDetalleCompra: idDetalleCompra
         }),
@@ -283,7 +299,7 @@ function modificarDetalleCompra() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Compra/Detalle_Compra.aspx/ModificarDetalleCompra",
+        url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ModificarDetalleCompra",
         data: JSON.stringify({
             detalle: detalle
         }),
@@ -337,7 +353,7 @@ function eliminarDetalleCompra(idDetalleCompra) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Compra/Detalle_Compra.aspx/EliminarDetalleCompra",
+        url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/EliminarDetalleCompra",
         data: JSON.stringify({
             idDetalleCompra: idDetalleCompra
         }),

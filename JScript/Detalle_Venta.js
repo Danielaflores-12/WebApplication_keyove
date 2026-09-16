@@ -3,9 +3,30 @@ $(document).ready(function () {
     listarVentasCombo();
     listarProductosCombo();
     listarDetallesVenta();
+    $("#txtCantidad, #txtPrecioVenta, #txtDescuento").on("input", function () {
+            calcularSubtotalVenta();
+        });
 
 });
 
+//==================================================
+// CALCULAR EL SUBTOTAL PARA VENTA 
+//==================================================
+
+function calcularSubtotalVenta() {
+
+    var cantidad = parseFloat($("#txtCantidad").val()) || 0;
+    var precio = parseFloat($("#txtPrecioVenta").val()) || 0;
+    var descuento = parseFloat($("#txtDescuento").val()) || 0;
+
+    var subtotal = (cantidad * precio) - descuento;
+
+    if (subtotal < 0) {
+        subtotal = 0;
+    }
+
+    $("#txtSubTotal").val(subtotal.toFixed(2));
+}
 
 //==================================================
 // LISTAR VENTAS PARA COMBOBOX
@@ -15,7 +36,7 @@ function listarVentasCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Venta/Detalle_Venta.aspx/ListarVentasCombo",
+        url: "/Views/Operaciones/Detalle_Venta/Detalle_Venta.aspx/ListarVentasCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -59,7 +80,7 @@ function listarProductosCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Venta/Detalle_Venta.aspx/ListarProductosCombo",
+        url: "/Views/Operaciones/Detalle_Venta/Detalle_Venta.aspx/ListarProductosCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -103,7 +124,7 @@ function listarDetallesVenta() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Venta/Detalle_Venta.aspx/ListarDetallesVenta",
+        url: "/Views/Operaciones/Detalle_Venta/Detalle_Venta.aspx/ListarDetallesVenta",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -179,7 +200,7 @@ function guardarDetalleVenta() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Venta/Detalle_Venta.aspx/GuardarDetalleVenta",
+        url: "/Views/Operaciones/Detalle_Venta/Detalle_Venta.aspx/GuardarDetalleVenta",
         data: JSON.stringify({
             detalle: detalle
         }),
@@ -223,7 +244,7 @@ function seleccionarDetalleVenta(idDetalleVenta) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Venta/Detalle_Venta.aspx/ObtenerDetalleVenta",
+        url: "/Views/Operaciones/Detalle_Venta/Detalle_Venta.aspx/ObtenerDetalleVenta",
         data: JSON.stringify({
             idDetalleVenta: idDetalleVenta
         }),
@@ -287,7 +308,7 @@ function modificarDetalleVenta() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Venta/Detalle_Venta.aspx/ModificarDetalleVenta",
+        url: "/Views/Operaciones/Detalle_Venta/Detalle_Venta.aspx/ModificarDetalleVenta",
         data: JSON.stringify({
             detalle: detalle
         }),
@@ -341,7 +362,7 @@ function eliminarDetalleVenta(idDetalleVenta) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Detalle_Venta/Detalle_Venta.aspx/EliminarDetalleVenta",
+        url: "/Views/Operaciones/Detalle_Venta/Detalle_Venta.aspx/EliminarDetalleVenta",
         data: JSON.stringify({
             idDetalleVenta: idDetalleVenta
         }),

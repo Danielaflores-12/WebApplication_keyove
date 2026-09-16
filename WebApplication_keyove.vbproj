@@ -92,6 +92,7 @@
     <Import Include="System.Web.UI.HtmlControls" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include=".gitignore" />
     <Content Include="Data\use DB_keyove_Inventario.txt" />
     <Content Include="JScript\Categorias.js" />
     <Content Include="JScript\Compras.js" />
@@ -105,21 +106,24 @@
     <Content Include="JScript\Usuarios.js" />
     <Content Include="JScript\Ventas.js" />
     <Content Include="prueba conexion.aspx" />
+    <Content Include="Views\Dashboard\Dashboard.aspx" />
+    <Content Include="Views\Inventario\Movimientos_Inventario\Movimientos_Inventario.aspx" />
     <Content Include="Views\Mantenimiento\Categorias\Categorias.aspx" />
-    <Content Include="Views\Mantenimiento\Compras\Compras.aspx" />
-    <Content Include="Views\Mantenimiento\Detalle_Compra\Detalle_Compra.aspx" />
-    <Content Include="Views\Mantenimiento\Detalle_Venta\Detalle_Venta.aspx" />
-    <Content Include="Views\Mantenimiento\Movimientos_Inventario\Movimientos_Inventario.aspx" />
     <Content Include="Views\Mantenimiento\Personas\Personas.aspx" />
     <Content Include="Views\Mantenimiento\Productos\Productos.aspx" />
     <Content Include="Views\Mantenimiento\Proveedores\Proveedores.aspx" />
     <Content Include="Views\Mantenimiento\Roles\Roles.aspx" />
     <Content Include="Views\Mantenimiento\Usuarios\Usuarios.aspx" />
-    <Content Include="Views\Mantenimiento\Ventas\Ventas.aspx" />
+    <Content Include="Views\Operaciones\Compras\Compras.aspx" />
+    <Content Include="Views\Operaciones\Detalle_Compra\Detalle_Compra.aspx" />
+    <Content Include="Views\Operaciones\Detalle_Venta\Detalle_Venta.aspx" />
+    <Content Include="Views\Operaciones\Ventas\Ventas.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\ConexionBD.vb" />
+    <Compile Include="Helpers\SeguridadHelper.vb" />
+    <Compile Include="Helpers\ValidacionHelper.vb" />
     <Compile Include="Model\Categorias.vb" />
     <Compile Include="Model\Compras.vb" />
     <Compile Include="Model\Detalle_Compra.vb" />
@@ -159,6 +163,20 @@
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="IniciarSistema.vb" />
+    <Compile Include="Views\Dashboard\Dashboard.aspx.designer.vb">
+      <DependentUpon>Dashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Dashboard\Dashboard.aspx.vb">
+      <DependentUpon>Dashboard.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Inventario\Movimientos_Inventario\Movimientos_Inventario.aspx.designer.vb">
+      <DependentUpon>Movimientos_Inventario.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Inventario\Movimientos_Inventario\Movimientos_Inventario.aspx.vb">
+      <DependentUpon>Movimientos_Inventario.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Views\Mantenimiento\Personas\Personas.aspx.designer.vb">
       <DependentUpon>Personas.aspx</DependentUpon>
     </Compile>
@@ -178,34 +196,6 @@
     </Compile>
     <Compile Include="Views\Mantenimiento\Categorias\Categorias.aspx.vb">
       <DependentUpon>Categorias.aspx</DependentUpon>
-      <SubType>ASPXCodebehind</SubType>
-    </Compile>
-    <Compile Include="Views\Mantenimiento\Compras\Compras.aspx.designer.vb">
-      <DependentUpon>Compras.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\Mantenimiento\Compras\Compras.aspx.vb">
-      <DependentUpon>Compras.aspx</DependentUpon>
-      <SubType>ASPXCodebehind</SubType>
-    </Compile>
-    <Compile Include="Views\Mantenimiento\Detalle_Compra\Detalle_Compra.aspx.designer.vb">
-      <DependentUpon>Detalle_Compra.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\Mantenimiento\Detalle_Compra\Detalle_Compra.aspx.vb">
-      <DependentUpon>Detalle_Compra.aspx</DependentUpon>
-      <SubType>ASPXCodebehind</SubType>
-    </Compile>
-    <Compile Include="Views\Mantenimiento\Detalle_Venta\Detalle_Venta.aspx.designer.vb">
-      <DependentUpon>Detalle_Venta.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\Mantenimiento\Detalle_Venta\Detalle_Venta.aspx.vb">
-      <DependentUpon>Detalle_Venta.aspx</DependentUpon>
-      <SubType>ASPXCodebehind</SubType>
-    </Compile>
-    <Compile Include="Views\Mantenimiento\Movimientos_Inventario\Movimientos_Inventario.aspx.designer.vb">
-      <DependentUpon>Movimientos_Inventario.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\Mantenimiento\Movimientos_Inventario\Movimientos_Inventario.aspx.vb">
-      <DependentUpon>Movimientos_Inventario.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
     </Compile>
     <Compile Include="Views\Mantenimiento\Productos\Productos.aspx.designer.vb">
@@ -229,12 +219,40 @@
       <DependentUpon>Usuarios.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
     </Compile>
-    <Compile Include="Views\Mantenimiento\Ventas\Ventas.aspx.designer.vb">
+    <Compile Include="Views\Master\Site.Master.designer.vb">
+      <DependentUpon>Site.Master</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Master\Site.Master.vb">
+      <DependentUpon>Site.Master</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Operaciones\Compras\Compras.aspx.designer.vb">
+      <DependentUpon>Compras.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Operaciones\Compras\Compras.aspx.vb">
+      <DependentUpon>Compras.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Operaciones\Detalle_Compra\Detalle_Compra.aspx.designer.vb">
+      <DependentUpon>Detalle_Compra.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Operaciones\Detalle_Compra\Detalle_Compra.aspx.vb">
+      <DependentUpon>Detalle_Compra.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Operaciones\Detalle_Venta\Detalle_Venta.aspx.designer.vb">
+      <DependentUpon>Detalle_Venta.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Operaciones\Detalle_Venta\Detalle_Venta.aspx.vb">
+      <DependentUpon>Detalle_Venta.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Operaciones\Ventas\Ventas.aspx.designer.vb">
       <DependentUpon>Ventas.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Views\Mantenimiento\Ventas\Ventas.aspx.vb">
+    <Compile Include="Views\Operaciones\Ventas\Ventas.aspx.vb">
       <DependentUpon>Ventas.aspx</DependentUpon>
-      <SubType>ASPXCodebehind</SubType>
+      <SubType>ASPXCodeBehind</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -256,6 +274,7 @@
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
     <None Include="packages.config" />
+    <Content Include="Views\Master\Site.Master" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
@@ -268,7 +287,6 @@
     <Folder Include="Assets\css\" />
     <Folder Include="Assets\img\" />
     <Folder Include="Business\" />
-    <Folder Include="Helpers\" />
     <Folder Include="SQLScripts\" />
   </ItemGroup>
   <PropertyGroup>

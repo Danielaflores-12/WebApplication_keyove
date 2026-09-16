@@ -15,7 +15,7 @@ function listarProveedoresCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Compras/Compras.aspx/ListarProveedoresCombo",
+        url: "/Views/Operaciones/Compras/Compras.aspx/ListarProveedoresCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -59,7 +59,7 @@ function listarUsuariosCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Compras/Compras.aspx/ListarUsuariosCombo",
+        url: "/Views/Operaciones/Compras/Compras.aspx/ListarUsuariosCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -103,7 +103,7 @@ function listarCompras() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Compras/Compras.aspx/ListarCompras",
+        url: "/Views/Operaciones/Compras/Compras.aspx/ListarCompras",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -184,7 +184,7 @@ function guardarCompra() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Compras/Compras.aspx/GuardarCompra",
+        url: "/Views/Operaciones/Compras/Compras.aspx/GuardarCompra",
         data: JSON.stringify({
             compra: compra
         }),
@@ -228,7 +228,7 @@ function seleccionarCompra(idCompra) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Compras/Compras.aspx/ObtenerCompra",
+        url: "/Views/Operaciones/Compras/Compras.aspx/ObtenerCompra",
         data: JSON.stringify({
             idCompra: idCompra
         }),
@@ -298,7 +298,7 @@ function modificarCompra() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Compras/Compras.aspx/ModificarCompra",
+        url: "/Views/Operaciones/Compras/Compras.aspx/ModificarCompra",
         data: JSON.stringify({
             compra: compra
         }),
@@ -352,7 +352,7 @@ function eliminarCompra(idCompra) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Compras/Compras.aspx/EliminarCompra",
+        url: "/Views/Operaciones/Compras/Compras.aspx/EliminarCompra",
         data: JSON.stringify({
             idCompra: idCompra
         }),

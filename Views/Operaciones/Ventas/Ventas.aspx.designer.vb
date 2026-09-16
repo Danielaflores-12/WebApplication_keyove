@@ -10,9 +10,9 @@
 Option Strict On
 Option Explicit On
 
-Namespace WebApplication_Keyove.Views.Mantenimiento.Detalle_Compra
+Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
-    Partial Public Class DetalleCompra1
+    Partial Public Class Venta1
 
         '''<summary>
         '''Control form1.

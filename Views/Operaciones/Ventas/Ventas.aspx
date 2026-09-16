@@ -1,4 +1,4 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Ventas.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Ventas.Venta1" %>
+<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Ventas.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Operaciones.Ventas.Venta1" %>
 
 <!DOCTYPE html>
 

@@ -1,13 +1,13 @@
 Imports System.Web.Services
 Imports System.Web.Script.Services
 Imports WebApplication_keyove.WebApplication_Keyove.Model
-Imports ModeloMovimiento = WebApplication_keyove.WebApplication_Keyove.Model.Movimientos_Inventario
-Imports ModeloProducto = WebApplication_keyove.WebApplication_Keyove.Model.Productos
+Imports ModeloCompra = WebApplication_keyove.WebApplication_Keyove.Model.Compras
+Imports ModeloProveedor = WebApplication_keyove.WebApplication_Keyove.Model.Proveedores
 Imports ModeloUsuario = WebApplication_keyove.WebApplication_Keyove.Model.Usuarios
 
-Namespace WebApplication_Keyove.Views.Mantenimiento.Movimientos_Inventario
+Namespace WebApplication_Keyove.Views.Operaciones.Compras
 
-    Partial Public Class Movimiento1
+    Partial Public Class Compra1
         Inherits Global.System.Web.UI.Page
 
         Protected Sub Page_Load(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles Me.Load
@@ -28,17 +28,17 @@ Namespace WebApplication_Keyove.Views.Mantenimiento.Movimientos_Inventario
 
 
         '==================================================
-        ' LISTAR PRODUCTOS PARA COMBOBOX
+        ' LISTAR PROVEEDORES PARA COMBOBOX
         '==================================================
 
         <WebMethod()>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
-        Public Shared Function ListarProductosCombo() As List(Of OpcionCombo)
+        Public Shared Function ListarProveedoresCombo() As List(Of OpcionCombo)
 
             Dim lista As New List(Of OpcionCombo)()
 
             Dim tabla As DataTable =
-                New ModeloProducto().ListaDatosCombo()
+                New ModeloProveedor().ListaDatosCombo()
 
             For Each fila As DataRow In tabla.Rows
 
@@ -92,72 +92,58 @@ Namespace WebApplication_Keyove.Views.Mantenimiento.Movimientos_Inventario
 
 
         '==================================================
-        ' LISTAR MOVIMIENTOS
+        ' LISTAR COMPRAS
         '==================================================
 
         <WebMethod()>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
-        Public Shared Function ListarMovimientos() As List(Of ModeloMovimiento)
+        Public Shared Function ListarCompras() As List(Of ModeloCompra)
 
-            Dim lista As New List(Of ModeloMovimiento)()
+            Dim lista As New List(Of ModeloCompra)()
 
             Dim tabla As DataTable =
-                New ModeloMovimiento().ListaDatosDetalle()
+                New ModeloCompra().ListaDatosShort()
 
             For Each fila As DataRow In tabla.Rows
 
-                Dim obj As New ModeloMovimiento()
+                Dim obj As New ModeloCompra()
 
-                obj.iCodMovimiento =
-                    Convert.ToInt32(fila("iCodMovimiento"))
+                obj.iCodCompra =
+                    Convert.ToInt32(fila("iCodCompra"))
 
-                obj.iCodProducto =
-                    Convert.ToInt32(fila("iCodProducto"))
-
-                obj.cNombreProducto =
-                    Convert.ToString(fila("Producto"))
+                obj.iCodProveedor =
+                    Convert.ToInt32(fila("iCodProveedor"))
 
                 obj.iCodUsuario =
                     Convert.ToInt32(fila("iCodUsuario"))
 
-                obj.cNombreUsuario =
-                    Convert.ToString(fila("Usuario"))
+                obj.cTipoComprobante =
+                    Convert.ToString(fila("cTipoComprobante"))
 
-                If IsDBNull(fila("iCodCompra")) Then
-                    obj.iCodCompra = Nothing
+                obj.cNumeroComprobante =
+                    Convert.ToString(fila("cNumeroComprobante"))
+
+                obj.dFechaCompra =
+                    Convert.ToDateTime(fila("dFechaCompra"))
+
+                obj.nSubTotal =
+                    Convert.ToDecimal(fila("nSubTotal"))
+
+                obj.nIgv =
+                    Convert.ToDecimal(fila("nIgv"))
+
+                obj.nTotal =
+                    Convert.ToDecimal(fila("nTotal"))
+
+                If IsDBNull(fila("cObservacion")) Then
+                    obj.cObservacion = Nothing
                 Else
-                    obj.iCodCompra =
-                        Convert.ToInt32(fila("iCodCompra"))
+                    obj.cObservacion =
+                        Convert.ToString(fila("cObservacion"))
                 End If
 
-                If IsDBNull(fila("iCodVenta")) Then
-                    obj.iCodVenta = Nothing
-                Else
-                    obj.iCodVenta =
-                        Convert.ToInt32(fila("iCodVenta"))
-                End If
-
-                obj.cTipoMovimiento =
-                    Convert.ToString(fila("cTipoMovimiento"))
-
-                obj.iCantidad =
-                    Convert.ToInt32(fila("iCantidad"))
-
-                obj.iStockAnterior =
-                    Convert.ToInt32(fila("iStockAnterior"))
-
-                obj.iStockNuevo =
-                    Convert.ToInt32(fila("iStockNuevo"))
-
-                If IsDBNull(fila("cMotivo")) Then
-                    obj.cMotivo = Nothing
-                Else
-                    obj.cMotivo =
-                        Convert.ToString(fila("cMotivo"))
-                End If
-
-                obj.dFechaMovimiento =
-                    Convert.ToDateTime(fila("dFechaMovimiento"))
+                obj.cEstado =
+                    Convert.ToString(fila("cEstado"))
 
                 lista.Add(obj)
 
@@ -169,15 +155,15 @@ Namespace WebApplication_Keyove.Views.Mantenimiento.Movimientos_Inventario
 
 
         '==================================================
-        ' GUARDAR MOVIMIENTO
+        ' GUARDAR COMPRA
         '==================================================
 
         <WebMethod()>
-        Public Shared Function GuardarMovimiento(movimiento As ModeloMovimiento) As String
+        Public Shared Function GuardarCompra(compra As ModeloCompra) As String
 
             Try
 
-                movimiento.Insertar()
+                compra.Insertar()
 
                 Return "OK"
 
@@ -191,15 +177,15 @@ Namespace WebApplication_Keyove.Views.Mantenimiento.Movimientos_Inventario
 
 
         '==================================================
-        ' MODIFICAR MOVIMIENTO
+        ' MODIFICAR COMPRA
         '==================================================
 
         <WebMethod()>
-        Public Shared Function ModificarMovimiento(movimiento As ModeloMovimiento) As String
+        Public Shared Function ModificarCompra(compra As ModeloCompra) As String
 
             Try
 
-                movimiento.Modificar()
+                compra.Modificar()
 
                 Return "OK"
 
@@ -213,19 +199,44 @@ Namespace WebApplication_Keyove.Views.Mantenimiento.Movimientos_Inventario
 
 
         '==================================================
-        ' OBTENER MOVIMIENTO POR ID
+        ' ANULAR COMPRA
+        '==================================================
+
+        <WebMethod()>
+        Public Shared Function EliminarCompra(idCompra As Integer) As String
+
+            Try
+
+                Dim objCompra As New ModeloCompra()
+
+                objCompra.iCodCompra = idCompra
+                objCompra.Eliminar()
+
+                Return "OK"
+
+            Catch ex As Exception
+
+                Return "ERROR: " & ex.Message
+
+            End Try
+
+        End Function
+
+
+        '==================================================
+        ' OBTENER COMPRA POR ID
         '==================================================
 
         <WebMethod()>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
-        Public Shared Function ObtenerMovimiento(idMovimiento As Integer) As ModeloMovimiento
+        Public Shared Function ObtenerCompra(idCompra As Integer) As ModeloCompra
 
-            Dim objMovimiento As New ModeloMovimiento()
+            Dim objCompra As New ModeloCompra()
 
-            objMovimiento.iCodMovimiento = idMovimiento
-            objMovimiento.getRecord()
+            objCompra.iCodCompra = idCompra
+            objCompra.getRecord()
 
-            Return objMovimiento
+            Return objCompra
 
         End Function
 

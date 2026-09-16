@@ -5,7 +5,7 @@ Imports ModeloDetalleCompra = WebApplication_keyove.WebApplication_Keyove.Model.
 Imports ModeloCompra = WebApplication_keyove.WebApplication_Keyove.Model.Compras
 Imports ModeloProducto = WebApplication_keyove.WebApplication_Keyove.Model.Productos
 
-Namespace WebApplication_Keyove.Views.Mantenimiento.Detalle_Compra
+Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
 
     Partial Public Class DetalleCompra1
         Inherits Global.System.Web.UI.Page

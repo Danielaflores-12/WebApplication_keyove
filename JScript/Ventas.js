@@ -14,7 +14,7 @@ function listarUsuariosCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Ventas/Ventas.aspx/ListarUsuariosCombo",
+        url: "/Views/Operaciones/Ventas/Ventas.aspx/ListarUsuariosCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -58,7 +58,7 @@ function listarVentas() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Ventas/Ventas.aspx/ListarVentas",
+        url: "/Views/Operaciones/Ventas/Ventas.aspx/ListarVentas",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -143,7 +143,7 @@ function guardarVenta() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Ventas/Ventas.aspx/GuardarVenta",
+        url: "/Views/Operaciones/Ventas/Ventas.aspx/GuardarVenta",
         data: JSON.stringify({
             venta: venta
         }),
@@ -187,7 +187,7 @@ function seleccionarVenta(idVenta) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Ventas/Ventas.aspx/ObtenerVenta",
+        url: "/Views/Operaciones/Ventas/Ventas.aspx/ObtenerVenta",
         data: JSON.stringify({
             idVenta: idVenta
         }),
@@ -261,7 +261,7 @@ function modificarVenta() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Ventas/Ventas.aspx/ModificarVenta",
+        url: "/Views/Operaciones/Ventas/Ventas.aspx/ModificarVenta",
         data: JSON.stringify({
             venta: venta
         }),
@@ -315,7 +315,7 @@ function eliminarVenta(idVenta) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Ventas/Ventas.aspx/EliminarVenta",
+        url: "/Views/Operaciones/Ventas/Ventas.aspx/EliminarVenta",
         data: JSON.stringify({
             idVenta: idVenta
         }),

@@ -1,4 +1,4 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Detalle_Compra.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Detalle_Compra.DetalleCompra1" %>
+<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Detalle_Compra.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Operaciones.Detalle_Compra.DetalleCompra1" %>
 
 <!DOCTYPE html>
 
@@ -52,7 +52,10 @@
 
             <div>
                 <label>Sub Total:</label>
-                <input type="number" step="0.01" id="txtSubTotal" />
+                <input type="number"
+                       step="0.01"
+                       id="txtSubTotal"
+                       readonly />
             </div>
 
             <br />

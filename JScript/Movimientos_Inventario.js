@@ -15,7 +15,7 @@ function listarProductosCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Movimientos_Inventario/Movimientos_Inventario.aspx/ListarProductosCombo",
+        url: "/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx/ListarProductosCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -59,7 +59,7 @@ function listarUsuariosCombo() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Movimientos_Inventario/Movimientos_Inventario.aspx/ListarUsuariosCombo",
+        url: "/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx/ListarUsuariosCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -103,7 +103,7 @@ function listarMovimientos() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Movimientos_Inventario/Movimientos_Inventario.aspx/ListarMovimientos",
+        url: "/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx/ListarMovimientos",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -184,7 +184,7 @@ function guardarMovimiento() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Movimientos_Inventario/Movimientos_Inventario.aspx/GuardarMovimiento",
+        url: "/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx/GuardarMovimiento",
         data: JSON.stringify({
             movimiento: movimiento
         }),
@@ -228,7 +228,7 @@ function seleccionarMovimiento(idMovimiento) {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Movimientos_Inventario/Movimientos_Inventario.aspx/ObtenerMovimiento",
+        url: "/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx/ObtenerMovimiento",
         data: JSON.stringify({
             idMovimiento: idMovimiento
         }),
@@ -301,7 +301,7 @@ function modificarMovimiento() {
 
     $.ajax({
         type: "POST",
-        url: "/Views/Mantenimiento/Movimientos_Inventario/Movimientos_Inventario.aspx/ModificarMovimiento",
+        url: "/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx/ModificarMovimiento",
         data: JSON.stringify({
             movimiento: movimiento
         }),

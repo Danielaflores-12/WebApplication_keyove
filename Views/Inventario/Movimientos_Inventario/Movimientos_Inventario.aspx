@@ -1,4 +1,4 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Movimientos_Inventario.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Movimientos_Inventario.Movimiento1" %>
+<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Movimientos_Inventario.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Inventario.Movimientos_Inventario.Movimiento1" %>
 
 <!DOCTYPE html>
 

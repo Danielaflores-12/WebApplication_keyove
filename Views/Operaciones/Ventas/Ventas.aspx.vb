@@ -4,7 +4,7 @@ Imports WebApplication_keyove.WebApplication_Keyove.Model
 Imports ModeloVenta = WebApplication_keyove.WebApplication_Keyove.Model.Ventas
 Imports ModeloUsuario = WebApplication_keyove.WebApplication_Keyove.Model.Usuarios
 
-Namespace WebApplication_Keyove.Views.Mantenimiento.Ventas
+Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
     Partial Public Class Venta1
         Inherits Global.System.Web.UI.Page

@@ -1,3 +1,4 @@
+
 CREATE DATABASE DB_keyove_inventario
 CREATE TABLE Personas (
     iCodPersona INT IDENTITY(1,1) NOT NULL,
@@ -91,7 +92,7 @@ GO
 
 CREATE TABLE Proveedores (
     iCodProveedor INT IDENTITY(1,1) NOT NULL,
-    cRuc VARCHAR(11) NOT NULL,
+    cRuc VARCHAR(10) NOT NULL,
     cRazonSocial NVARCHAR(150) NOT NULL,
     cRepresentante NVARCHAR(100) NULL,
     cTelefono VARCHAR(9) NULL,
@@ -109,7 +110,7 @@ CREATE TABLE Proveedores (
 
     CONSTRAINT CK_Proveedores_Ruc
         CHECK (
-            LEN(cRuc) = 11
+            LEN(cRuc) = 10
             AND cRuc NOT LIKE '%[^0-9]%'
         ),
 
