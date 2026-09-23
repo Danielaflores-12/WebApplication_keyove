@@ -156,6 +156,12 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                 obj.iCodUsuario =
                     Convert.ToInt32(fila("iCodUsuario"))
 
+                obj.cNombreProveedor =
+                    Convert.ToString(fila("cNombreProveedor"))
+
+                obj.cNombreUsuario =
+                    Convert.ToString(fila("cNombreUsuario"))
+
                 obj.cTipoComprobante =
                     Convert.ToString(fila("cTipoComprobante"))
 

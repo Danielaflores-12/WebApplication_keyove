@@ -149,10 +149,8 @@ Namespace WebApplication_Keyove.Model
             Dim Query As String =
                 "UPDATE Ventas SET " &
                 "iCodUsuario = @iCodUsuario, " &
-                "cTipoComprobante = @cTipoComprobante, " &
                 "cDocumentoCliente = @cDocumentoCliente, " &
                 "cNumeroCelular = @cNumeroCelular, " &
-                "cNumeroComprobante = @cNumeroComprobante, " &
                 "nSubTotal = @nSubTotal, " &
                 "nIgv = @nIgv, " &
                 "nTotal = @nTotal, " &
@@ -214,28 +212,14 @@ Namespace WebApplication_Keyove.Model
         '==================================================
 
         Public Sub Insertar()
-
-            Dim Query As String =
-                "INSERT INTO Ventas " &
-                "(iCodUsuario, cTipoComprobante, " &
-                "cDocumentoCliente, cNumeroCelular, " &
-                "cNumeroComprobante, nSubTotal, nIgv, nTotal, " &
-                "cMetodoPago, cObservacion, cEstado) " &
-                "VALUES " &
-                "(@iCodUsuario, @cTipoComprobante, " &
-                "@cDocumentoCliente, @cNumeroCelular, " &
-                "@cNumeroComprobante, @nSubTotal, @nIgv, @nTotal, " &
-                "@cMetodoPago, @cObservacion, @cEstado); " &
-                "SELECT CAST(SCOPE_IDENTITY() AS INT);"
-
-            Dim parametros As List(Of SqlParameter) =
-                CrearParametros(False)
-
-            Me.iCodVenta =
-                Convert.ToInt32(
-                    db.ExecuteScalar(Query, parametros)
-                )
-
+            db.BeginTransaction()
+            Try
+                InsertarTransact()
+                db.CommitTransaction()
+            Catch
+                db.RollbackTransaction()
+                Throw
+            End Try
         End Sub
 
 
@@ -244,6 +228,8 @@ Namespace WebApplication_Keyove.Model
         '==================================================
 
         Public Sub InsertarTransact()
+            Me.cTipoComprobante = If(Me.cTipoComprobante, "").Trim().ToUpperInvariant()
+            Me.cNumeroComprobante = ComprobanteHelper.GenerarNumero(db, "Ventas", Me.cTipoComprobante)
 
             Dim Query As String =
                 "INSERT INTO Ventas " &

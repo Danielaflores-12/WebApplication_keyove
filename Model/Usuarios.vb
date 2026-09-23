@@ -13,6 +13,7 @@ Namespace WebApplication_Keyove.Model
         Public iCodPersona As Integer?
         Public iCodRol As Integer
         Public cNombreRol As String
+        Public cNombrePersona As String
         Public cNombreUsuario As String
         Public cContrasenaHash As String
         Public dFechaRegistro As DateTime
@@ -128,12 +129,14 @@ Namespace WebApplication_Keyove.Model
                 "SELECT " &
                 "U.iCodUsuario, " &
                 "U.iCodPersona, " &
+                "LTRIM(RTRIM(COALESCE(P.cNombres, '') + ' ' + COALESCE(P.cApellidos, ''))) AS cNombrePersona, " &
                 "U.iCodRol, " &
                 "R.cNombre AS Rol, " &
                 "U.cNombreUsuario, " &
                 "U.dFechaRegistro, " &
                 "U.bEstado " &
                 "FROM Usuarios U " &
+                "LEFT JOIN Personas P ON U.iCodPersona = P.iCodPersona " &
                 "INNER JOIN Roles R " &
                 "ON U.iCodRol = R.iCodRol " &
                 "ORDER BY U.iCodUsuario DESC"

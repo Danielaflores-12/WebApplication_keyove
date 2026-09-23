@@ -156,6 +156,9 @@ Namespace WebApplication_Keyove.Views.Mantenimiento.Usuarios
                 obj.cNombreRol =
                     Convert.ToString(fila("Rol"))
 
+                obj.cNombrePersona =
+                    Convert.ToString(fila("cNombrePersona"))
+
                 obj.cNombreUsuario =
                     Convert.ToString(fila("cNombreUsuario"))
 

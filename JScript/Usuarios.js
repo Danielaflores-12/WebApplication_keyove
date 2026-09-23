@@ -145,8 +145,6 @@ function listarUsuarios() {
 
             for (var i = 0; i < usuarios.length; i++) {
 
-                var idPersona = usuarios[i].iCodPersona;
-
                 var estado =
                     usuarios[i].bEstado
                         ? "<span class='badge badge-active'>Activo</span>"
@@ -155,7 +153,7 @@ function listarUsuarios() {
                 filas += "<tr>";
 
                 filas += "<td>" + usuarios[i].iCodUsuario + "</td>";
-                filas += "<td>" + (idPersona ? idPersona : "-") + "</td>";
+                filas += "<td>" + $("<span>").text(usuarios[i].cNombrePersona || "Sin persona asignada").html() + "</td>";
                 filas += "<td>" + usuarios[i].cNombreRol + "</td>";
                 filas += "<td>" + usuarios[i].cNombreUsuario + "</td>";
                 filas += "<td>" + estado + "</td>";

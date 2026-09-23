@@ -26,6 +26,11 @@
 
     </div>
 
+    <nav class="ventas-vistas" aria-label="Secciones de compras">
+        <button type="button" class="btn btn-primary" data-vista-compras="registro" aria-controls="panelRegistroCompra" aria-pressed="true">Registrar compra</button>
+        <button type="button" class="btn btn-secondary" data-vista-compras="registros" aria-controls="panelComprasRegistradas" aria-pressed="false">Ver compras realizadas</button>
+    </nav>
+    <section id="panelRegistroCompra" aria-label="Registrar compra">
     <div class="card">
 
         <div class="card-title">
@@ -33,6 +38,9 @@
         </div>
 
         <input type="hidden" id="txtIdCompra" />
+        <input type="hidden" id="txtSubTotal" />
+        <input type="hidden" id="txtIgv" />
+        <input type="hidden" id="txtTotal" />
 
         <div class="form-grid">
 
@@ -71,44 +79,8 @@
                 <label for="txtNumeroComprobante">Número de Comprobante</label>
 
                 <input type="text"
-                       id="txtNumeroComprobante"
+                       id="txtNumeroComprobante" readonly placeholder="Se genera al guardar"
                        class="input-control" />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtSubTotal">Sub Total</label>
-
-                <input type="number"
-                       step="0.01"
-                       id="txtSubTotal"
-                       class="input-control"
-                       readonly />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtIgv">IGV</label>
-
-                <input type="number"
-                       step="0.01"
-                       id="txtIgv"
-                       class="input-control"
-                       readonly />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtTotal">Total</label>
-
-                <input type="number"
-                       step="0.01"
-                       id="txtTotal"
-                       class="input-control"
-                       readonly />
 
             </div>
 
@@ -283,10 +255,22 @@
 
     </div>
 
+    </section>
+    <section id="panelComprasRegistradas" aria-label="Compras realizadas" hidden>
+        <div class="card">
+            <div class="form-group">
+                <label for="buscarCompras">Buscar compras</label>
+                <input type="search" id="buscarCompras" class="input-control" placeholder="Comprobante, proveedor, usuario, fecha o estado" />
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="listarCompras()">Actualizar lista</button>
+            </div>
+            <p id="estadoBusquedaCompras" role="status" aria-live="polite"></p>
+        </div>
     <div class="card">
 
         <div class="card-title">
-            Compras registradas
+            Compras realizadas
         </div>
 
         <div class="table-container">
@@ -322,4 +306,5 @@
 
     </div>
 
+    </section>
 </asp:Content>

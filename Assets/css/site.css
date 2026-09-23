@@ -140,6 +140,7 @@ a {
 
 .contenido {
     flex: 1;
+    min-width: 0;
     margin-left: 260px;
     display: flex;
     flex-direction: column;
@@ -165,7 +166,10 @@ a {
 }
 
 .btn-menu-toggle {
-    display: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
     background: #f1f5f9;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
@@ -180,6 +184,7 @@ a {
 }
 
 .contenido-inner {
+    min-width: 0;
     padding: 28px 32px;
 }
 
@@ -235,21 +240,24 @@ a {
 }
 
 .form-group {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
 .form-group label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #475569;
 }
 
 .input-control {
     width: 100%;
-    padding: 10px 14px;
-    font-size: 14px;
+    min-width: 0;
+    max-width: 100%;
+    padding: 9px 12px;
+    font-size: 13px;
     font-family: "Segoe UI", Arial, sans-serif;
     color: #1e293b;
     background: #ffffff;
@@ -380,6 +388,7 @@ input[type="checkbox"].input-control {
 
 .table-container {
     width: 100%;
+    max-width: 100%;
     overflow-x: auto;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
@@ -586,4 +595,53 @@ input[type="checkbox"].input-control {
     .form-actions .btn {
         width: 100%;
     }
+}
+
+#textoPanelControl { font-size: 12px; font-weight: 600; }
+.btn-ocultar-panel { margin: 12px 18px 0; padding: 9px; border: 1px solid #475569; border-radius: 6px; background: transparent; color: #e2e8f0; font: inherit; font-size: 12px; cursor: pointer; }
+.btn-ocultar-panel:hover { background: #334155; }
+
+.detalle-editor { border: 0; padding: 0; margin: 0; min-width: 0; }
+.detalle-editor:disabled { opacity: 0.6; }
+.detalle-opcional { margin: 16px 0; }
+.detalle-opcional summary { cursor: pointer; margin-bottom: 12px; }
+.detalle-importe { margin: 20px 0; font-size: 18px; }
+#mensajeDetalle { margin-bottom: 16px; }
+
+.menu-grupo summary { cursor: pointer; list-style: none; }
+.menu-grupo summary::-webkit-details-marker { display: none; }
+.menu-grupo summary::after { content: "▸"; margin-left: auto; }
+.menu-grupo[open] summary::after { content: "▾"; }
+.submenu .menu-link { padding-left: 42px; font-size: 13px; }
+.menu-contraido .sidebar { transform: translateX(-100%); visibility: hidden; }
+.menu-contraido .contenido { margin-left: 0; }
+.card, .form-grid, .topbar-titulo { min-width: 0; overflow-wrap: anywhere; }
+.fondo-menu { position: fixed; inset: 0; z-index: 90; border: 0; background: rgba(15, 23, 42, 0.45); }
+.fondo-menu[hidden] { display: none; }
+
+.ventas-vistas { display: inline-flex; max-width: 100%; padding: 4px; gap: 4px; margin-bottom: 24px; border: 1px solid #cbd5e1; border-radius: 10px; background: #e2e8f0; }
+.ventas-vistas .btn { min-width: 0; border-radius: 7px; font-size: 13px; padding: 9px 14px; text-align: center; }
+.ventas-vistas .btn-secondary { background: transparent; border-color: transparent; }
+.ventas-vistas .btn-secondary:hover { background: #f8fafc; }
+.ventas-vistas .btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+#panelRegistroVenta[hidden], #panelVentasRegistradas[hidden] { display: none; }
+#panelRegistroCompra[hidden], #panelComprasRegistradas[hidden] { display: none; }
+
+#tablaCompras, #tablaVentas { font-size: 12px; }
+#tablaCompras th, #tablaCompras td, #tablaVentas th, #tablaVentas td { padding: 9px 10px; }
+#tablaCompras th:last-child, #tablaCompras td:last-child,
+#tablaVentas th:last-child, #tablaVentas td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: white;
+    box-shadow: -3px 0 5px rgba(15, 23, 42, 0.08);
+}
+#tablaCompras th:last-child, #tablaVentas th:last-child { background: #f8fafc; z-index: 2; }
+#tablaCompras .table-actions, #tablaVentas .table-actions { flex-direction: column; min-width: 112px; }
+#tablaCompras .table-actions .btn, #tablaVentas .table-actions .btn { min-height: 32px; white-space: nowrap; }
+@media (max-width: 600px) {
+    .ventas-vistas { display: flex; width: 100%; }
+    .ventas-vistas .btn { flex: 1 1 0; padding: 9px 7px; font-size: 12px; }
+    #panelVentasRegistradas .table-actions { min-width: 140px; }
 }
