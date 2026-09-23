@@ -69,7 +69,7 @@ Partial Public Class Login
                                 Convert.ToString(lector("cApellidos"))
 
                             Response.Redirect(
-                                "~/Views/Mantenimiento/Roles/Roles.aspx"
+                                "~/Views/Dashboard/Dashboard.aspx"
                             )
 
                         Else
