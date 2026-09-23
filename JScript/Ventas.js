@@ -1,9 +1,27 @@
 $(document).ready(function () {
 
-    listarUsuariosCombo();
+    $("#buscarVentas").on("input", filtrarVentasRegistradas);
     listarProductosCombo();
-    listarVentas();
-
+    var usuariosListos = listarUsuariosCombo();
+    $(document).on("click", "[data-vista-ventas]", function (evento) {
+        if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+        evento.preventDefault();
+        mostrarVistaVentas($(this).attr("data-vista-ventas"), true);
+        if (window.matchMedia("(max-width: 768px)").matches) $("#fondoMenu").trigger("click");
+    });
+    $("#bodyVentas").on("click", "a[data-editar-venta]", function (evento) {
+        if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+        evento.preventDefault();
+        var id = Number($(this).attr("data-editar-venta"));
+        mostrarVistaVentas("registro", true);
+        usuariosListos.done(function () { seleccionarVenta(id); });
+    });
+    $(window).on("popstate", function () { mostrarVistaVentas(vistaVentasDesdeUrl(), false); });
+    mostrarVistaVentas(vistaVentasDesdeUrl(), false);
+    usuariosListos.done(function () {
+        var id = new URLSearchParams(window.location.search).get("id");
+        if (/^[1-9]\d*$/.test(id || "")) seleccionarVenta(Number(id));
+    });
     $("#txtCantidadVenta, #txtPrecioVenta").on("input", function () {
         actualizarSubtotalLineaVenta();
     });
@@ -275,7 +293,7 @@ function recalcTotalesVenta() {
 
 function listarUsuariosCombo() {
 
-    $.ajax({
+    return $.ajax({
         type: "POST",
         url: "/Views/Operaciones/Ventas/Ventas.aspx/ListarUsuariosCombo",
         data: "{}",
@@ -318,6 +336,8 @@ function listarUsuariosCombo() {
 //==================================================
 
 function listarVentas() {
+    if (!$("#bodyVentas").length) return;
+    $("#estadoBusquedaVentas").text("Cargando ventas...");
 
     $.ajax({
         type: "POST",
@@ -360,9 +380,11 @@ function listarVentas() {
 
                 filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarVenta(" +
-                    ventas[i].iCodVenta +
-                    ")'>Editar</button>";
+                filas += "<a class='btn btn-sm btn-primary' target='_blank' rel='noopener' href='Comprobante.aspx?id=" +
+                    encodeURIComponent(ventas[i].iCodVenta) + "'>Ver comprobante</a>";
+
+                filas += "<a class='btn btn-sm btn-warning' href='Ventas.aspx?id=" +
+                    encodeURIComponent(ventas[i].iCodVenta) + "' data-editar-venta='" + ventas[i].iCodVenta + "'>Editar</a>";
 
                 filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarVenta(" +
                     ventas[i].iCodVenta +
@@ -375,11 +397,14 @@ function listarVentas() {
             }
 
             $("#bodyVentas").html(filas);
+            filtrarVentasRegistradas();
 
         },
 
         error: function (error) {
 
+            $("#bodyVentas").empty();
+            $("#estadoBusquedaVentas").text("No se pudieron cargar las ventas. Pulsa Actualizar lista para reintentar.");
             console.log("Error al listar ventas:");
             console.log(error);
 
@@ -495,7 +520,7 @@ function seleccionarVenta(idVenta) {
 
             $("#txtIdVenta").val(venta.iCodVenta);
             $("#cboUsuario").val(venta.iCodUsuario);
-            $("#cboTipoComprobante").val(venta.cTipoComprobante);
+            $("#cboTipoComprobante").val(venta.cTipoComprobante).prop("disabled", true);
             $("#txtDocumentoCliente").val(venta.cDocumentoCliente);
             $("#txtNumeroCelular").val(venta.cNumeroCelular);
             $("#txtNumeroComprobante").val(venta.cNumeroComprobante);
@@ -623,7 +648,7 @@ function eliminarVenta(idVenta) {
 
                 alert("Venta anulada correctamente.");
 
-                limpiarFormulario();
+                if (String($("#txtIdVenta").val()) === String(idVenta)) limpiarFormulario();
                 listarVentas();
 
             } else {
@@ -654,7 +679,7 @@ function limpiarFormulario() {
 
     $("#txtIdVenta").val("");
     $("#cboUsuario").val("");
-    $("#cboTipoComprobante").val("BOLETA");
+    $("#cboTipoComprobante").val("BOLETA").prop("disabled", false);
     $("#txtDocumentoCliente").val("");
     $("#txtNumeroCelular").val("");
     $("#txtNumeroComprobante").val("");
@@ -675,4 +700,50 @@ function limpiarFormulario() {
     $("#txtIGVVenta").val("");
     $("#txtTotalVenta").val("");
 
+}
+
+function normalizarBusquedaVenta(texto) {
+    return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function filtrarVentasRegistradas() {
+    var terminos = normalizarBusquedaVenta($("#buscarVentas").val()).trim().split(/\s+/).filter(Boolean);
+    var visibles = 0;
+    var filas = $("#bodyVentas tr");
+    filas.each(function () {
+        var texto = normalizarBusquedaVenta($(this).children("td").not(":last").text());
+        var coincide = terminos.every(function (termino) { return texto.indexOf(termino) !== -1; });
+        $(this).toggle(coincide);
+        if (coincide) visibles++;
+    });
+    $("#estadoBusquedaVentas").text(filas.length === 0 ? "Todavía no hay ventas registradas." :
+        visibles === 0 ? "No se encontraron ventas para esta búsqueda." : visibles + " de " + filas.length + " ventas");
+}
+function vistaVentasDesdeUrl() {
+    return new URLSearchParams(window.location.search).get("vista") === "registros" ? "registros" : "registro";
+}
+
+function mostrarVistaVentas(vista, actualizarUrl) {
+    var registros = vista === "registros";
+    $("#panelRegistroVenta").prop("hidden", registros);
+    $("#panelVentasRegistradas").prop("hidden", !registros);
+    $("[data-vista-ventas]").each(function () {
+        var activo = $(this).attr("data-vista-ventas") === vista;
+        if (this.tagName === "BUTTON") {
+            $(this).toggleClass("btn-primary", activo).toggleClass("btn-secondary", !activo).attr("aria-pressed", String(activo));
+        } else {
+            $(this).toggleClass("active", activo);
+            if (activo) $(this).attr("aria-current", "page");
+            else $(this).removeAttr("aria-current");
+        }
+    });
+    $("#menuVentas").prop("open", true);
+    if (actualizarUrl) {
+        var url = new URL(window.location.href);
+        url.searchParams.delete("id");
+        if (registros) url.searchParams.set("vista", "registros");
+        else url.searchParams.delete("vista");
+        if (url.href !== window.location.href) history.pushState(null, "", url);
+    }
+    if (registros) listarVentas();
 }

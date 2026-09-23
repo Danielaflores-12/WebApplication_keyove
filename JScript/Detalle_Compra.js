@@ -1,4 +1,10 @@
 $(document).ready(function () {
+    $("#cboCompra").on("change", function () {
+        limpiarFormulario();
+        $("#editorDetalle").prop("disabled", !$(this).val());
+        listarDetallesCompra();
+    });
+    limpiarFormulario();
 
     listarComprasCombo();
     listarProductosCombo();
@@ -21,6 +27,7 @@ function calcularSubtotalDetalle() {
     var subtotal = cantidad * precio;
 
     $("#txtSubTotal").val(subtotal.toFixed(2));
+    $("#importeDetalle").text("S/ " + subtotal.toFixed(2));
 }
 
 //==================================================
@@ -29,7 +36,7 @@ function calcularSubtotalDetalle() {
 
 function listarComprasCombo() {
 
-    $.ajax({
+    solicitarDetalle({
         type: "POST",
         url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ListarComprasCombo",
         data: "{}",
@@ -45,9 +52,9 @@ function listarComprasCombo() {
             for (var i = 0; i < opciones.length; i++) {
 
                 html += "<option value='" +
-                    opciones[i].v +
+                    escaparDetalle(opciones[i].v) +
                     "'>" +
-                    opciones[i].t +
+                    escaparDetalle(opciones[i].t) +
                     "</option>";
 
             }
@@ -73,7 +80,7 @@ function listarComprasCombo() {
 
 function listarProductosCombo() {
 
-    $.ajax({
+    solicitarDetalle({
         type: "POST",
         url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ListarProductosCombo",
         data: "{}",
@@ -89,9 +96,9 @@ function listarProductosCombo() {
             for (var i = 0; i < opciones.length; i++) {
 
                 html += "<option value='" +
-                    opciones[i].v +
+                    escaparDetalle(opciones[i].v) +
                     "'>" +
-                    opciones[i].t +
+                    escaparDetalle(opciones[i].t) +
                     "</option>";
 
             }
@@ -116,8 +123,14 @@ function listarProductosCombo() {
 //==================================================
 
 function listarDetallesCompra() {
+    var comprobante = $("#cboCompra").val();
+    if (!comprobante) {
+        $("#bodyDetalleCompra").html("<tr><td colspan='5'>Selecciona un comprobante para ver sus productos.</td></tr>");
+        return;
+    }
+    $("#bodyDetalleCompra").html("<tr><td colspan='5'>Cargando productos...</td></tr>");
 
-    $.ajax({
+    solicitarDetalle({
         type: "POST",
         url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ListarDetallesCompra",
         data: "{}",
@@ -126,7 +139,10 @@ function listarDetallesCompra() {
 
         success: function (response) {
 
-            var detalles = response.d;
+            if ($("#cboCompra").val() !== comprobante) return;
+            var detalles = response.d.filter(function (detalle) {
+                return String(detalle.iCodCompra) === comprobante;
+            });
 
             var filas = "";
 
@@ -134,13 +150,11 @@ function listarDetallesCompra() {
 
                 filas += "<tr>";
 
-                filas += "<td>" + detalles[i].iCodDetalleCompra + "</td>";
-                filas += "<td>" + detalles[i].iCodCompra + "</td>";
-                filas += "<td>" + detalles[i].cCodigo +
-                    " - " + detalles[i].cNombreProducto + "</td>";
+                filas += "<td>" + escaparDetalle(detalles[i].cCodigo) +
+                    " - " + escaparDetalle(detalles[i].cNombreProducto) + "</td>";
                 filas += "<td>" + detalles[i].iCantidad + "</td>";
-                filas += "<td>" + detalles[i].nPrecioCompra + "</td>";
-                filas += "<td>" + detalles[i].nSubTotal + "</td>";
+                filas += "<td>" + Number(detalles[i].nPrecioCompra).toFixed(2) + "</td>";
+                filas += "<td>" + Number(detalles[i].nSubTotal).toFixed(2) + "</td>";
 
                 filas += "<td><div class='table-actions'>";
 
@@ -158,13 +172,14 @@ function listarDetallesCompra() {
 
             }
 
-            $("#bodyDetalleCompra").html(filas);
+            $("#bodyDetalleCompra").html(filas || "<tr><td colspan='5'>Este comprobante todavía no tiene productos.</td></tr>");
 
         },
 
         error: function (error) {
 
-            console.log("Error al listar detalles de compra:");
+            $("#bodyDetalleCompra").empty();
+            $("#mensajeDetalle").text("No se pudieron cargar los productos. Selecciona nuevamente el comprobante para reintentar.");
             console.log(error);
 
         }
@@ -191,7 +206,7 @@ function guardarDetalleCompra() {
 
     };
 
-    $.ajax({
+    solicitarDetalle({
         type: "POST",
         url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/GuardarDetalleCompra",
         data: JSON.stringify({
@@ -204,9 +219,10 @@ function guardarDetalleCompra() {
 
             if (response.d === "OK") {
 
-                alert("Detalle registrado correctamente.");
+
 
                 limpiarFormulario();
+                $("#mensajeDetalle").text("Comprobante actualizado.");
                 listarDetallesCompra();
 
             } else {
@@ -235,7 +251,7 @@ function guardarDetalleCompra() {
 
 function seleccionarDetalleCompra(idDetalleCompra) {
 
-    $.ajax({
+    solicitarDetalle({
         type: "POST",
         url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ObtenerDetalleCompra",
         data: JSON.stringify({
@@ -254,6 +270,15 @@ function seleccionarDetalleCompra(idDetalleCompra) {
             $("#txtCantidad").val(detalle.iCantidad);
             $("#txtPrecioCompra").val(detalle.nPrecioCompra);
             $("#txtSubTotal").val(detalle.nSubTotal);
+            $("#cboCompra").prop("disabled", true);
+            $("#tituloEditor").text("Editar producto");
+            $("#btnGuardarDetalle").text("Guardar cambios");
+            $("#btnCancelarDetalle").text("Cancelar edición");
+            $("#opcionesDescuento").prop("open", Number(detalle.nDescuento) > 0);
+            $("#mensajeDetalle").text("");
+            calcularSubtotalDetalle();
+            document.getElementById("tituloEditor").scrollIntoView({ behavior: "smooth", block: "center" });
+            $("#txtCantidad").trigger("focus");
 
         },
 
@@ -297,7 +322,7 @@ function modificarDetalleCompra() {
 
     };
 
-    $.ajax({
+    solicitarDetalle({
         type: "POST",
         url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/ModificarDetalleCompra",
         data: JSON.stringify({
@@ -310,9 +335,10 @@ function modificarDetalleCompra() {
 
             if (response.d === "OK") {
 
-                alert("Detalle modificado correctamente.");
+
 
                 limpiarFormulario();
+                $("#mensajeDetalle").text("Comprobante actualizado.");
                 listarDetallesCompra();
 
             } else {
@@ -351,7 +377,7 @@ function eliminarDetalleCompra(idDetalleCompra) {
 
     }
 
-    $.ajax({
+    solicitarDetalle({
         type: "POST",
         url: "/Views/Operaciones/Detalle_Compra/Detalle_Compra.aspx/EliminarDetalleCompra",
         data: JSON.stringify({
@@ -364,9 +390,10 @@ function eliminarDetalleCompra(idDetalleCompra) {
 
             if (response.d === "OK") {
 
-                alert("Detalle eliminado correctamente.");
+
 
                 limpiarFormulario();
+                $("#mensajeDetalle").text("Comprobante actualizado.");
                 listarDetallesCompra();
 
             } else {
@@ -396,10 +423,52 @@ function eliminarDetalleCompra(idDetalleCompra) {
 function limpiarFormulario() {
 
     $("#txtIdDetalleCompra").val("");
-    $("#cboCompra").val("");
+    $("#cboCompra").prop("disabled", false);
     $("#cboProducto").val("");
-    $("#txtCantidad").val("");
+    $("#txtCantidad").val(1);
     $("#txtPrecioCompra").val("");
-    $("#txtSubTotal").val("");
+    $("#txtSubTotal").val("0.00");
+    $("#importeDetalle").text("S/ 0.00");
+    $("#tituloEditor").text("2. Agrega un producto");
+    $("#btnGuardarDetalle").text("Agregar producto");
+    $("#btnCancelarDetalle").text("Limpiar producto");
+    $("#opcionesDescuento").prop("open", false);
+    $("#mensajeDetalle").text("");
 
+}
+function escaparDetalle(texto) {
+    return $("<span>").text(texto || "").html();
+}
+
+function enviarDetalle() {
+    var cantidad = Number($("#txtCantidad").val());
+    var precioTexto = $("#txtPrecioCompra").val();
+    var precio = Number(precioTexto);
+    var descuento = Number($("#txtDescuento").val() || 0);
+    var mensaje = "";
+    if (!$("#cboCompra").val() || !$("#cboProducto").val()) mensaje = "Selecciona el comprobante y el producto.";
+    else if (!Number.isInteger(cantidad) || cantidad < 1) mensaje = "La cantidad debe ser un número entero mayor que cero.";
+    else if (precioTexto === "" || !Number.isFinite(precio) || precio < 0) mensaje = "Ingresa un precio unitario válido.";
+    else if (!Number.isFinite(descuento) || descuento < 0 || descuento > cantidad * precio) mensaje = "El descuento no puede superar el importe del producto.";
+    $("#mensajeDetalle").text(mensaje);
+    if (mensaje) return;
+    calcularSubtotalDetalle();
+    if ($("#txtIdDetalleCompra").val()) modificarDetalleCompra();
+    else guardarDetalleCompra();
+}
+var guardandoDetalle = false;
+function solicitarDetalle(opciones) {
+    var modifica = /\/(Guardar|Modificar|Eliminar)/.test(opciones.url);
+    if (guardandoDetalle && modifica) return;
+    if (modifica) {
+        guardandoDetalle = true;
+        $("#editorDetalle, #cboCompra, #bodyDetalleCompra button").prop("disabled", true);
+        opciones.complete = function () {
+            guardandoDetalle = false;
+            $("#editorDetalle").prop("disabled", !$("#cboCompra").val());
+            $("#cboCompra").prop("disabled", !!$("#txtIdDetalleCompra").val());
+            $("#bodyDetalleCompra button").prop("disabled", false);
+        };
+    }
+    return $.ajax(opciones);
 }

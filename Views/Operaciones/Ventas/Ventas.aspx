@@ -26,6 +26,11 @@
 
     </div>
 
+    <nav class="ventas-vistas" aria-label="Secciones de ventas">
+        <button type="button" class="btn btn-primary" data-vista-ventas="registro" aria-controls="panelRegistroVenta" aria-pressed="true">Registrar venta</button>
+        <button type="button" class="btn btn-secondary" data-vista-ventas="registros" aria-controls="panelVentasRegistradas" aria-pressed="false">Ventas registradas</button>
+    </nav>
+    <section id="panelRegistroVenta" aria-label="Registrar venta">
     <div class="card">
 
         <div class="card-title">
@@ -33,6 +38,9 @@
         </div>
 
         <input type="hidden" id="txtIdVenta" />
+        <input type="hidden" id="txtSubTotal" />
+        <input type="hidden" id="txtIgv" />
+        <input type="hidden" id="txtTotal" />
 
         <div class="form-grid">
 
@@ -62,7 +70,7 @@
                 <label for="txtNumeroComprobante">Número de Comprobante</label>
 
                 <input type="text"
-                       id="txtNumeroComprobante"
+                       id="txtNumeroComprobante" readonly placeholder="Se genera al guardar"
                        class="input-control" />
 
             </div>
@@ -86,42 +94,6 @@
                        id="txtNumeroCelular"
                        maxlength="9"
                        class="input-control" />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtSubTotal">Sub Total</label>
-
-                <input type="number"
-                       step="0.01"
-                       id="txtSubTotal"
-                       class="input-control"
-                       readonly />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtIgv">IGV</label>
-
-                <input type="number"
-                       step="0.01"
-                       id="txtIgv"
-                       class="input-control"
-                       readonly />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtTotal">Total</label>
-
-                <input type="number"
-                       step="0.01"
-                       id="txtTotal"
-                       class="input-control"
-                       readonly />
 
             </div>
 
@@ -309,6 +281,18 @@
 
     </div>
 
+    </section>
+    <section id="panelVentasRegistradas" aria-label="Ventas registradas" hidden>
+    <div class="card">
+        <div class="form-group">
+            <label for="buscarVentas">Buscar ventas</label>
+            <input type="search" id="buscarVentas" class="input-control" placeholder="Comprobante, documento, celular, usuario, fecha o estado" />
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="listarVentas()">Actualizar lista</button>
+        </div>
+        <p id="estadoBusquedaVentas" role="status" aria-live="polite"></p>
+    </div>
     <div class="card">
 
         <div class="card-title">
@@ -350,4 +334,6 @@
 
     </div>
 
+
+    </section>
 </asp:Content>

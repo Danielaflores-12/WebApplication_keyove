@@ -40,7 +40,9 @@
 
             </div>
 
-            <nav class="menu">
+            <button type="button" class="btn-ocultar-panel" id="btnOcultarPanel">Ocultar panel de control</button>
+
+            <nav class="menu" aria-label="Panel de control">
 
                 <a class="menu-link"
                    data-ruta="/Views/Dashboard/Dashboard.aspx"
@@ -92,17 +94,25 @@
                     OPERACIONES
                 </div>
 
-                <a class="menu-link"
-                   data-ruta="/Views/Operaciones/Compras/Compras.aspx"
-                   href="/Views/Operaciones/Compras/Compras.aspx">
-                    Compras
-                </a>
+                <details class="menu-grupo" id="menuCompras">
+                    <summary class="menu-link">Compras</summary>
+                    <div class="submenu">
+                        <a class="menu-link" data-vista-compras="registro" data-ruta="/Views/Operaciones/Compras/Compras.aspx"
+                           href="/Views/Operaciones/Compras/Compras.aspx">Nueva compra</a>
+                        <a class="menu-link" data-vista-compras="registros" data-ruta="/Views/Operaciones/Compras/Compras.aspx?vista=registros"
+                           href="/Views/Operaciones/Compras/Compras.aspx?vista=registros">Compras realizadas</a>
+                    </div>
+                </details>
 
-                <a class="menu-link"
-                   data-ruta="/Views/Operaciones/Ventas/Ventas.aspx"
-                   href="/Views/Operaciones/Ventas/Ventas.aspx">
-                    Ventas
-                </a>
+                <details class="menu-grupo" id="menuVentas">
+                    <summary class="menu-link">Ventas</summary>
+                    <div class="submenu">
+                        <a class="menu-link" data-vista-ventas="registro" data-ruta="/Views/Operaciones/Ventas/Ventas.aspx"
+                           href="/Views/Operaciones/Ventas/Ventas.aspx">Nueva venta</a>
+                        <a class="menu-link" data-vista-ventas="registros" data-ruta="/Views/Operaciones/Ventas/Ventas.aspx?vista=registros"
+                           href="/Views/Operaciones/Ventas/Ventas.aspx?vista=registros">Ventas registradas</a>
+                    </div>
+                </details>
 
                 <div class="titulo-menu">
                     INVENTARIO
@@ -125,6 +135,8 @@
 
         </aside>
 
+        <button type="button" id="fondoMenu" class="fondo-menu" aria-label="Cerrar menú" hidden></button>
+
         <main class="contenido">
 
             <header class="topbar">
@@ -132,8 +144,9 @@
                 <button type="button"
                         class="btn-menu-toggle"
                         id="btnMenuToggle"
-                        aria-label="Abrir menú">
-                    &#9776;
+                        aria-label="Ocultar panel de control" aria-controls="sidebar" aria-expanded="true">
+                    <span aria-hidden="true">&#9776;</span>
+                    <span id="textoPanelControl">Ocultar panel</span>
                 </button>
 
                 <div class="topbar-titulo">
@@ -164,25 +177,71 @@
 
         // Resalta el enlace de la página actual en el menú.
         var rutaActual = window.location.pathname;
+        if (new URLSearchParams(window.location.search).get("vista") === "registros") rutaActual += "?vista=registros";
 
         $(".menu-link").each(function () {
 
             var ruta = $(this).attr("data-ruta");
 
-            if (ruta && rutaActual.indexOf(ruta) !== -1) {
+            if (ruta && rutaActual.toLowerCase() === ruta.toLowerCase()) {
 
                 $(this).addClass("active");
+                $(this).attr("aria-current", "page");
+                $(this).closest("details").prop("open", true);
 
             }
 
         });
 
-        // Abre/cierra el menú lateral en pantallas pequeñas.
+        var pantallaMovil = window.matchMedia("(max-width: 768px)");
+        var contraido = false;
+        var movilAbierto = false;
+        try { contraido = localStorage.getItem("keyoveMenuContraido") === "true"; } catch (e) {}
+
+        function actualizarMenu() {
+            var visible = pantallaMovil.matches ? movilAbierto : !contraido;
+            $(".contenedor").toggleClass("menu-contraido", !pantallaMovil.matches && contraido);
+            $("#sidebar").toggleClass("abierto", pantallaMovil.matches && movilAbierto);
+            document.getElementById("sidebar").inert = !visible;
+            $("#sidebar").attr("aria-hidden", String(!visible));
+            $("#btnMenuToggle").attr("aria-expanded", String(visible))
+                .attr("aria-label", visible ? "Ocultar panel de control" : "Mostrar panel de control");
+            $("#textoPanelControl").text(visible ? "Ocultar panel" : "Mostrar panel");
+            $("#fondoMenu").prop("hidden", !(pantallaMovil.matches && movilAbierto));
+        }
+
         $("#btnMenuToggle").on("click", function () {
-
-            $("#sidebar").toggleClass("abierto");
-
+            if (pantallaMovil.matches) movilAbierto = !movilAbierto;
+            else {
+                contraido = !contraido;
+                try { localStorage.setItem("keyoveMenuContraido", String(contraido)); } catch (e) {}
+            }
+            actualizarMenu();
         });
+        $("#fondoMenu").on("click", function () {
+            movilAbierto = false;
+            actualizarMenu();
+            $("#btnMenuToggle").trigger("focus");
+        });
+        $("#btnOcultarPanel").on("click", function () {
+            if (pantallaMovil.matches) movilAbierto = false;
+            else {
+                contraido = true;
+                try { localStorage.setItem("keyoveMenuContraido", "true"); } catch (e) {}
+            }
+            actualizarMenu();
+            $("#btnMenuToggle").trigger("focus");
+        });
+        $(document).on("keydown", function (evento) {
+            if (evento.key === "Escape" && pantallaMovil.matches && movilAbierto) {
+                $("#fondoMenu").trigger("click");
+            }
+        });
+        pantallaMovil.addEventListener("change", function () {
+            movilAbierto = false;
+            actualizarMenu();
+        });
+        actualizarMenu();
 
     });
 

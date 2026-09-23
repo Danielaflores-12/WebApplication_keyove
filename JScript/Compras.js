@@ -3,7 +3,15 @@ $(document).ready(function () {
     listarProveedoresCombo();
     listarUsuariosCombo();
     listarProductosCombo();
-    listarCompras();
+    $("#buscarCompras").on("input", filtrarComprasRegistradas);
+    $(document).on("click", "[data-vista-compras]", function (evento) {
+        if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+        evento.preventDefault();
+        mostrarVistaCompras($(this).attr("data-vista-compras"), true);
+        if (window.matchMedia("(max-width: 768px)").matches) $("#fondoMenu").trigger("click");
+    });
+    $(window).on("popstate", function () { mostrarVistaCompras(vistaComprasDesdeUrl(), false); });
+    mostrarVistaCompras(vistaComprasDesdeUrl(), false);
 
     $("#txtCantidadCompra, #txtPrecioCompra").on("input", function () {
         actualizarSubtotalLineaCompra();
@@ -362,6 +370,7 @@ function listarUsuariosCombo() {
 //==================================================
 
 function listarCompras() {
+    $("#estadoBusquedaCompras").text("Cargando compras...");
 
     $.ajax({
         type: "POST",
@@ -390,8 +399,8 @@ function listarCompras() {
                 filas += "<tr>";
 
                 filas += "<td>" + compras[i].iCodCompra + "</td>";
-                filas += "<td>" + compras[i].iCodProveedor + "</td>";
-                filas += "<td>" + compras[i].iCodUsuario + "</td>";
+                filas += "<td>" + $("<span>").text(compras[i].cNombreProveedor || "Sin proveedor").html() + "</td>";
+                filas += "<td>" + $("<span>").text(compras[i].cNombreUsuario || "Sin usuario").html() + "</td>";
                 filas += "<td>" + compras[i].cTipoComprobante + "</td>";
                 filas += "<td>" + compras[i].cNumeroComprobante + "</td>";
                 filas += "<td>" + formatearFecha(compras[i].dFechaCompra) + "</td>";
@@ -417,12 +426,14 @@ function listarCompras() {
             }
 
             $("#bodyCompras").html(filas);
+            filtrarComprasRegistradas();
 
         },
 
         error: function (error) {
 
-            console.log("Error al listar compras:");
+            $("#bodyCompras").empty();
+            $("#estadoBusquedaCompras").text("No se pudieron cargar las compras. Pulsa Actualizar lista para reintentar.");
             console.log(error);
 
         }
@@ -518,6 +529,7 @@ function guardarCompra() {
 //==================================================
 
 function seleccionarCompra(idCompra) {
+    mostrarVistaCompras("registro", true);
 
     $.ajax({
         type: "POST",
@@ -535,7 +547,7 @@ function seleccionarCompra(idCompra) {
             $("#txtIdCompra").val(compra.iCodCompra);
             $("#cboProveedor").val(compra.iCodProveedor);
             $("#cboUsuario").val(compra.iCodUsuario);
-            $("#cboTipoComprobante").val(compra.cTipoComprobante);
+            $("#cboTipoComprobante").val(compra.cTipoComprobante).prop("disabled", true);
             $("#txtNumeroComprobante").val(compra.cNumeroComprobante);
             $("#txtSubTotal").val(compra.nSubTotal);
             $("#txtIgv").val(compra.nIgv);
@@ -658,7 +670,7 @@ function eliminarCompra(idCompra) {
 
                 alert("Compra anulada correctamente.");
 
-                limpiarFormulario();
+                if (String($("#txtIdCompra").val()) === String(idCompra)) limpiarFormulario();
                 listarCompras();
 
             } else {
@@ -690,7 +702,7 @@ function limpiarFormulario() {
     $("#txtIdCompra").val("");
     $("#cboProveedor").val("");
     $("#cboUsuario").val("");
-    $("#cboTipoComprobante").val("FACTURA");
+    $("#cboTipoComprobante").val("FACTURA").prop("disabled", false);
     $("#txtNumeroComprobante").val("");
     $("#txtSubTotal").val("");
     $("#txtIgv").val("");
@@ -708,4 +720,50 @@ function limpiarFormulario() {
     $("#txtIGVCompra").val("");
     $("#txtTotalCompra").val("");
 
+}
+
+function normalizarBusquedaCompra(texto) {
+    return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function filtrarComprasRegistradas() {
+    var terminos = normalizarBusquedaCompra($("#buscarCompras").val()).trim().split(/\s+/).filter(Boolean);
+    var visibles = 0;
+    var filas = $("#bodyCompras tr");
+    filas.each(function () {
+        var texto = normalizarBusquedaCompra($(this).children("td").not(":last").text());
+        var coincide = terminos.every(function (termino) { return texto.indexOf(termino) !== -1; });
+        $(this).toggle(coincide);
+        if (coincide) visibles++;
+    });
+    $("#estadoBusquedaCompras").text(filas.length === 0 ? "Todavía no hay compras registradas." :
+        visibles === 0 ? "No se encontraron compras para esta búsqueda." : visibles + " de " + filas.length + " compras");
+}
+function vistaComprasDesdeUrl() {
+    return new URLSearchParams(window.location.search).get("vista") === "registros" ? "registros" : "registro";
+}
+
+function mostrarVistaCompras(vista, actualizarUrl) {
+    var registros = vista === "registros";
+    $("#panelRegistroCompra").prop("hidden", registros);
+    $("#panelComprasRegistradas").prop("hidden", !registros);
+    $("[data-vista-compras]").each(function () {
+        var activo = $(this).attr("data-vista-compras") === vista;
+        if (this.tagName === "BUTTON") {
+            $(this).toggleClass("btn-primary", activo).toggleClass("btn-secondary", !activo).attr("aria-pressed", String(activo));
+        } else {
+            $(this).toggleClass("active", activo);
+            if (activo) $(this).attr("aria-current", "page");
+            else $(this).removeAttr("aria-current");
+        }
+    });
+    $("#menuCompras").prop("open", true);
+    if (actualizarUrl) {
+        var url = new URL(window.location.href);
+        url.searchParams.delete("id");
+        if (registros) url.searchParams.set("vista", "registros");
+        else url.searchParams.delete("vista");
+        if (url.href !== window.location.href) history.pushState(null, "", url);
+    }
+    if (registros) listarCompras();
 }

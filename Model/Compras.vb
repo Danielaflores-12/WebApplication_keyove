@@ -12,6 +12,8 @@ Namespace WebApplication_Keyove.Model
         Public iCodCompra As Integer
         Public iCodProveedor As Integer
         Public iCodUsuario As Integer
+        Public cNombreProveedor As String
+        Public cNombreUsuario As String
         Public cTipoComprobante As String
         Public cNumeroComprobante As String
         Public dFechaCompra As DateTime
@@ -135,8 +137,6 @@ Namespace WebApplication_Keyove.Model
                 "UPDATE Compras SET " &
                 "iCodProveedor = @iCodProveedor, " &
                 "iCodUsuario = @iCodUsuario, " &
-                "cTipoComprobante = @cTipoComprobante, " &
-                "cNumeroComprobante = @cNumeroComprobante, " &
                 "nSubTotal = @nSubTotal, " &
                 "nIgv = @nIgv, " &
                 "nTotal = @nTotal, " &
@@ -171,6 +171,8 @@ Namespace WebApplication_Keyove.Model
                 "C.iCodCompra, " &
                 "C.iCodProveedor, " &
                 "C.iCodUsuario, " &
+                "P.cRazonSocial AS cNombreProveedor, " &
+                "U.cNombreUsuario, " &
                 "C.cTipoComprobante, " &
                 "C.cNumeroComprobante, " &
                 "C.dFechaCompra, " &
@@ -180,6 +182,8 @@ Namespace WebApplication_Keyove.Model
                 "C.cObservacion, " &
                 "C.cEstado " &
                 "FROM Compras C " &
+                "LEFT JOIN Proveedores P ON C.iCodProveedor = P.iCodProveedor " &
+                "LEFT JOIN Usuarios U ON C.iCodUsuario = U.iCodUsuario " &
                 "ORDER BY C.iCodCompra DESC"
 
             Return db.ExecuteDataTable(Query)
@@ -192,28 +196,14 @@ Namespace WebApplication_Keyove.Model
         '==================================================
 
         Public Sub Insertar()
-
-            Dim Query As String =
-                "INSERT INTO Compras " &
-                "(iCodProveedor, iCodUsuario, " &
-                "cTipoComprobante, cNumeroComprobante, " &
-                "nSubTotal, nIgv, nTotal, " &
-                "cObservacion, cEstado) " &
-                "VALUES " &
-                "(@iCodProveedor, @iCodUsuario, " &
-                "@cTipoComprobante, @cNumeroComprobante, " &
-                "@nSubTotal, @nIgv, @nTotal, " &
-                "@cObservacion, @cEstado); " &
-                "SELECT CAST(SCOPE_IDENTITY() AS INT);"
-
-            Dim parametros As List(Of SqlParameter) =
-                CrearParametros(False)
-
-            Me.iCodCompra =
-                Convert.ToInt32(
-                    db.ExecuteScalar(Query, parametros)
-                )
-
+            db.BeginTransaction()
+            Try
+                InsertarTransact()
+                db.CommitTransaction()
+            Catch
+                db.RollbackTransaction()
+                Throw
+            End Try
         End Sub
 
 
@@ -222,6 +212,8 @@ Namespace WebApplication_Keyove.Model
         '==================================================
 
         Public Sub InsertarTransact()
+            Me.cTipoComprobante = If(Me.cTipoComprobante, "").Trim().ToUpperInvariant()
+            Me.cNumeroComprobante = ComprobanteHelper.GenerarNumero(db, "Compras", Me.cTipoComprobante)
 
             Dim Query As String =
                 "INSERT INTO Compras " &

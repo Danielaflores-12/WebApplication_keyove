@@ -116,15 +116,22 @@
     <Content Include="Views\Mantenimiento\Roles\Roles.aspx" />
     <Content Include="Views\Mantenimiento\Usuarios\Usuarios.aspx" />
     <Content Include="Views\Operaciones\Compras\Compras.aspx" />
+    <Content Include="Views\Operaciones\Ventas\Comprobante.aspx" />
     <Content Include="Views\Operaciones\Detalle_Compra\Detalle_Compra.aspx" />
     <Content Include="Views\Operaciones\Detalle_Venta\Detalle_Venta.aspx" />
     <Content Include="Views\Operaciones\Ventas\Ventas.aspx" />
+    <Content Include="Views\Operaciones\Ventas\VentasRegistradas.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\ConexionBD.vb" />
     <Compile Include="Helpers\SeguridadHelper.vb" />
     <Compile Include="Helpers\ValidacionHelper.vb" />
+    <Compile Include="Helpers\ComprobanteHelper.vb" />
+    <Compile Include="Views\Operaciones\Ventas\Comprobante.aspx.vb">
+      <DependentUpon>Comprobante.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Model\Categorias.vb" />
     <Compile Include="Model\Compras.vb" />
     <Compile Include="Model\Detalle_Compra.vb" />
@@ -285,7 +292,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\bootstrap\" />
-    <Folder Include="Assets\css\" />
     <Folder Include="Assets\img\" />
     <Folder Include="Business\" />
     <Folder Include="SQLScripts\" />
