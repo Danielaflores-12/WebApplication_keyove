@@ -200,6 +200,43 @@ Namespace WebApplication_Keyove.Model
         End Sub
 
         '==================================================
+        ' INSERTAR DETALLE DE VENTA EN TRANSACCIÓN
+        '==================================================
+
+        Public Sub InsertarTransact()
+
+            Dim Query As String =
+                "INSERT INTO Detalle_Venta (" &
+                "iCodVenta, " &
+                "iCodProducto, " &
+                "iCantidad, " &
+                "nPrecioVenta, " &
+                "nDescuento" &
+                ") VALUES (" &
+                "@iCodVenta, " &
+                "@iCodProducto, " &
+                "@iCantidad, " &
+                "@nPrecioVenta, " &
+                "@nDescuento" &
+                "); " &
+                "SELECT CAST(SCOPE_IDENTITY() AS INT);"
+
+            Dim parametros As List(Of SqlParameter) =
+                CrearParametros(False)
+
+            Me.iCodDetalleVenta =
+                Convert.ToInt32(
+                    db.ExecuteScalarTransact(
+                        Query,
+                        parametros
+                    )
+                )
+
+        End Sub
+
+        '==================================================
+        ' MODIFICAR DETALLE DE VENTA EN TRANSACCIÓN
+        '==================================================
         ' MODIFICAR DETALLE DE VENTA
         '==================================================
 

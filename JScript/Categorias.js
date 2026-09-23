@@ -6,6 +6,35 @@ $(document).ready(function () {
 
 
 //==================================================
+// FORMATEAR FECHA /Date(ms)/ A TEXTO LEGIBLE
+//==================================================
+
+function formatearFecha(valor) {
+
+    if (!valor) {
+
+        return "";
+
+    }
+
+    var coincidencia = /\/Date\((\d+)\)\//.exec(valor);
+
+    if (coincidencia) {
+
+        var fecha = new Date(parseInt(coincidencia[1]));
+
+        return fecha.toLocaleDateString() +
+            " " +
+            fecha.toLocaleTimeString();
+
+    }
+
+    return valor;
+
+}
+
+
+//==================================================
 // LISTAR CATEGORÍAS
 //==================================================
 
@@ -22,33 +51,38 @@ function listarCategorias() {
 
             var categorias = response.d;
 
-            var filas = "";
+var filas = "";
 
-            for (var i = 0; i < categorias.length; i++) {
+                for (var i = 0; i < categorias.length; i++) {
 
-                filas += "<tr>";
+                    var estado =
+                        categorias[i].bEstado
+                            ? "<span class='badge badge-active'>Activo</span>"
+                            : "<span class='badge badge-inactive'>Inactivo</span>";
 
-                filas += "<td>" + categorias[i].iCodCategoria + "</td>";
-                filas += "<td>" + categorias[i].cNombre + "</td>";
-                filas += "<td>" + (categorias[i].cDescripcion || "") + "</td>";
-                filas += "<td>" + (categorias[i].bEstado ? "Activo" : "Inactivo") + "</td>";
-                filas += "<td>" + (categorias[i].dFechaRegistro || "") + "</td>";
+                    filas += "<tr>";
 
-                filas += "<td>";
+                    filas += "<td>" + categorias[i].iCodCategoria + "</td>";
+                    filas += "<td>" + categorias[i].cNombre + "</td>";
+                    filas += "<td>" + (categorias[i].cDescripcion || "") + "</td>";
+                    filas += "<td>" + estado + "</td>";
+                    filas += "<td>" + formatearFecha(categorias[i].dFechaRegistro) + "</td>";
 
-                filas += "<button type='button' onclick='seleccionarCategoria(" +
-                    categorias[i].iCodCategoria +
-                    ")'>Editar</button> ";
+                    filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' onclick='eliminarCategoria(" +
-                    categorias[i].iCodCategoria +
-                    ")'>Eliminar</button>";
+                    filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarCategoria(" +
+                        categorias[i].iCodCategoria +
+                        ")'>Editar</button>";
 
-                filas += "</td>";
+                    filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarCategoria(" +
+                        categorias[i].iCodCategoria +
+                        ")'>Eliminar</button>";
 
-                filas += "</tr>";
+                    filas += "</div></td>";
 
-            }
+                    filas += "</tr>";
+
+                }
 
             $("#bodyCategorias").html(filas);
 

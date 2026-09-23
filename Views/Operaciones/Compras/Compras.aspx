@@ -1,120 +1,297 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Compras.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Operaciones.Compras.Compra1" %>
+<%@ Page Language="vb"
+    AutoEventWireup="false"
+    MasterPageFile="~/Views/Master/Site.Master"
+    CodeBehind="Compras.aspx.vb"
+    Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Operaciones.Compras.Compra1" %>
 
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <meta charset="utf-8" />
-    <title>Compras</title>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<asp:Content
+    ID="Content1"
+    ContentPlaceHolderID="head"
+    runat="server">
 
     <script src="../../../JScript/Compras.js"></script>
-</head>
 
-<body>
+</asp:Content>
 
-    <form id="form1" runat="server">
+<asp:Content
+    ID="Content2"
+    ContentPlaceHolderID="ContentPlaceHolder1"
+    runat="server">
 
-        <div>
+    <div class="page-title">
 
-            <h2>Registro de Compras</h2>
+        <h1>Compras</h1>
 
-            <input type="hidden" id="txtIdCompra" />
+        <p>Registro de compras</p>
 
-            <div>
-                <label>Proveedor:</label>
-                <select id="cboProveedor"></select>
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Nueva compra
+        </div>
+
+        <input type="hidden" id="txtIdCompra" />
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="cboProveedor">Proveedor</label>
+
+                <select id="cboProveedor"
+                        class="input-control"></select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Usuario:</label>
-                <select id="cboUsuario"></select>
+                <label for="cboUsuario">Usuario</label>
+
+                <select id="cboUsuario"
+                        class="input-control"></select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Tipo de Comprobante:</label>
-                <select id="cboTipoComprobante">
+                <label for="cboTipoComprobante">Tipo de Comprobante</label>
+
+                <select id="cboTipoComprobante"
+                        class="input-control">
                     <option value="BOLETA">BOLETA</option>
                     <option value="FACTURA">FACTURA</option>
                 </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Número de Comprobante:</label>
-                <input type="text" id="txtNumeroComprobante" />
+                <label for="txtNumeroComprobante">Número de Comprobante</label>
+
+                <input type="text"
+                       id="txtNumeroComprobante"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Sub Total:</label>
-                <input type="number" step="0.01" id="txtSubTotal" />
+                <label for="txtSubTotal">Sub Total</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtSubTotal"
+                       class="input-control"
+                       readonly />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>IGV:</label>
-                <input type="number" step="0.01" id="txtIgv" />
+                <label for="txtIgv">IGV</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtIgv"
+                       class="input-control"
+                       readonly />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Total:</label>
-                <input type="number" step="0.01" id="txtTotal" />
+                <label for="txtTotal">Total</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtTotal"
+                       class="input-control"
+                       readonly />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Observación:</label>
-                <input type="text" id="txtObservacion" />
+                <label for="txtObservacion">Observación</label>
+
+                <input type="text"
+                       id="txtObservacion"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Estado:</label>
-                <select id="cboEstado">
+                <label for="cboEstado">Estado</label>
+
+                <select id="cboEstado"
+                        class="input-control">
                     <option value="REGISTRADA">REGISTRADA</option>
                     <option value="ANULADA">ANULADA</option>
                 </select>
+
             </div>
 
-            <br />
+        </div>
+
+        <div class="card-title">
+            Productos de la compra
+        </div>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="cboProducto">Producto</label>
+
+                <select id="cboProducto"
+                        class="input-control"></select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="txtCantidadCompra">Cantidad</label>
+
+                <input type="number"
+                       id="txtCantidadCompra"
+                       class="input-control"
+                       oninput="actualizarSubtotalLineaCompra()" />
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="txtPrecioCompra">Precio Compra</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtPrecioCompra"
+                       class="input-control"
+                       oninput="actualizarSubtotalLineaCompra()" />
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="txtSubtotalLinea">Subtotal de línea</label>
+
+                <input type="text"
+                       id="txtSubtotalLinea"
+                       class="input-control"
+                       readonly />
+
+            </div>
+
+        </div>
+
+        <div class="form-actions">
 
             <button type="button"
+                    class="btn btn-primary"
+                    onclick="agregarProductoCompra()">
+                Agregar producto
+            </button>
+
+        </div>
+
+        <div class="table-container">
+
+            <table class="table"
+                   id="tablaDetalleCompra">
+
+                <thead>
+
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Subtotal</th>
+                        <th>Acción</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="bodyDetalleCompra">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="txtSubtotalCompraGral">Subtotal general</label>
+
+                <input type="text"
+                       id="txtSubtotalCompraGral"
+                       class="input-control"
+                       readonly />
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="txtIGVCompra">IGV 18%</label>
+
+                <input type="text"
+                       id="txtIGVCompra"
+                       class="input-control"
+                       readonly />
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="txtTotalCompra">Total</label>
+
+                <input type="text"
+                       id="txtTotalCompra"
+                       class="input-control"
+                       readonly />
+
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button type="button"
+                    class="btn btn-primary"
                     onclick="guardarCompra()">
                 Guardar
             </button>
 
             <button type="button"
+                    class="btn btn-warning"
                     onclick="modificarCompra()">
                 Modificar
             </button>
 
             <button type="button"
+                    class="btn btn-secondary"
                     onclick="limpiarFormulario()">
                 Limpiar
             </button>
 
         </div>
 
-        <hr />
+    </div>
 
-        <div>
+    <div class="card">
 
-            <h3>Compras Registradas</h3>
+        <div class="card-title">
+            Compras registradas
+        </div>
 
-            <table border="1"
+        <div class="table-container">
+
+            <table class="table"
                    id="tablaCompras">
 
                 <thead>
@@ -143,7 +320,6 @@
 
         </div>
 
-    </form>
+    </div>
 
-</body>
-</html>
+</asp:Content>

@@ -1,100 +1,150 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Productos.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Productos.Producto1" %>
+<%@ Page Language="vb"
+    AutoEventWireup="false"
+    MasterPageFile="~/Views/Master/Site.Master"
+    CodeBehind="Productos.aspx.vb"
+    Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Productos.Producto1" %>
 
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <meta charset="utf-8" />
-    <title>Productos</title>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<asp:Content
+    ID="Content1"
+    ContentPlaceHolderID="head"
+    runat="server">
 
     <script src="../../../JScript/Productos.js"></script>
-</head>
 
-<body>
+</asp:Content>
 
-    <form id="form1" runat="server">
+<asp:Content
+    ID="Content2"
+    ContentPlaceHolderID="ContentPlaceHolder1"
+    runat="server">
 
-        <div>
+    <div class="page-title">
 
-            <h2>Registro de Productos</h2>
+        <h1>Productos</h1>
 
-            <input type="hidden" id="txtIdProducto" />
+        <p>Gestión de productos del inventario</p>
 
-            <div>
-                <label>Categoría:</label>
-                <select id="cboCategoria"></select>
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Nuevo producto
+        </div>
+
+        <input type="hidden" id="txtIdProducto" />
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="cboCategoria">Categoría</label>
+
+                <select id="cboCategoria"
+                        class="input-control">
+                </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Código:</label>
-                <input type="text" id="txtCodigo" />
+                <label for="txtCodigo">Código</label>
+
+                <input type="text"
+                       id="txtCodigo"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Nombre:</label>
-                <input type="text" id="txtNombre" />
+                <label for="txtNombre">Nombre</label>
+
+                <input type="text"
+                       id="txtNombre"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Descripción:</label>
-                <input type="text" id="txtDescripcion" />
+                <label for="txtDescripcion">Descripción</label>
+
+                <input type="text"
+                       id="txtDescripcion"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Marca:</label>
-                <input type="text" id="txtMarca" />
+                <label for="txtMarca">Marca</label>
+
+                <input type="text"
+                       id="txtMarca"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Modelo:</label>
-                <input type="text" id="txtModelo" />
+                <label for="txtModelo">Modelo</label>
+
+                <input type="text"
+                       id="txtModelo"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Precio Compra:</label>
-                <input type="number" step="0.01" id="txtPrecioCompra" />
+                <label for="txtPrecioCompra">Precio Compra</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtPrecioCompra"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Precio Venta:</label>
-                <input type="number" step="0.01" id="txtPrecioVenta" />
+                <label for="txtPrecioVenta">Precio Venta</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtPrecioVenta"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Stock Actual:</label>
-                <input type="number" id="txtStockActual" />
+                <label for="txtStockActual">Stock Actual</label>
+
+                <input type="number"
+                       id="txtStockActual"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Stock Mínimo:</label>
-                <input type="number" id="txtStockMinimo" value="5" />
+                <label for="txtStockMinimo">Stock Mínimo</label>
+
+                <input type="number"
+                       id="txtStockMinimo"
+                       value="5"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Unidad de Medida:</label>
-                <select id="cboUnidadMedida">
+                <label for="cboUnidadMedida">Unidad de Medida</label>
+
+                <select id="cboUnidadMedida"
+                        class="input-control">
 
                     <option value="UNIDAD">UNIDAD</option>
                     <option value="CAJA">CAJA</option>
@@ -103,41 +153,59 @@
                     <option value="LITRO">LITRO</option>
 
                 </select>
+
             </div>
 
-            <br />
+            <div class="form-group form-group-check">
 
-            <div>
-                <label>Estado:</label>
-                <input type="checkbox" id="chkEstado" checked />
+                <label class="form-check" for="chkEstado">
+
+                    <input type="checkbox"
+                           id="chkEstado"
+                           class="input-control"
+                           checked />
+
+                    Activo
+
+                </label>
+
             </div>
 
-            <br />
+        </div>
+
+        <div class="form-actions">
 
             <button type="button"
+                    class="btn btn-primary"
                     onclick="guardarProducto()">
                 Guardar
             </button>
 
             <button type="button"
+                    class="btn btn-warning"
                     onclick="modificarProducto()">
                 Modificar
             </button>
 
             <button type="button"
+                    class="btn btn-secondary"
                     onclick="limpiarFormulario()">
                 Limpiar
             </button>
 
         </div>
 
-        <hr />
+    </div>
 
-        <div>
+    <div class="card">
 
-            <h3>Productos Registrados</h3>
+        <div class="card-title">
+            Productos registrados
+        </div>
 
-            <table border="1"
+        <div class="table-container">
+
+            <table class="table"
                    id="tablaProductos">
 
                 <thead>
@@ -168,7 +236,6 @@
 
         </div>
 
-    </form>
+    </div>
 
-</body>
-</html>
+</asp:Content>

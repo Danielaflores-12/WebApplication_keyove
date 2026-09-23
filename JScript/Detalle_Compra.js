@@ -142,17 +142,17 @@ function listarDetallesCompra() {
                 filas += "<td>" + detalles[i].nPrecioCompra + "</td>";
                 filas += "<td>" + detalles[i].nSubTotal + "</td>";
 
-                filas += "<td>";
+                filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' onclick='seleccionarDetalleCompra(" +
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarDetalleCompra(" +
                     detalles[i].iCodDetalleCompra +
-                    ")'>Editar</button> ";
+                    ")'>Editar</button>";
 
-                filas += "<button type='button' onclick='eliminarDetalleCompra(" +
+                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarDetalleCompra(" +
                     detalles[i].iCodDetalleCompra +
                     ")'>Eliminar</button>";
 
-                filas += "</td>";
+                filas += "</div></td>";
 
                 filas += "</tr>";
 

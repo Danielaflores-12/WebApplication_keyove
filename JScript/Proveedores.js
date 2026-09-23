@@ -6,6 +6,35 @@ $(document).ready(function () {
 
 
 //==================================================
+// FORMATEAR FECHA /Date(ms)/ A TEXTO LEGIBLE
+//==================================================
+
+function formatearFecha(valor) {
+
+    if (!valor) {
+
+        return "";
+
+    }
+
+    var coincidencia = /\/Date\((\d+)\)\//.exec(valor);
+
+    if (coincidencia) {
+
+        var fecha = new Date(parseInt(coincidencia[1]));
+
+        return fecha.toLocaleDateString() +
+            " " +
+            fecha.toLocaleTimeString();
+
+    }
+
+    return valor;
+
+}
+
+
+//==================================================
 // LISTAR PROVEEDORES
 //==================================================
 
@@ -26,6 +55,11 @@ function listarProveedores() {
 
             for (var i = 0; i < proveedores.length; i++) {
 
+                var estado =
+                    proveedores[i].bEstado
+                        ? "<span class='badge badge-active'>Activo</span>"
+                        : "<span class='badge badge-inactive'>Inactivo</span>";
+
                 filas += "<tr>";
 
                 filas += "<td>" + proveedores[i].iCodProveedor + "</td>";
@@ -35,20 +69,20 @@ function listarProveedores() {
                 filas += "<td>" + (proveedores[i].cTelefono || "") + "</td>";
                 filas += "<td>" + (proveedores[i].cCorreo || "") + "</td>";
                 filas += "<td>" + (proveedores[i].cDireccion || "") + "</td>";
-                filas += "<td>" + (proveedores[i].bEstado ? "Activo" : "Inactivo") + "</td>";
-                filas += "<td>" + (proveedores[i].dFechaRegistro || "") + "</td>";
+                filas += "<td>" + estado + "</td>";
+                filas += "<td>" + formatearFecha(proveedores[i].dFechaRegistro) + "</td>";
 
-                filas += "<td>";
+                filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' onclick='seleccionarProveedor(" +
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarProveedor(" +
                     proveedores[i].iCodProveedor +
-                    ")'>Editar</button> ";
+                    ")'>Editar</button>";
 
-                filas += "<button type='button' onclick='eliminarProveedor(" +
+                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarProveedor(" +
                     proveedores[i].iCodProveedor +
                     ")'>Eliminar</button>";
 
-                filas += "</td>";
+                filas += "</div></td>";
 
                 filas += "</tr>";
 

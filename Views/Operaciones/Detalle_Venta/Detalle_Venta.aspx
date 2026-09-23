@@ -1,96 +1,141 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Detalle_Venta.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Operaciones.Detalle_Venta.DetalleVenta1" %>
+<%@ Page Language="vb"
+    AutoEventWireup="false"
+    MasterPageFile="~/Views/Master/Site.Master"
+    CodeBehind="Detalle_Venta.aspx.vb"
+    Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Operaciones.Detalle_Venta.DetalleVenta1" %>
 
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <meta charset="utf-8" />
-    <title>Detalle de Ventas</title>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<asp:Content
+    ID="Content1"
+    ContentPlaceHolderID="head"
+    runat="server">
 
     <script src="../../../JScript/Detalle_Venta.js"></script>
-</head>
 
-<body>
+</asp:Content>
 
-    <form id="form1" runat="server">
+<asp:Content
+    ID="Content2"
+    ContentPlaceHolderID="ContentPlaceHolder1"
+    runat="server">
 
-        <div>
+    <div class="page-title">
 
-            <h2>Registro de Detalle de Ventas</h2>
+        <h1>Detalle de Ventas</h1>
 
-            <input type="hidden" id="txtIdDetalleVenta" />
+        <p>Registro de detalle de ventas</p>
 
-            <div>
-                <label>Venta:</label>
-                <select id="cboVenta"></select>
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Nuevo detalle
+        </div>
+
+        <input type="hidden" id="txtIdDetalleVenta" />
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="cboVenta">Venta</label>
+
+                <select id="cboVenta"
+                        class="input-control">
+                </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Producto:</label>
-                <select id="cboProducto"></select>
+                <label for="cboProducto">Producto</label>
+
+                <select id="cboProducto"
+                        class="input-control">
+                </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Cantidad:</label>
-                <input type="number" id="txtCantidad" />
-            </div>
+                <label for="txtCantidad">Cantidad</label>
 
-            <br />
-
-            <div>
-                <label>Precio de Venta:</label>
-                <input type="number" step="0.01" id="txtPrecioVenta" />
-            </div>
-
-            <br />
-
-            <div>
-                <label>Descuento:</label>
-                <input type="number" step="0.01" id="txtDescuento" value="0" />
-            </div>
-
-            <br />
-
-            <div>
-                <label>Sub Total:</label>
                 <input type="number"
-                   step="0.01"
-                   id="txtSubTotal"
-                   readonly />
+                       id="txtCantidad"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
+
+                <label for="txtPrecioVenta">Precio de Venta</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtPrecioVenta"
+                       class="input-control" />
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="txtDescuento">Descuento</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtDescuento"
+                       class="input-control"
+                       value="0" />
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="txtSubTotal">Sub Total</label>
+
+                <input type="number"
+                       step="0.01"
+                       id="txtSubTotal"
+                       class="input-control"
+                       readonly />
+
+            </div>
+
+        </div>
+
+        <div class="form-actions">
 
             <button type="button"
+                    class="btn btn-primary"
                     onclick="guardarDetalleVenta()">
                 Guardar
             </button>
 
             <button type="button"
+                    class="btn btn-warning"
                     onclick="modificarDetalleVenta()">
                 Modificar
             </button>
 
             <button type="button"
+                    class="btn btn-secondary"
                     onclick="limpiarFormulario()">
                 Limpiar
             </button>
 
         </div>
 
-        <hr />
+    </div>
 
-        <div>
+    <div class="card">
 
-            <h3>Detalles de Venta Registrados</h3>
+        <div class="card-title">
+            Detalles de venta registrados
+        </div>
 
-            <table border="1"
+        <div class="table-container">
+
+            <table class="table"
                    id="tablaDetalleVenta">
 
                 <thead>
@@ -116,7 +161,6 @@
 
         </div>
 
-    </form>
+    </div>
 
-</body>
-</html>
+</asp:Content>

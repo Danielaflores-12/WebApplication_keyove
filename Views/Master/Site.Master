@@ -9,71 +9,18 @@
 <head runat="server">
 
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>KEYOVE</title>
+
+    <link rel="stylesheet" href="/Assets/css/site.css" />
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <asp:ContentPlaceHolder
         ID="head"
         runat="server">
     </asp:ContentPlaceHolder>
-
-    <style>
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
-        }
-
-        .contenedor {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 240px;
-            background: #1f2937;
-            color: white;
-            padding: 20px 0;
-        }
-
-        .logo {
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 30px;
-        }
-
-        .sidebar a {
-            display: block;
-            padding: 12px 20px;
-            color: white;
-            text-decoration: none;
-        }
-
-        .sidebar a:hover {
-            background: #374151;
-        }
-
-        .titulo-menu {
-            padding: 15px 20px 5px;
-            font-size: 12px;
-            color: #9ca3af;
-        }
-
-        .contenido {
-            flex: 1;
-            padding: 25px;
-        }
-
-        .topbar {
-            background: white;
-            padding: 15px 25px;
-            margin: -25px -25px 25px -25px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-    </style>
 
 </head>
 
@@ -83,91 +30,163 @@
 
     <div class="contenedor">
 
-        <div class="sidebar">
+        <aside class="sidebar" id="sidebar">
 
             <div class="logo">
-                KEYOVE
-            </div>
 
+                <span class="logo-icono">K</span>
 
-            <a href="/Views/Dashboard/Dashboard.aspx">
-                Dashboard
-            </a>
-
-
-            <div class="titulo-menu">
-                MANTENIMIENTO
-            </div>
-
-            <a href="/Views/Mantenimiento/Categorias/Categorias.aspx">
-                Categorías
-            </a>
-
-            <a href="/Views/Mantenimiento/Productos/Productos.aspx">
-                Productos
-            </a>
-
-            <a href="/Views/Mantenimiento/Proveedores/Proveedores.aspx">
-                Proveedores
-            </a>
-
-            <a href="/Views/Mantenimiento/Personas/Personas.aspx">
-                Personas
-            </a>
-
-            <a href="/Views/Mantenimiento/Usuarios/Usuarios.aspx">
-                Usuarios
-            </a>
-
-            <a href="/Views/Mantenimiento/Roles/Roles.aspx">
-                Roles
-            </a>
-
-
-            <div class="titulo-menu">
-                OPERACIONES
-            </div>
-
-            <a href="/Views/Operaciones/Compras/Compras.aspx">
-                Compras
-            </a>
-
-            <a href="/Views/Operaciones/Ventas/Ventas.aspx">
-                Ventas
-            </a>
-
-
-            <div class="titulo-menu">
-                INVENTARIO
-            </div>
-
-            <a href="/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx">
-                Movimientos
-            </a>
-
-        </div>
-
-
-        <div class="contenido">
-
-            <div class="topbar">
-
-                <strong>Sistema de Inventario KEYOVE</strong>
+                <span>KEYOVE</span>
 
             </div>
 
+            <nav class="menu">
 
-            <asp:ContentPlaceHolder
-                ID="ContentPlaceHolder1"
-                runat="server">
+                <a class="menu-link"
+                   data-ruta="/Views/Dashboard/Dashboard.aspx"
+                   href="/Views/Dashboard/Dashboard.aspx">
+                    Dashboard
+                </a>
 
-            </asp:ContentPlaceHolder>
+                <div class="titulo-menu">
+                    MANTENIMIENTO
+                </div>
 
-        </div>
+                <a class="menu-link"
+                   data-ruta="/Views/Mantenimiento/Categorias/Categorias.aspx"
+                   href="/Views/Mantenimiento/Categorias/Categorias.aspx">
+                    Categorías
+                </a>
+
+                <a class="menu-link"
+                   data-ruta="/Views/Mantenimiento/Productos/Productos.aspx"
+                   href="/Views/Mantenimiento/Productos/Productos.aspx">
+                    Productos
+                </a>
+
+                <a class="menu-link"
+                   data-ruta="/Views/Mantenimiento/Proveedores/Proveedores.aspx"
+                   href="/Views/Mantenimiento/Proveedores/Proveedores.aspx">
+                    Proveedores
+                </a>
+
+                <a class="menu-link"
+                   data-ruta="/Views/Mantenimiento/Personas/Personas.aspx"
+                   href="/Views/Mantenimiento/Personas/Personas.aspx">
+                    Personas
+                </a>
+
+                <a class="menu-link"
+                   data-ruta="/Views/Mantenimiento/Usuarios/Usuarios.aspx"
+                   href="/Views/Mantenimiento/Usuarios/Usuarios.aspx">
+                    Usuarios
+                </a>
+
+                <a class="menu-link"
+                   data-ruta="/Views/Mantenimiento/Roles/Roles.aspx"
+                   href="/Views/Mantenimiento/Roles/Roles.aspx">
+                    Roles
+                </a>
+
+                <div class="titulo-menu">
+                    OPERACIONES
+                </div>
+
+                <a class="menu-link"
+                   data-ruta="/Views/Operaciones/Compras/Compras.aspx"
+                   href="/Views/Operaciones/Compras/Compras.aspx">
+                    Compras
+                </a>
+
+                <a class="menu-link"
+                   data-ruta="/Views/Operaciones/Ventas/Ventas.aspx"
+                   href="/Views/Operaciones/Ventas/Ventas.aspx">
+                    Ventas
+                </a>
+
+                <div class="titulo-menu">
+                    INVENTARIO
+                </div>
+
+                <a class="menu-link"
+                   data-ruta="/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx"
+                   href="/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx">
+                    Movimientos
+                </a>
+
+                <div class="menu-separador"></div>
+
+                <a class="menu-link cerrar-sesion"
+                   href="#">
+                    Cerrar sesión
+                </a>
+
+            </nav>
+
+        </aside>
+
+        <main class="contenido">
+
+            <header class="topbar">
+
+                <button type="button"
+                        class="btn-menu-toggle"
+                        id="btnMenuToggle"
+                        aria-label="Abrir menú">
+                    &#9776;
+                </button>
+
+                <div class="topbar-titulo">
+                    Sistema de Inventario KEYOVE
+                </div>
+
+            </header>
+
+            <div class="contenido-inner">
+
+                <asp:ContentPlaceHolder
+                    ID="ContentPlaceHolder1"
+                    runat="server">
+
+                </asp:ContentPlaceHolder>
+
+            </div>
+
+        </main>
 
     </div>
 
 </form>
+
+<script>
+
+    $(function () {
+
+        // Resalta el enlace de la página actual en el menú.
+        var rutaActual = window.location.pathname;
+
+        $(".menu-link").each(function () {
+
+            var ruta = $(this).attr("data-ruta");
+
+            if (ruta && rutaActual.indexOf(ruta) !== -1) {
+
+                $(this).addClass("active");
+
+            }
+
+        });
+
+        // Abre/cierra el menú lateral en pantallas pequeñas.
+        $("#btnMenuToggle").on("click", function () {
+
+            $("#sidebar").toggleClass("abierto");
+
+        });
+
+    });
+
+</script>
 
 </body>
 </html>

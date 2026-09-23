@@ -8,6 +8,35 @@ $(document).ready(function () {
 
 
 //==================================================
+// FORMATEAR FECHA /Date(ms)/ A TEXTO LEGIBLE
+//==================================================
+
+function formatearFecha(valor) {
+
+    if (!valor) {
+
+        return "";
+
+    }
+
+    var coincidencia = /\/Date\((\d+)\)\//.exec(valor);
+
+    if (coincidencia) {
+
+        var fecha = new Date(parseInt(coincidencia[1]));
+
+        return fecha.toLocaleDateString() +
+            " " +
+            fecha.toLocaleTimeString();
+
+    }
+
+    return valor;
+
+}
+
+
+//==================================================
 // LISTAR ROLES PARA COMBOBOX
 //==================================================
 
@@ -118,26 +147,31 @@ function listarUsuarios() {
 
                 var idPersona = usuarios[i].iCodPersona;
 
+                var estado =
+                    usuarios[i].bEstado
+                        ? "<span class='badge badge-active'>Activo</span>"
+                        : "<span class='badge badge-inactive'>Inactivo</span>";
+
                 filas += "<tr>";
 
                 filas += "<td>" + usuarios[i].iCodUsuario + "</td>";
                 filas += "<td>" + (idPersona ? idPersona : "-") + "</td>";
                 filas += "<td>" + usuarios[i].cNombreRol + "</td>";
                 filas += "<td>" + usuarios[i].cNombreUsuario + "</td>";
-                filas += "<td>" + (usuarios[i].bEstado ? "Activo" : "Inactivo") + "</td>";
-                filas += "<td>" + (usuarios[i].dFechaRegistro || "") + "</td>";
+                filas += "<td>" + estado + "</td>";
+                filas += "<td>" + formatearFecha(usuarios[i].dFechaRegistro) + "</td>";
 
-                filas += "<td>";
+                filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' onclick='seleccionarUsuario(" +
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarUsuario(" +
                     usuarios[i].iCodUsuario +
-                    ")'>Editar</button> ";
+                    ")'>Editar</button>";
 
-                filas += "<button type='button' onclick='eliminarUsuario(" +
+                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarUsuario(" +
                     usuarios[i].iCodUsuario +
                     ")'>Eliminar</button>";
 
-                filas += "</td>";
+                filas += "</div></td>";
 
                 filas += "</tr>";
 

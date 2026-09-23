@@ -71,6 +71,11 @@ function listarProductos() {
 
             for (var i = 0; i < productos.length; i++) {
 
+                var estado =
+                    productos[i].bEstado
+                        ? "<span class='badge badge-active'>Activo</span>"
+                        : "<span class='badge badge-inactive'>Inactivo</span>";
+
                 filas += "<tr>";
 
                 filas += "<td>" + productos[i].iCodProducto + "</td>";
@@ -84,19 +89,19 @@ function listarProductos() {
                 filas += "<td>" + productos[i].iStockActual + "</td>";
                 filas += "<td>" + productos[i].iStockMinimo + "</td>";
                 filas += "<td>" + productos[i].cUnidadMedida + "</td>";
-                filas += "<td>" + (productos[i].bEstado ? "Activo" : "Inactivo") + "</td>";
+                filas += "<td>" + estado + "</td>";
 
-                filas += "<td>";
+                filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' onclick='seleccionarProducto(" +
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarProducto(" +
                     productos[i].iCodProducto +
-                    ")'>Editar</button> ";
+                    ")'>Editar</button>";
 
-                filas += "<button type='button' onclick='eliminarProducto(" +
+                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarProducto(" +
                     productos[i].iCodProducto +
                     ")'>Eliminar</button>";
 
-                filas += "</td>";
+                filas += "</div></td>";
 
                 filas += "</tr>";
 

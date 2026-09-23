@@ -1,72 +1,111 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Roles.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Roles.Rol1" %>
+<%@ Page Language="vb"
+    AutoEventWireup="false"
+    MasterPageFile="~/Views/Master/Site.Master"
+    CodeBehind="Roles.aspx.vb"
+    Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Roles.Rol1" %>
 
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <meta charset="utf-8" />
-    <title>Roles</title>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<asp:Content
+    ID="Content1"
+    ContentPlaceHolderID="head"
+    runat="server">
 
     <script src="../../../JScript/Roles.js"></script>
-</head>
 
-<body>
+</asp:Content>
 
-    <form id="form1" runat="server">
+<asp:Content
+    ID="Content2"
+    ContentPlaceHolderID="ContentPlaceHolder1"
+    runat="server">
 
-        <div>
+    <div class="page-title">
 
-            <h2>Registro de Roles</h2>
+        <h1>Roles</h1>
 
-            <input type="hidden" id="txtIdRol" />
+        <p>Gestión de roles del sistema</p>
 
-            <div>
-                <label>Nombre:</label>
-                <input type="text" id="txtNombre" />
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Nuevo rol
+        </div>
+
+        <input type="hidden" id="txtIdRol" />
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="txtNombre">Nombre</label>
+
+                <input type="text"
+                       id="txtNombre"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Descripción:</label>
-                <input type="text" id="txtDescripcion" />
+                <label for="txtDescripcion">Descripción</label>
+
+                <input type="text"
+                       id="txtDescripcion"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group form-group-check">
 
-            <div>
-                <label>Estado:</label>
-                <input type="checkbox" id="chkEstado" checked />
+                <label class="form-check" for="chkEstado">
+
+                    <input type="checkbox"
+                           id="chkEstado"
+                           class="input-control"
+                           checked />
+
+                    Activo
+
+                </label>
+
             </div>
 
-            <br />
+        </div>
+
+        <div class="form-actions">
 
             <button type="button"
+                    class="btn btn-primary"
                     onclick="guardarRol()">
                 Guardar
             </button>
 
             <button type="button"
+                    class="btn btn-warning"
                     onclick="modificarRol()">
                 Modificar
             </button>
 
             <button type="button"
+                    class="btn btn-secondary"
                     onclick="limpiarFormulario()">
                 Limpiar
             </button>
 
         </div>
 
-        <hr />
+    </div>
 
-        <div>
+    <div class="card">
 
-            <h3>Roles Registrados</h3>
+        <div class="card-title">
+            Roles registrados
+        </div>
 
-            <table border="1"
+        <div class="table-container">
+
+            <table class="table"
                    id="tablaRoles">
 
                 <thead>
@@ -90,7 +129,6 @@
 
         </div>
 
-    </form>
+    </div>
 
-</body>
-</html>
+</asp:Content>

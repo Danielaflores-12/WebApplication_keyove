@@ -1,86 +1,131 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Usuarios.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Usuarios.Usuario1" %>
+<%@ Page Language="vb"
+    AutoEventWireup="false"
+    MasterPageFile="~/Views/Master/Site.Master"
+    CodeBehind="Usuarios.aspx.vb"
+    Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Usuarios.Usuario1" %>
 
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <meta charset="utf-8" />
-    <title>Usuarios</title>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<asp:Content
+    ID="Content1"
+    ContentPlaceHolderID="head"
+    runat="server">
 
     <script src="../../../JScript/Usuarios.js"></script>
-</head>
 
-<body>
+</asp:Content>
 
-    <form id="form1" runat="server">
+<asp:Content
+    ID="Content2"
+    ContentPlaceHolderID="ContentPlaceHolder1"
+    runat="server">
 
-        <div>
+    <div class="page-title">
 
-            <h2>Registro de Usuarios</h2>
+        <h1>Usuarios</h1>
 
-            <input type="hidden" id="txtIdUsuario" />
+        <p>Gestión de usuarios del sistema</p>
 
-            <div>
-                <label>Persona:</label>
-                <select id="cboPersona"></select>
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Nuevo usuario
+        </div>
+
+        <input type="hidden" id="txtIdUsuario" />
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="cboPersona">Persona</label>
+
+                <select id="cboPersona"
+                        class="input-control">
+                </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Rol:</label>
-                <select id="cboRol"></select>
+                <label for="cboRol">Rol</label>
+
+                <select id="cboRol"
+                        class="input-control">
+                </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Nombre de Usuario:</label>
-                <input type="text" id="txtNombreUsuario" />
+                <label for="txtNombreUsuario">Nombre de Usuario</label>
+
+                <input type="text"
+                       id="txtNombreUsuario"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Contraseña:</label>
-                <input type="password" id="txtContrasena" />
+                <label for="txtContrasena">Contraseña</label>
+
+                <input type="password"
+                       id="txtContrasena"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group form-group-check">
 
-            <div>
-                <label>Estado:</label>
-                <input type="checkbox" id="chkEstado" checked />
+                <label class="form-check" for="chkEstado">
+
+                    <input type="checkbox"
+                           id="chkEstado"
+                           class="input-control"
+                           checked />
+
+                    Activo
+
+                </label>
+
             </div>
 
-            <br />
+        </div>
+
+        <div class="form-actions">
 
             <button type="button"
+                    class="btn btn-primary"
                     onclick="guardarUsuario()">
                 Guardar
             </button>
 
             <button type="button"
+                    class="btn btn-warning"
                     onclick="modificarUsuario()">
                 Modificar
             </button>
 
             <button type="button"
+                    class="btn btn-secondary"
                     onclick="limpiarFormulario()">
                 Limpiar
             </button>
 
         </div>
 
-        <hr />
+    </div>
 
-        <div>
+    <div class="card">
 
-            <h3>Usuarios Registrados</h3>
+        <div class="card-title">
+            Usuarios registrados
+        </div>
 
-            <table border="1"
+        <div class="table-container">
+
+            <table class="table"
                    id="tablaUsuarios">
 
                 <thead>
@@ -105,7 +150,6 @@
 
         </div>
 
-    </form>
+    </div>
 
-</body>
-</html>
+</asp:Content>

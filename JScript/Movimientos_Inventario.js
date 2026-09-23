@@ -8,6 +8,35 @@ $(document).ready(function () {
 
 
 //==================================================
+// FORMATEAR FECHA /Date(ms)/ A TEXTO LEGIBLE
+//==================================================
+
+function formatearFecha(valor) {
+
+    if (!valor) {
+
+        return "";
+
+    }
+
+    var coincidencia = /\/Date\((\d+)\)\//.exec(valor);
+
+    if (coincidencia) {
+
+        var fecha = new Date(parseInt(coincidencia[1]));
+
+        return fecha.toLocaleDateString() +
+            " " +
+            fecha.toLocaleTimeString();
+
+    }
+
+    return valor;
+
+}
+
+
+//==================================================
 // LISTAR PRODUCTOS PARA COMBOBOX
 //==================================================
 
@@ -128,15 +157,15 @@ function listarMovimientos() {
                 filas += "<td>" + movimientos[i].iStockAnterior + "</td>";
                 filas += "<td>" + movimientos[i].iStockNuevo + "</td>";
                 filas += "<td>" + (movimientos[i].cMotivo || "") + "</td>";
-                filas += "<td>" + (movimientos[i].dFechaMovimiento || "") + "</td>";
+                filas += "<td>" + formatearFecha(movimientos[i].dFechaMovimiento) + "</td>";
 
-                filas += "<td>";
+                filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' onclick='seleccionarMovimiento(" +
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarMovimiento(" +
                     movimientos[i].iCodMovimiento +
                     ")'>Editar</button>";
 
-                filas += "</td>";
+                filas += "</div></td>";
 
                 filas += "</tr>";
 

@@ -1,8 +1,11 @@
 Imports System.Web.Services
 Imports System.Web.Script.Services
 Imports WebApplication_keyove.WebApplication_Keyove.Model
+Imports WebApplication_keyove.WebApplication_Keyove.Data
 Imports ModeloCompra = WebApplication_keyove.WebApplication_Keyove.Model.Compras
+Imports ModeloDetalleCompra = WebApplication_keyove.WebApplication_Keyove.Model.DetalleCompra
 Imports ModeloProveedor = WebApplication_keyove.WebApplication_Keyove.Model.Proveedores
+Imports ModeloProducto = WebApplication_keyove.WebApplication_Keyove.Model.Productos
 Imports ModeloUsuario = WebApplication_keyove.WebApplication_Keyove.Model.Usuarios
 
 Namespace WebApplication_Keyove.Views.Operaciones.Compras
@@ -92,6 +95,42 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
 
 
         '==================================================
+        ' LISTAR PRODUCTOS PARA COMBOBOX
+        '==================================================
+
+        <WebMethod()>
+        <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
+        Public Shared Function ListarProductosCombo() As List(Of OpcionCombo)
+
+            Dim lista As New List(Of OpcionCombo)()
+
+            Dim tabla As DataTable =
+                New ModeloProducto().ListaDatosShort()
+
+            For Each fila As DataRow In tabla.Rows
+
+                If Convert.ToBoolean(fila("bEstado")) Then
+
+                    Dim opcion As New OpcionCombo()
+
+                    opcion.v =
+                        Convert.ToString(fila("iCodProducto"))
+
+                    opcion.t =
+                        Convert.ToString(fila("cNombre"))
+
+                    lista.Add(opcion)
+
+                End If
+
+            Next
+
+            Return lista
+
+        End Function
+
+
+        '==================================================
         ' LISTAR COMPRAS
         '==================================================
 
@@ -155,15 +194,41 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
 
 
         '==================================================
-        ' GUARDAR COMPRA
+        ' GUARDAR COMPRA CON SUS DETALLES
         '==================================================
 
         <WebMethod()>
-        Public Shared Function GuardarCompra(compra As ModeloCompra) As String
+        Public Shared Function GuardarCompra(
+            compra As ModeloCompra,
+            detalles As List(Of ModeloDetalleCompra)
+        ) As String
 
             Try
 
-                compra.Insertar()
+                Using db As New ConexionBD()
+
+                    db.BeginTransaction()
+
+                    compra.db = db
+                    compra.InsertarTransact()
+
+                    If detalles IsNot Nothing Then
+
+                        For Each detalle As ModeloDetalleCompra In detalles
+
+                            detalle.iCodCompra =
+                                compra.iCodCompra
+
+                            detalle.db = db
+                            detalle.InsertarTransact()
+
+                        Next
+
+                    End If
+
+                    db.CommitTransaction()
+
+                End Using
 
                 Return "OK"
 

@@ -148,17 +148,17 @@ function listarDetallesVenta() {
                 filas += "<td>" + detalles[i].nDescuento + "</td>";
                 filas += "<td>" + detalles[i].nSubTotal + "</td>";
 
-                filas += "<td>";
+                filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' onclick='seleccionarDetalleVenta(" +
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarDetalleVenta(" +
                     detalles[i].iCodDetalleVenta +
-                    ")'>Editar</button> ";
+                    ")'>Editar</button>";
 
-                filas += "<button type='button' onclick='eliminarDetalleVenta(" +
+                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarDetalleVenta(" +
                     detalles[i].iCodDetalleVenta +
                     ")'>Eliminar</button>";
 
-                filas += "</td>";
+                filas += "</div></td>";
 
                 filas += "</tr>";
 

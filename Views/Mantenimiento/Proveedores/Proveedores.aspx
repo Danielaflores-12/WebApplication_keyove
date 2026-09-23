@@ -1,100 +1,153 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Proveedores.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Proveedores.Proveedor1" %>
+<%@ Page Language="vb"
+    AutoEventWireup="false"
+    MasterPageFile="~/Views/Master/Site.Master"
+    CodeBehind="Proveedores.aspx.vb"
+    Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Mantenimiento.Proveedores.Proveedor1" %>
 
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <meta charset="utf-8" />
-    <title>Proveedores</title>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<asp:Content
+    ID="Content1"
+    ContentPlaceHolderID="head"
+    runat="server">
 
     <script src="../../../JScript/Proveedores.js"></script>
-</head>
 
-<body>
+</asp:Content>
 
-    <form id="form1" runat="server">
+<asp:Content
+    ID="Content2"
+    ContentPlaceHolderID="ContentPlaceHolder1"
+    runat="server">
 
-        <div>
+    <div class="page-title">
 
-            <h2>Registro de Proveedores</h2>
+        <h1>Proveedores</h1>
 
-            <input type="hidden" id="txtIdProveedor" />
+        <p>Gestión de proveedores del inventario</p>
 
-            <div>
-                <label>RUC:</label>
-                <input type="text" id="txtRuc" maxlength="11" />
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Nuevo proveedor
+        </div>
+
+        <input type="hidden" id="txtIdProveedor" />
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="txtRuc">RUC</label>
+
+                <input type="text"
+                       id="txtRuc"
+                       maxlength="11"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Razón Social:</label>
-                <input type="text" id="txtRazonSocial" />
+                <label for="txtRazonSocial">Razón Social</label>
+
+                <input type="text"
+                       id="txtRazonSocial"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Representante:</label>
-                <input type="text" id="txtRepresentante" />
+                <label for="txtRepresentante">Representante</label>
+
+                <input type="text"
+                       id="txtRepresentante"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Teléfono:</label>
-                <input type="text" id="txtTelefono" maxlength="9" />
+                <label for="txtTelefono">Teléfono</label>
+
+                <input type="text"
+                       id="txtTelefono"
+                       maxlength="9"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Correo:</label>
-                <input type="text" id="txtCorreo" />
+                <label for="txtCorreo">Correo</label>
+
+                <input type="text"
+                       id="txtCorreo"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Dirección:</label>
-                <input type="text" id="txtDireccion" />
+                <label for="txtDireccion">Dirección</label>
+
+                <input type="text"
+                       id="txtDireccion"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group form-group-check">
 
-            <div>
-                <label>Estado:</label>
-                <input type="checkbox" id="chkEstado" checked />
+                <label class="form-check" for="chkEstado">
+
+                    <input type="checkbox"
+                           id="chkEstado"
+                           class="input-control"
+                           checked />
+
+                    Activo
+
+                </label>
+
             </div>
 
-            <br />
+        </div>
+
+        <div class="form-actions">
 
             <button type="button"
+                    class="btn btn-primary"
                     onclick="guardarProveedor()">
                 Guardar
             </button>
 
             <button type="button"
+                    class="btn btn-warning"
                     onclick="modificarProveedor()">
                 Modificar
             </button>
 
             <button type="button"
+                    class="btn btn-secondary"
                     onclick="limpiarFormulario()">
                 Limpiar
             </button>
 
         </div>
 
-        <hr />
+    </div>
 
-        <div>
+    <div class="card">
 
-            <h3>Proveedores Registrados</h3>
+        <div class="card-title">
+            Proveedores registrados
+        </div>
 
-            <table border="1"
+        <div class="table-container">
+
+            <table class="table"
                    id="tablaProveedores">
 
                 <thead>
@@ -122,7 +175,6 @@
 
         </div>
 
-    </form>
+    </div>
 
-</body>
-</html>
+</asp:Content>

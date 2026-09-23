@@ -2,9 +2,271 @@ $(document).ready(function () {
 
     listarProveedoresCombo();
     listarUsuariosCombo();
+    listarProductosCombo();
     listarCompras();
 
+    $("#txtCantidadCompra, #txtPrecioCompra").on("input", function () {
+        actualizarSubtotalLineaCompra();
+    });
+
 });
+
+
+//==================================================
+// CONSTANTES Y ESTADO DE LA COMPRA
+//==================================================
+
+var cIGV = 0.18;
+
+var compraDetalles = [];
+
+
+//==================================================
+// FORMATEAR MONEDA SOLES
+//==================================================
+
+function formatoMoneda(valor) {
+
+    var numero = Number(valor || 0);
+
+    var partes = numero.toFixed(2).split(".");
+
+    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    return "S/ " + partes.join(".");
+
+}
+
+
+//==================================================
+// FORMATEAR FECHA /Date(ms)/ A TEXTO LEGIBLE
+//==================================================
+
+function formatearFecha(valor) {
+
+    if (!valor) {
+
+        return "";
+
+    }
+
+    var coincidencia = /\/Date\((\d+)\)\//.exec(valor);
+
+    if (coincidencia) {
+
+        var fecha = new Date(parseInt(coincidencia[1]));
+
+        return fecha.toLocaleDateString() +
+            " " +
+            fecha.toLocaleTimeString();
+
+    }
+
+    return valor;
+
+}
+
+
+//==================================================
+// LISTAR PRODUCTOS PARA COMBOBOX
+//==================================================
+
+function listarProductosCombo() {
+
+    $.ajax({
+        type: "POST",
+        url: "/Views/Operaciones/Compras/Compras.aspx/ListarProductosCombo",
+        data: "{}",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+
+        success: function (response) {
+
+            var opciones = response.d;
+
+            var html = "<option value=''>-- Seleccionar --</option>";
+
+            for (var i = 0; i < opciones.length; i++) {
+
+                html += "<option value='" +
+                    opciones[i].v +
+                    "'>" +
+                    opciones[i].t +
+                    "</option>";
+
+            }
+
+            $("#cboProducto").html(html);
+
+        },
+
+        error: function (error) {
+
+            console.log("Error al listar productos:");
+            console.log(error);
+
+        }
+    });
+
+}
+
+
+//==================================================
+// ACTUALIZAR SUBTOTAL DE LA LÍNEA EN EDICIÓN
+//==================================================
+
+function actualizarSubtotalLineaCompra() {
+
+    var cantidad = parseFloat($("#txtCantidadCompra").val()) || 0;
+    var precio = parseFloat($("#txtPrecioCompra").val()) || 0;
+
+    var subtotal = Math.round(cantidad * precio * 100) / 100;
+
+    $("#txtSubtotalLinea").val(formatoMoneda(subtotal));
+
+}
+
+
+//==================================================
+// AGREGAR PRODUCTO AL DETALLE
+//==================================================
+
+function agregarProductoCompra() {
+
+    var idProducto = parseInt($("#cboProducto").val() || 0, 10);
+    var cantidad = parseInt($("#txtCantidadCompra").val() || 0, 10);
+    var precio = parseFloat($("#txtPrecioCompra").val() || 0);
+
+    if (!idProducto) {
+
+        alert("Selecciona un producto.");
+
+        return;
+
+    }
+
+    if (cantidad <= 0) {
+
+        alert("La cantidad debe ser mayor a 0.");
+
+        return;
+
+    }
+
+    if (precio <= 0) {
+
+        alert("El precio de compra debe ser mayor a 0.");
+
+        return;
+
+    }
+
+    var nombreProducto =
+        $("#cboProducto option:selected").text();
+
+    var subtotal = Math.round(precio * cantidad * 100) / 100;
+
+    compraDetalles.push({
+        iCodProducto: idProducto,
+        cNombreProducto: nombreProducto,
+        iCantidad: cantidad,
+        nPrecioCompra: precio,
+        nSubTotal: subtotal
+    });
+
+    $("#cboProducto").val("");
+    $("#txtCantidadCompra").val("");
+    $("#txtPrecioCompra").val("");
+    $("#txtSubtotalLinea").val("");
+
+    dibujarDetalleCompra();
+
+}
+
+
+//==================================================
+// QUITAR PRODUCTO DEL DETALLE
+//==================================================
+
+function quitarProductoCompra(index) {
+
+    if (index < 0 || index >= compraDetalles.length) {
+
+        return;
+
+    }
+
+    compraDetalles.splice(index, 1);
+
+    dibujarDetalleCompra();
+
+}
+
+
+//==================================================
+// DIBUJAR DETALLE DE COMPRA
+//==================================================
+
+function dibujarDetalleCompra() {
+
+    var filas = "";
+
+    for (var i = 0; i < compraDetalles.length; i++) {
+
+        filas += "<tr>";
+
+        filas += "<td>" + compraDetalles[i].cNombreProducto + "</td>";
+        filas += "<td>" + compraDetalles[i].iCantidad + "</td>";
+        filas += "<td>" + formatoMoneda(compraDetalles[i].nPrecioCompra) + "</td>";
+        filas += "<td>" + formatoMoneda(compraDetalles[i].nSubTotal) + "</td>";
+
+        filas += "<td><div class='table-actions'>";
+
+        filas += "<button type='button' class='btn btn-sm btn-danger' onclick='quitarProductoCompra(" +
+            i +
+            ")'>Quitar</button>";
+
+        filas += "</div></td>";
+
+        filas += "</tr>";
+
+    }
+
+    $("#bodyDetalleCompra").html(filas);
+
+    recalcTotalesCompra();
+
+}
+
+
+//==================================================
+// RECALCULAR TOTALES: SUBTOTAL, IGV 18% Y TOTAL
+//==================================================
+
+function recalcTotalesCompra() {
+
+    var subtotal = 0;
+
+    for (var i = 0; i < compraDetalles.length; i++) {
+
+        subtotal += compraDetalles[i].nSubTotal;
+
+    }
+
+    subtotal = Math.round(subtotal * 100) / 100;
+
+    var igv = Math.round(subtotal * cIGV * 100) / 100;
+    var total = Math.round((subtotal + igv) * 100) / 100;
+
+    $("#txtSubtotalCompraGral").val(formatoMoneda(subtotal));
+    $("#txtIGVCompra").val(formatoMoneda(igv));
+    $("#txtTotalCompra").val(formatoMoneda(total));
+
+    $("#txtSubTotal").val(subtotal.toFixed(2));
+    $("#txtIgv").val(igv.toFixed(2));
+    $("#txtTotal").val(total.toFixed(2));
+
+}
 
 
 //==================================================
@@ -116,6 +378,15 @@ function listarCompras() {
 
             for (var i = 0; i < compras.length; i++) {
 
+                var estado =
+                    compras[i].cEstado === "ANULADA"
+                        ? "<span class='badge badge-inactive'>" +
+                            compras[i].cEstado +
+                            "</span>"
+                        : "<span class='badge badge-active'>" +
+                            compras[i].cEstado +
+                            "</span>";
+
                 filas += "<tr>";
 
                 filas += "<td>" + compras[i].iCodCompra + "</td>";
@@ -123,23 +394,23 @@ function listarCompras() {
                 filas += "<td>" + compras[i].iCodUsuario + "</td>";
                 filas += "<td>" + compras[i].cTipoComprobante + "</td>";
                 filas += "<td>" + compras[i].cNumeroComprobante + "</td>";
-                filas += "<td>" + (compras[i].dFechaCompra || "") + "</td>";
+                filas += "<td>" + formatearFecha(compras[i].dFechaCompra) + "</td>";
                 filas += "<td>" + compras[i].nSubTotal + "</td>";
                 filas += "<td>" + compras[i].nIgv + "</td>";
                 filas += "<td>" + compras[i].nTotal + "</td>";
-                filas += "<td>" + compras[i].cEstado + "</td>";
+                filas += "<td>" + estado + "</td>";
 
-                filas += "<td>";
+                filas += "<td><div class='table-actions'>";
 
-                filas += "<button type='button' onclick='seleccionarCompra(" +
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarCompra(" +
                     compras[i].iCodCompra +
-                    ")'>Editar</button> ";
+                    ")'>Editar</button>";
 
-                filas += "<button type='button' onclick='eliminarCompra(" +
+                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarCompra(" +
                     compras[i].iCodCompra +
                     ")'>Anular</button>";
 
-                filas += "</td>";
+                filas += "</div></td>";
 
                 filas += "</tr>";
 
@@ -166,6 +437,14 @@ function listarCompras() {
 
 function guardarCompra() {
 
+    if (compraDetalles.length === 0) {
+
+        alert("Agrega al menos un producto a la compra.");
+
+        return;
+
+    }
+
     var compra = {
 
         iCodCompra: 0,
@@ -182,11 +461,25 @@ function guardarCompra() {
 
     };
 
+    var detalles = [];
+
+    for (var i = 0; i < compraDetalles.length; i++) {
+
+        detalles.push({
+            iCodProducto: compraDetalles[i].iCodProducto,
+            iCantidad: compraDetalles[i].iCantidad,
+            nPrecioCompra: compraDetalles[i].nPrecioCompra,
+            nSubTotal: compraDetalles[i].nSubTotal
+        });
+
+    }
+
     $.ajax({
         type: "POST",
         url: "/Views/Operaciones/Compras/Compras.aspx/GuardarCompra",
         data: JSON.stringify({
-            compra: compra
+            compra: compra,
+            detalles: detalles
         }),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
@@ -404,5 +697,15 @@ function limpiarFormulario() {
     $("#txtTotal").val("");
     $("#txtObservacion").val("");
     $("#cboEstado").val("REGISTRADA");
+
+    compraDetalles = [];
+    $("#bodyDetalleCompra").html("");
+    $("#cboProducto").val("");
+    $("#txtCantidadCompra").val("");
+    $("#txtPrecioCompra").val("");
+    $("#txtSubtotalLinea").val("");
+    $("#txtSubtotalCompraGral").val("");
+    $("#txtIGVCompra").val("");
+    $("#txtTotalCompra").val("");
 
 }

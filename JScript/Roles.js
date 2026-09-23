@@ -45,20 +45,25 @@ function listarRoles() {
             var filas = "";
 
             for (var i = 0; i < roles.length; i++) {
+                var estado =
+                    roles[i].bEstado
+                        ? "<span class='badge badge-active'>Activo</span>"
+                        : "<span class='badge badge-inactive'>Inactivo</span>";
+
                 filas += "<tr>";
                 filas += "<td>" + roles[i].iCodRol + "</td>";
                 filas += "<td>" + roles[i].cNombre + "</td>";
                 filas += "<td>" + (roles[i].cDescripcion || "") + "</td>";
-                filas += "<td>" + (roles[i].bEstado ? "Activo" : "Inactivo") + "</td>";
+                filas += "<td>" + estado + "</td>";
                 filas += "<td>" + formatearFecha(roles[i].dFechaRegistro) + "</td>";
 
-                filas += "<td>";
-                filas += "<button type='button' onclick='seleccionarRol(" +
-                    roles[i].iCodRol + ")'>Editar</button> ";
+                filas += "<td><div class='table-actions'>";
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarRol(" +
+                    roles[i].iCodRol + ")'>Editar</button>";
 
-                filas += "<button type='button' onclick='eliminarRol(" +
+                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarRol(" +
                     roles[i].iCodRol + ")'>Eliminar</button>";
-                filas += "</td>";
+                filas += "</div></td>";
 
                 filas += "</tr>";
             }

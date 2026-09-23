@@ -11,7 +11,7 @@ function formatearFecha(fechaJson, soloFecha) {
         return fechaJson;
     }
 
-    var fecha = new Date(parseInt(coincencia[1], 10));
+    var fecha = new Date(parseInt(coincidencia[1], 10));
 
     if (soloFecha) {
         return fecha.toLocaleDateString("es-PE");
@@ -47,13 +47,13 @@ function listarPersonas() {
                 filas += "<td>" + formatearFecha(personas[i].dFechaNacimiento, true) + "</td>";
                 filas += "<td>" + formatearFecha(personas[i].dFechaRegistro, false) + "</td>";
 
-                filas += "<td>";
-                filas += "<button type='button' onclick='seleccionarPersona(" +
-                    personas[i].iCodPersona + ")'>Editar</button> ";
+                filas += "<td><div class='table-actions'>";
+                filas += "<button type='button' class='btn btn-sm btn-warning' onclick='seleccionarPersona(" +
+                    personas[i].iCodPersona + ")'>Editar</button>";
 
-                filas += "<button type='button' onclick='eliminarPersona(" +
+                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarPersona(" +
                     personas[i].iCodPersona + ")'>Eliminar</button>";
-                filas += "</td>";
+                filas += "</div></td>";
                 filas += "</tr>";
             }
 

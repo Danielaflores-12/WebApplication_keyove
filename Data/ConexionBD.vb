@@ -13,7 +13,7 @@ Namespace WebApplication_Keyove.Data
         '==================================================
 
         Private ReadOnly Servidor As String =
-        "DESKTOP-23BGPA5"
+        "localhost\SQLEXPRESS"
 
         Private ReadOnly BaseDatos As String =
         "DB_keyove_inventario"
@@ -556,6 +556,44 @@ Namespace WebApplication_Keyove.Data
             Using comando As New SqlCommand(
             consulta,
             linkSQL
+        )
+
+                If parametros IsNot Nothing Then
+
+                    comando.Parameters.AddRange(
+                    parametros.ToArray()
+                )
+
+                End If
+
+                Return comando.ExecuteScalar()
+
+            End Using
+
+        End Function
+
+
+        '==================================================
+        ' EXECUTE SCALAR PARAMETRIZADO EN TRANSACCIÓN
+        '==================================================
+
+        Public Function ExecuteScalarTransact(
+        ByVal consulta As String,
+        ByVal parametros As List(Of SqlParameter)
+    ) As Object
+
+            If miTransact Is Nothing Then
+
+                Throw New InvalidOperationException(
+                "No existe una transacción activa."
+            )
+
+            End If
+
+            Using comando As New SqlCommand(
+            consulta,
+            linkSQL,
+            miTransact
         )
 
                 If parametros IsNot Nothing Then

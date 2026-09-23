@@ -1,8 +1,11 @@
 Imports System.Web.Services
 Imports System.Web.Script.Services
 Imports WebApplication_keyove.WebApplication_Keyove.Model
-Imports ModeloVenta = WebApplication_keyove.WebApplication_Keyove.Model.Ventas
+Imports WebApplication_keyove.WebApplication_Keyove.Data
+Imports ModeloDetalleVenta = WebApplication_keyove.WebApplication_Keyove.Model.DetalleVenta
+Imports ModeloProducto = WebApplication_keyove.WebApplication_Keyove.Model.Productos
 Imports ModeloUsuario = WebApplication_keyove.WebApplication_Keyove.Model.Usuarios
+Imports ModeloVenta = WebApplication_keyove.WebApplication_Keyove.Model.Ventas
 
 Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
@@ -50,6 +53,42 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
                     Convert.ToString(fila("DisplayMember"))
 
                 lista.Add(opcion)
+
+            Next
+
+            Return lista
+
+        End Function
+
+
+        '==================================================
+        ' LISTAR PRODUCTOS PARA COMBOBOX
+        '==================================================
+
+        <WebMethod()>
+        <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
+        Public Shared Function ListarProductosCombo() As List(Of OpcionCombo)
+
+            Dim lista As New List(Of OpcionCombo)()
+
+            Dim tabla As DataTable =
+                New ModeloProducto().ListaDatosShort()
+
+            For Each fila As DataRow In tabla.Rows
+
+                If Convert.ToBoolean(fila("bEstado")) Then
+
+                    Dim opcion As New OpcionCombo()
+
+                    opcion.v =
+                        Convert.ToString(fila("iCodProducto"))
+
+                    opcion.t =
+                        Convert.ToString(fila("cNombre"))
+
+                    lista.Add(opcion)
+
+                End If
 
             Next
 
@@ -139,15 +178,41 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
 
         '==================================================
-        ' GUARDAR VENTA
+        ' GUARDAR VENTA CON SUS DETALLES
         '==================================================
 
         <WebMethod()>
-        Public Shared Function GuardarVenta(venta As ModeloVenta) As String
+        Public Shared Function GuardarVenta(
+            venta As ModeloVenta,
+            detalles As List(Of ModeloDetalleVenta)
+        ) As String
 
             Try
 
-                venta.Insertar()
+                Using db As New ConexionBD()
+
+                    db.BeginTransaction()
+
+                    venta.db = db
+                    venta.InsertarTransact()
+
+                    If detalles IsNot Nothing Then
+
+                        For Each detalle As ModeloDetalleVenta In detalles
+
+                            detalle.iCodVenta =
+                                venta.iCodVenta
+
+                            detalle.db = db
+                            detalle.InsertarTransact()
+
+                        Next
+
+                    End If
+
+                    db.CommitTransaction()
+
+                End Using
 
                 Return "OK"
 

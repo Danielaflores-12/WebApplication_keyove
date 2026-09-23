@@ -1,117 +1,170 @@
-<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="Movimientos_Inventario.aspx.vb" Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Inventario.Movimientos_Inventario.Movimiento1" %>
+<%@ Page Language="vb"
+    AutoEventWireup="false"
+    MasterPageFile="~/Views/Master/Site.Master"
+    CodeBehind="Movimientos_Inventario.aspx.vb"
+    Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Inventario.Movimientos_Inventario.Movimiento1" %>
 
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <meta charset="utf-8" />
-    <title>Movimientos de Inventario</title>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<asp:Content
+    ID="Content1"
+    ContentPlaceHolderID="head"
+    runat="server">
 
     <script src="../../../JScript/Movimientos_Inventario.js"></script>
-</head>
 
-<body>
+</asp:Content>
 
-    <form id="form1" runat="server">
+<asp:Content
+    ID="Content2"
+    ContentPlaceHolderID="ContentPlaceHolder1"
+    runat="server">
 
-        <div>
+    <div class="page-title">
 
-            <h2>Registro de Movimientos de Inventario</h2>
+        <h1>Movimientos de Inventario</h1>
 
-            <input type="hidden" id="txtIdMovimiento" />
+        <p>Registro de movimientos de inventario</p>
 
-            <div>
-                <label>Producto:</label>
-                <select id="cboProducto"></select>
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Nuevo movimiento
+        </div>
+
+        <input type="hidden" id="txtIdMovimiento" />
+
+        <div class="form-grid">
+
+            <div class="form-group">
+
+                <label for="cboProducto">Producto</label>
+
+                <select id="cboProducto"
+                        class="input-control">
+                </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Usuario:</label>
-                <select id="cboUsuario"></select>
+                <label for="cboUsuario">Usuario</label>
+
+                <select id="cboUsuario"
+                        class="input-control">
+                </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Tipo de Movimiento:</label>
-                <select id="cboTipoMovimiento">
+                <label for="cboTipoMovimiento">Tipo de Movimiento</label>
+
+                <select id="cboTipoMovimiento"
+                        class="input-control">
+
                     <option value="ENTRADA">ENTRADA</option>
                     <option value="SALIDA">SALIDA</option>
+
                 </select>
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Cantidad:</label>
-                <input type="number" id="txtCantidad" />
+                <label for="txtCantidad">Cantidad</label>
+
+                <input type="number"
+                       id="txtCantidad"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Stock Anterior:</label>
-                <input type="number" id="txtStockAnterior" />
+                <label for="txtStockAnterior">Stock Anterior</label>
+
+                <input type="number"
+                       id="txtStockAnterior"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Stock Nuevo:</label>
-                <input type="number" id="txtStockNuevo" />
+                <label for="txtStockNuevo">Stock Nuevo</label>
+
+                <input type="number"
+                       id="txtStockNuevo"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>Motivo:</label>
-                <input type="text" id="txtMotivo" />
+                <label for="txtMotivo">Motivo</label>
+
+                <input type="text"
+                       id="txtMotivo"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>ID Compra (opcional):</label>
-                <input type="number" id="txtIdCompra" />
+                <label for="txtIdCompra">ID Compra (opcional)</label>
+
+                <input type="number"
+                       id="txtIdCompra"
+                       class="input-control" />
+
             </div>
 
-            <br />
+            <div class="form-group">
 
-            <div>
-                <label>ID Venta (opcional):</label>
-                <input type="number" id="txtIdVenta" />
+                <label for="txtIdVenta">ID Venta (opcional)</label>
+
+                <input type="number"
+                       id="txtIdVenta"
+                       class="input-control" />
+
             </div>
 
-            <br />
+        </div>
+
+        <div class="form-actions">
 
             <button type="button"
+                    class="btn btn-primary"
                     onclick="guardarMovimiento()">
                 Guardar
             </button>
 
             <button type="button"
+                    class="btn btn-warning"
                     onclick="modificarMovimiento()">
                 Modificar
             </button>
 
             <button type="button"
+                    class="btn btn-secondary"
                     onclick="limpiarFormulario()">
                 Limpiar
             </button>
 
         </div>
 
-        <hr />
+    </div>
 
-        <div>
+    <div class="card">
 
-            <h3>Movimientos Registrados</h3>
+        <div class="card-title">
+            Movimientos registrados
+        </div>
 
-            <table border="1"
+        <div class="table-container">
+
+            <table class="table"
                    id="tablaMovimientos">
 
                 <thead>
@@ -141,7 +194,6 @@
 
         </div>
 
-    </form>
+    </div>
 
-</body>
-</html>
+</asp:Content>

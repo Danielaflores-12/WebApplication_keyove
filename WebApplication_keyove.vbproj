@@ -92,6 +92,7 @@
     <Import Include="System.Web.UI.HtmlControls" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\css\site.css" />
     <Content Include=".gitignore" />
     <Content Include="Data\use DB_keyove_Inventario.txt" />
     <Content Include="JScript\Categorias.js" />
