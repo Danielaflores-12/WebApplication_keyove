@@ -94,7 +94,9 @@
   <ItemGroup>
     <Content Include="Assets\css\site.css" />
     <Content Include=".gitignore" />
+    <Content Include="Assets\logo-keyove.png" />
     <Content Include="Data\use DB_keyove_Inventario.txt" />
+    <Content Include="Global.asax" />
     <Content Include="JScript\Categorias.js" />
     <Content Include="JScript\Compras.js" />
     <Content Include="JScript\Detalle_Compra.js" />
@@ -107,8 +109,14 @@
     <Content Include="JScript\Usuarios.js" />
     <Content Include="JScript\Ventas.js" />
     <Content Include="prueba conexion.aspx" />
+    <Content Include="Tests\compras-navigation.test.cjs" />
+    <Content Include="Tests\detalles-ui.test.cjs" />
+    <Content Include="Tests\layout-responsive.test.cjs" />
+    <Content Include="Tests\ventas-navigation.test.cjs" />
     <Content Include="Views\Dashboard\Dashboard.aspx" />
+    <Content Include="Views\Inventario\Alertas_Stock\Alertas_Stock.aspx" />
     <Content Include="Views\Inventario\Movimientos_Inventario\Movimientos_Inventario.aspx" />
+    <Content Include="Views\Login.aspx" />
     <Content Include="Views\Mantenimiento\Categorias\Categorias.aspx" />
     <Content Include="Views\Mantenimiento\Personas\Personas.aspx" />
     <Content Include="Views\Mantenimiento\Productos\Productos.aspx" />
@@ -125,9 +133,27 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\ConexionBD.vb" />
+    <Compile Include="Global.asax.vb">
+      <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Compile Include="Helpers\SeguridadContraseña.vb" />
     <Compile Include="Helpers\SeguridadHelper.vb" />
     <Compile Include="Helpers\ValidacionHelper.vb" />
     <Compile Include="Helpers\ComprobanteHelper.vb" />
+    <Compile Include="Views\Inventario\Alertas_Stock\Alertas_Stock.aspx.designer.vb">
+      <DependentUpon>Alertas_Stock.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Inventario\Alertas_Stock\Alertas_Stock.aspx.vb">
+      <DependentUpon>Alertas_Stock.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="Views\Login.aspx.designer.vb">
+      <DependentUpon>Login.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Login.aspx.vb">
+      <DependentUpon>Login.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Views\Operaciones\Ventas\Comprobante.aspx.vb">
       <DependentUpon>Comprobante.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

@@ -68,9 +68,20 @@ Partial Public Class Login
                                 Convert.ToString(lector("cNombres")) & " " &
                                 Convert.ToString(lector("cApellidos"))
 
-                            Response.Redirect(
-                                "~/Views/Dashboard/Dashboard.aspx"
-                            )
+                            Dim rol As String = Convert.ToString(Session("Rol")).Trim()
+
+                            Dim destino As String =
+                                            "~/Views/Dashboard/Dashboard.aspx"
+
+                            If String.Equals(rol, "Vendedor",
+                                StringComparison.OrdinalIgnoreCase) Then
+                                destino = "~/Views/Operaciones/Ventas/Ventas.aspx"
+                            End If
+
+                            Response.Redirect(destino, False)
+                            Context.ApplicationInstance.CompleteRequest()
+                            Return
+
 
                         Else
                             lblMensaje.Text =

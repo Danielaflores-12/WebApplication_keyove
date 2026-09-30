@@ -4,8 +4,7 @@
     Inherits="WebApplication_keyove.Site" %>
 
 <!DOCTYPE html>
-
-<html>
+<html lang="es">
 <head runat="server">
 
     <meta charset="utf-8" />
@@ -13,18 +12,82 @@
 
     <title>KEYOVE</title>
 
-    <link rel="stylesheet" href="/Assets/css/site.css" />
+    <link rel="stylesheet"
+          href="<%= ResolveUrl("~/Assets/css/site.css") %>" />
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-    <asp:ContentPlaceHolder
-        ID="head"
-        runat="server">
-    </asp:ContentPlaceHolder>
+    <style>
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .perfil-usuario {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .perfil-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #ede9fe;
+            color: #6d28d9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .perfil-datos {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .perfil-nombre {
+            color: #172033;
+            font-weight: 600;
+        }
+
+        .perfil-rol {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .perfil-salir {
+            padding: 8px 12px;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            color: #b91c1c;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .perfil-salir:hover {
+            background: #fef2f2;
+        }
+
+        @media (max-width: 768px) {
+            .perfil-usuario {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+
+    <asp:ContentPlaceHolder ID="head" runat="server" />
 
 </head>
 
-<body>
+<body data-rol="<%= System.Web.HttpUtility.HtmlAttributeEncode(Convert.ToString(Session("Rol"))) %>">
 
 <form id="form1" runat="server">
 
@@ -33,109 +96,140 @@
         <aside class="sidebar" id="sidebar">
 
             <div class="logo">
-
                 <span class="logo-icono">K</span>
-
                 <span>KEYOVE</span>
-
             </div>
-
-            <button type="button" class="btn-ocultar-panel" id="btnOcultarPanel">Ocultar panel de control</button>
 
             <nav class="menu" aria-label="Panel de control">
 
-                <a class="menu-link"
-                   data-ruta="/Views/Dashboard/Dashboard.aspx"
-                   href="/Views/Dashboard/Dashboard.aspx">
-                    Dashboard
-                </a>
+                <asp:PlaceHolder ID="menuDashboard" runat="server">
 
-                <div class="titulo-menu">
-                    MANTENIMIENTO
-                </div>
+                    <a class="menu-link"
+                       data-ruta="<%= ResolveUrl("~/Views/Dashboard/Dashboard.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Dashboard/Dashboard.aspx") %>">
+                        Dashboard
+                    </a>
 
-                <a class="menu-link"
-                   data-ruta="/Views/Mantenimiento/Categorias/Categorias.aspx"
-                   href="/Views/Mantenimiento/Categorias/Categorias.aspx">
-                    Categorías
-                </a>
+                </asp:PlaceHolder>
 
-                <a class="menu-link"
-                   data-ruta="/Views/Mantenimiento/Productos/Productos.aspx"
-                   href="/Views/Mantenimiento/Productos/Productos.aspx">
-                    Productos
-                </a>
+                <asp:PlaceHolder ID="menuMantenimiento" runat="server">
 
-                <a class="menu-link"
-                   data-ruta="/Views/Mantenimiento/Proveedores/Proveedores.aspx"
-                   href="/Views/Mantenimiento/Proveedores/Proveedores.aspx">
-                    Proveedores
-                </a>
+                    <div class="titulo-menu">MANTENIMIENTO</div>
 
-                <a class="menu-link"
-                   data-ruta="/Views/Mantenimiento/Personas/Personas.aspx"
-                   href="/Views/Mantenimiento/Personas/Personas.aspx">
-                    Personas
-                </a>
+                    <a class="menu-link"
+                       data-ruta="<%= ResolveUrl("~/Views/Mantenimiento/Categorias/Categorias.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Mantenimiento/Categorias/Categorias.aspx") %>">
+                        Categorías
+                    </a>
 
-                <a class="menu-link"
-                   data-ruta="/Views/Mantenimiento/Usuarios/Usuarios.aspx"
-                   href="/Views/Mantenimiento/Usuarios/Usuarios.aspx">
-                    Usuarios
-                </a>
+                    <a class="menu-link"
+                       data-ruta="<%= ResolveUrl("~/Views/Mantenimiento/Productos/Productos.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Mantenimiento/Productos/Productos.aspx") %>">
+                        Productos
+                    </a>
 
-                <a class="menu-link"
-                   data-ruta="/Views/Mantenimiento/Roles/Roles.aspx"
-                   href="/Views/Mantenimiento/Roles/Roles.aspx">
-                    Roles
-                </a>
+                    <a class="menu-link"
+                       data-ruta="<%= ResolveUrl("~/Views/Mantenimiento/Proveedores/Proveedores.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Mantenimiento/Proveedores/Proveedores.aspx") %>">
+                        Proveedores
+                    </a>
 
-                <div class="titulo-menu">
-                    OPERACIONES
-                </div>
+                    <a class="menu-link"
+                       data-ruta="<%= ResolveUrl("~/Views/Mantenimiento/Personas/Personas.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Mantenimiento/Personas/Personas.aspx") %>">
+                        Personas
+                    </a>
 
-                <details class="menu-grupo" id="menuCompras">
-                    <summary class="menu-link">Compras</summary>
-                    <div class="submenu">
-                        <a class="menu-link" data-vista-compras="registro" data-ruta="/Views/Operaciones/Compras/Compras.aspx"
-                           href="/Views/Operaciones/Compras/Compras.aspx">Nueva compra</a>
-                        <a class="menu-link" data-vista-compras="registros" data-ruta="/Views/Operaciones/Compras/Compras.aspx?vista=registros"
-                           href="/Views/Operaciones/Compras/Compras.aspx?vista=registros">Compras realizadas</a>
-                    </div>
-                </details>
+                    <a class="menu-link"
+                       data-ruta="<%= ResolveUrl("~/Views/Mantenimiento/Usuarios/Usuarios.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Mantenimiento/Usuarios/Usuarios.aspx") %>">
+                        Usuarios
+                    </a>
 
-                <details class="menu-grupo" id="menuVentas">
-                    <summary class="menu-link">Ventas</summary>
-                    <div class="submenu">
-                        <a class="menu-link" data-vista-ventas="registro" data-ruta="/Views/Operaciones/Ventas/Ventas.aspx"
-                           href="/Views/Operaciones/Ventas/Ventas.aspx">Nueva venta</a>
-                        <a class="menu-link" data-vista-ventas="registros" data-ruta="/Views/Operaciones/Ventas/Ventas.aspx?vista=registros"
-                           href="/Views/Operaciones/Ventas/Ventas.aspx?vista=registros">Ventas registradas</a>
-                    </div>
-                </details>
+                    <a class="menu-link"
+                       data-ruta="<%= ResolveUrl("~/Views/Mantenimiento/Roles/Roles.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Mantenimiento/Roles/Roles.aspx") %>">
+                        Roles
+                    </a>
 
-                <div class="titulo-menu">
-                    INVENTARIO
-                </div>
+                </asp:PlaceHolder>
 
-                <a class="menu-link"
-                   data-ruta="/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx"
-                   href="/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx">
-                    Movimientos
-                </a>
+                <div class="titulo-menu">OPERACIONES</div>
 
-                <div class="menu-separador"></div>
+                <asp:PlaceHolder ID="menuComprasAdmin" runat="server">
 
-                <a class="menu-link cerrar-sesion"
-                   href="#">
-                    Cerrar sesión
-                </a>
+                    <details class="menu-grupo" id="menuCompras">
+                        <summary class="menu-link">Compras</summary>
+
+                        <div class="submenu">
+
+                            <a class="menu-link"
+                               data-vista-compras="registro"
+                               data-ruta="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx") %>"
+                               href="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx") %>">
+                                Nueva compra
+                            </a>
+
+                            <a class="menu-link"
+                               data-vista-compras="registros"
+                               data-ruta="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx?vista=registros") %>"
+                               href="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx?vista=registros") %>">
+                                Compras realizadas
+                            </a>
+
+                        </div>
+                    </details>
+
+                </asp:PlaceHolder>
+
+                <asp:PlaceHolder ID="menuVentasPermitido" runat="server">
+
+                    <details class="menu-grupo" id="menuVentas">
+                        <summary class="menu-link">Ventas</summary>
+
+                        <div class="submenu">
+
+                            <a class="menu-link"
+                               data-vista-ventas="registro"
+                               data-ruta="<%= ResolveUrl("~/Views/Operaciones/Ventas/Ventas.aspx") %>"
+                               href="<%= ResolveUrl("~/Views/Operaciones/Ventas/Ventas.aspx") %>">
+                                Nueva venta
+                            </a>
+
+                            <a class="menu-link"
+                               data-vista-ventas="registros"
+                               data-ruta="<%= ResolveUrl("~/Views/Operaciones/Ventas/Ventas.aspx?vista=registros") %>"
+                               href="<%= ResolveUrl("~/Views/Operaciones/Ventas/Ventas.aspx?vista=registros") %>">
+                                Ventas registradas
+                            </a>
+
+                        </div>
+                    </details>
+
+                </asp:PlaceHolder>
+
+                <asp:PlaceHolder ID="menuInventario" runat="server">
+
+                    <div class="titulo-menu">INVENTARIO</div>
+
+                    <a class="menu-link"
+                       data-ruta="<%= ResolveUrl("~/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Inventario/Movimientos_Inventario/Movimientos_Inventario.aspx") %>">
+                        Movimientos
+                    </a>
+
+                </asp:PlaceHolder>
 
             </nav>
 
         </aside>
 
-        <button type="button" id="fondoMenu" class="fondo-menu" aria-label="Cerrar menú" hidden></button>
+        <button type="button"
+                id="fondoMenu"
+                class="fondo-menu"
+                aria-label="Cerrar menú"
+                hidden>
+        </button>
 
         <main class="contenido">
 
@@ -144,7 +238,9 @@
                 <button type="button"
                         class="btn-menu-toggle"
                         id="btnMenuToggle"
-                        aria-label="Ocultar panel de control" aria-controls="sidebar" aria-expanded="true">
+                        aria-label="Ocultar panel de control"
+                        aria-controls="sidebar"
+                        aria-expanded="true">
                     <span aria-hidden="true">&#9776;</span>
                     <span id="textoPanelControl">Ocultar panel</span>
                 </button>
@@ -153,15 +249,47 @@
                     Sistema de Inventario KEYOVE
                 </div>
 
+                <div class="perfil-usuario">
+
+                    <div class="perfil-avatar" aria-hidden="true">
+                        <asp:Literal ID="litInicial"
+                            runat="server"
+                            Mode="Encode" />
+                    </div>
+
+                    <div class="perfil-datos">
+
+                        <span class="perfil-nombre">
+                            <asp:Literal ID="litNombre"
+                                runat="server"
+                                Mode="Encode" />
+                        </span>
+
+                        <span class="perfil-rol">
+                            <asp:Literal ID="litRol"
+                                runat="server"
+                                Mode="Encode" />
+                        </span>
+
+                    </div>
+
+                    <asp:LinkButton ID="btnCerrarSesionPerfil"
+                        runat="server"
+                        CssClass="perfil-salir"
+                        CausesValidation="false"
+                        OnClick="CerrarSesion_Click">
+                        Cerrar sesión
+                    </asp:LinkButton>
+
+                </div>
+
             </header>
 
             <div class="contenido-inner">
 
                 <asp:ContentPlaceHolder
                     ID="ContentPlaceHolder1"
-                    runat="server">
-
-                </asp:ContentPlaceHolder>
+                    runat="server" />
 
             </div>
 
@@ -172,79 +300,115 @@
 </form>
 
 <script>
-
     $(function () {
 
-        // Resalta el enlace de la página actual en el menú.
         var rutaActual = window.location.pathname;
-        if (new URLSearchParams(window.location.search).get("vista") === "registros") rutaActual += "?vista=registros";
+
+        if (new URLSearchParams(window.location.search)
+            .get("vista") === "registros") {
+            rutaActual += "?vista=registros";
+        }
 
         $(".menu-link").each(function () {
-
             var ruta = $(this).attr("data-ruta");
 
-            if (ruta && rutaActual.toLowerCase() === ruta.toLowerCase()) {
+            if (ruta &&
+                rutaActual.toLowerCase() === ruta.toLowerCase()) {
 
                 $(this).addClass("active");
                 $(this).attr("aria-current", "page");
                 $(this).closest("details").prop("open", true);
-
             }
-
         });
 
         var pantallaMovil = window.matchMedia("(max-width: 768px)");
         var contraido = false;
         var movilAbierto = false;
-        try { contraido = localStorage.getItem("keyoveMenuContraido") === "true"; } catch (e) {}
+
+        try {
+            contraido =
+                localStorage.getItem("keyoveMenuContraido") === "true";
+        } catch (e) {}
 
         function actualizarMenu() {
-            var visible = pantallaMovil.matches ? movilAbierto : !contraido;
-            $(".contenedor").toggleClass("menu-contraido", !pantallaMovil.matches && contraido);
-            $("#sidebar").toggleClass("abierto", pantallaMovil.matches && movilAbierto);
+
+            var visible =
+                pantallaMovil.matches ? movilAbierto : !contraido;
+
+            $(".contenedor").toggleClass(
+                "menu-contraido",
+                !pantallaMovil.matches && contraido
+            );
+
+            $("#sidebar").toggleClass(
+                "abierto",
+                pantallaMovil.matches && movilAbierto
+            );
+
             document.getElementById("sidebar").inert = !visible;
+
             $("#sidebar").attr("aria-hidden", String(!visible));
-            $("#btnMenuToggle").attr("aria-expanded", String(visible))
-                .attr("aria-label", visible ? "Ocultar panel de control" : "Mostrar panel de control");
-            $("#textoPanelControl").text(visible ? "Ocultar panel" : "Mostrar panel");
-            $("#fondoMenu").prop("hidden", !(pantallaMovil.matches && movilAbierto));
+
+            $("#btnMenuToggle")
+                .attr("aria-expanded", String(visible))
+                .attr(
+                    "aria-label",
+                    visible
+                        ? "Ocultar panel de control"
+                        : "Mostrar panel de control"
+                );
+
+            $("#textoPanelControl").text(
+                visible ? "Ocultar panel" : "Mostrar panel"
+            );
+
+            $("#fondoMenu").prop(
+                "hidden",
+                !(pantallaMovil.matches && movilAbierto)
+            );
         }
 
         $("#btnMenuToggle").on("click", function () {
-            if (pantallaMovil.matches) movilAbierto = !movilAbierto;
-            else {
+
+            if (pantallaMovil.matches) {
+                movilAbierto = !movilAbierto;
+            } else {
                 contraido = !contraido;
-                try { localStorage.setItem("keyoveMenuContraido", String(contraido)); } catch (e) {}
+
+                try {
+                    localStorage.setItem(
+                        "keyoveMenuContraido",
+                        String(contraido)
+                    );
+                } catch (e) {}
             }
+
             actualizarMenu();
         });
+
         $("#fondoMenu").on("click", function () {
             movilAbierto = false;
             actualizarMenu();
             $("#btnMenuToggle").trigger("focus");
         });
-        $("#btnOcultarPanel").on("click", function () {
-            if (pantallaMovil.matches) movilAbierto = false;
-            else {
-                contraido = true;
-                try { localStorage.setItem("keyoveMenuContraido", "true"); } catch (e) {}
-            }
-            actualizarMenu();
-            $("#btnMenuToggle").trigger("focus");
-        });
+
         $(document).on("keydown", function (evento) {
-            if (evento.key === "Escape" && pantallaMovil.matches && movilAbierto) {
+
+            if (evento.key === "Escape" &&
+                pantallaMovil.matches &&
+                movilAbierto) {
+
                 $("#fondoMenu").trigger("click");
             }
         });
+
         pantallaMovil.addEventListener("change", function () {
             movilAbierto = false;
             actualizarMenu();
         });
+
         actualizarMenu();
-
     });
-
 </script>
 
 </body>

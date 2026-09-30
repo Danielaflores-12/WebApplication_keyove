@@ -33,9 +33,34 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         ' LISTAR USUARIOS PARA COMBOBOX
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarUsuariosCombo() As List(Of OpcionCombo)
+            Dim sesionActual = System.Web.HttpContext.Current.Session
+
+            If sesionActual Is Nothing OrElse
+                sesionActual("iCodUsuario") Is Nothing Then
+
+                Throw New System.Web.HttpException(
+                    401,
+                "Debe iniciar sesión."
+            )
+            End If
+
+            If String.Equals(
+                 Convert.ToString(sesionActual("Rol")).Trim(),
+                     "Vendedor",
+                 StringComparison.OrdinalIgnoreCase
+            ) Then
+
+                Return New List(Of OpcionCombo) From {
+        New OpcionCombo With {
+            .v = Convert.ToString(sesionActual("iCodUsuario")),
+            .t = Convert.ToString(sesionActual("Usuario"))
+        }
+    }
+
+            End If
 
             Dim lista As New List(Of OpcionCombo)()
 
@@ -65,7 +90,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         ' LISTAR PRODUCTOS PARA COMBOBOX
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarProductosCombo() As List(Of OpcionCombo)
 
@@ -101,7 +126,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         ' LISTAR VENTAS
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarVentas() As List(Of ModeloVenta)
 
@@ -181,14 +206,33 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         ' GUARDAR VENTA CON SUS DETALLES
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         Public Shared Function GuardarVenta(
             venta As ModeloVenta,
             detalles As List(Of ModeloDetalleVenta)
         ) As String
 
             Try
+                Dim sesionActual = System.Web.HttpContext.Current.Session
 
+                If sesionActual Is Nothing OrElse
+                     sesionActual("iCodUsuario") Is Nothing Then
+
+                    Return "ERROR: Debe iniciar sesión."
+                End If
+
+                If venta Is Nothing OrElse
+                 detalles Is Nothing OrElse
+                 detalles.Count = 0 Then
+
+                    Return "ERROR: Agregue al menos un producto."
+                End If
+
+                ' El usuario que registra la venta se toma de la sesión.
+                venta.iCodUsuario =
+    Convert.ToInt32(sesionActual("iCodUsuario"))
+
+                venta.cEstado = "REGISTRADA"
                 Using db As New ConexionBD()
 
                     db.BeginTransaction()
@@ -229,7 +273,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         ' MODIFICAR VENTA
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         Public Shared Function ModificarVenta(venta As ModeloVenta) As String
 
             Try
@@ -251,7 +295,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         ' ANULAR VENTA
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         Public Shared Function EliminarVenta(idVenta As Integer) As String
 
             Try
@@ -276,7 +320,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         ' OBTENER VENTA POR ID
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ObtenerVenta(idVenta As Integer) As ModeloVenta
 

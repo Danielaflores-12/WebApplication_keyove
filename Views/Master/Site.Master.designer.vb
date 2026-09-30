@@ -32,6 +32,87 @@ Partial Public Class Site
     Protected WithEvents form1 As Global.System.Web.UI.HtmlControls.HtmlForm
 
     '''<summary>
+    '''Control menuDashboard.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents menuDashboard As Global.System.Web.UI.WebControls.PlaceHolder
+
+    '''<summary>
+    '''Control menuMantenimiento.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents menuMantenimiento As Global.System.Web.UI.WebControls.PlaceHolder
+
+    '''<summary>
+    '''Control menuComprasAdmin.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents menuComprasAdmin As Global.System.Web.UI.WebControls.PlaceHolder
+
+    '''<summary>
+    '''Control menuVentasPermitido.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents menuVentasPermitido As Global.System.Web.UI.WebControls.PlaceHolder
+
+    '''<summary>
+    '''Control menuInventario.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents menuInventario As Global.System.Web.UI.WebControls.PlaceHolder
+
+    '''<summary>
+    '''Control litInicial.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents litInicial As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''Control litNombre.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents litNombre As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''Control litRol.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents litRol As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''Control btnCerrarSesionPerfil.
+    '''</summary>
+    '''<remarks>
+    '''Campo generado automáticamente.
+    '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+    '''</remarks>
+    Protected WithEvents btnCerrarSesionPerfil As Global.System.Web.UI.WebControls.LinkButton
+
+    '''<summary>
     '''Control ContentPlaceHolder1.
     '''</summary>
     '''<remarks>
