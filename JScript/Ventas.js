@@ -805,3 +805,57 @@ function mostrarVistaVentas(vista, actualizarUrl) {
     }
     if (registros) listarVentas();
 }
+
+function extraerOCRVenta() {
+    var input = document.getElementById('txtArchivoComprobanteVenta');
+    if (!input.files || input.files.length === 0) {
+        alert('Selecciona un archivo de comprobante para extraer datos.');
+        return;
+    }
+    var archivo = input.files[0];
+    var formData = new FormData();
+    formData.append('file', archivo);
+    #ocrEstadoVenta.text('Extrayendo datos...');
+    #btnExtraerOCRVenta.prop('disabled', true);
+    $.ajax({
+        url: 'http://localhost:5000/ocr/extraer',
+        type: 'POST',
+        data: formData,
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: function (resp) {
+            #btnExtraerOCRVenta.prop('disabled', false);
+            if (resp && resp.success && resp.datos) {
+                var d = resp.datos;
+                if (d.numero_comprobante) #txtNumeroComprobante.val(d.numero_comprobante);
+                if (d.tipo_comprobante) {
+                    var tipo = d.tipo_comprobante.toUpperCase();
+                    if (tipo === 'BOLETA' || tipo === 'FACTURA') {
+                        #cboTipoComprobante.val(tipo);
+                    }
+                }
+                if (typeof d.total !== 'undefined' && d.total !== null) {
+                    #txtTotalVenta.val(formatoMoneda(d.total));
+                    #txtTotal.val(d.total.toFixed ? d.total.toFixed(2) : String(d.total));
+                }
+                if (typeof d.subtotal !== 'undefined' && d.subtotal !== null) {
+                    #txtSubtotalVentaGral.val(formatoMoneda(d.subtotal));
+                    #txtSubTotal.val(d.subtotal.toFixed ? d.subtotal.toFixed(2) : String(d.subtotal));
+                }
+                if (typeof d.igv !== 'undefined' && d.igv !== null) {
+                    #txtIGVVenta.val(formatoMoneda(d.igv));
+                    #txtIgv.val(d.igv.toFixed ? d.igv.toFixed(2) : String(d.igv));
+                }
+                #ocrEstadoVenta.text('Datos extraídos. Revisa y corrige si es necesario.');
+            } else {
+                #ocrEstadoVenta.text('No se pudo extraer datos del comprobante.');
+            }
+        },
+        error: function (err) {
+            #btnExtraerOCRVenta.prop('disabled', false);
+            #ocrEstadoVenta.text('Error al conectar con el servicio OCR.');
+            console.log(err);
+        }
+    });
+}
