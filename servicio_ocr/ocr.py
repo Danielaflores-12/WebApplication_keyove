@@ -4,8 +4,8 @@ import cv2
 import numpy as np
 import os
 
-# Configurar ruta de tesseract si es necesario (ajustar según instalación)
-# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# Configurar ruta de tesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class OCRService:
     def __init__(self):
