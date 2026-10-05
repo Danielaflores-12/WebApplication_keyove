@@ -767,3 +767,67 @@ function mostrarVistaCompras(vista, actualizarUrl) {
     }
     if (registros) listarCompras();
 }
+
+function extraerOCRCompra() {
+    var input = document.getElementById('txtArchivoComprobante');
+    if (!input.files || input.files.length === 0) {
+        alert('Selecciona un archivo de comprobante para extraer datos.');
+        return;
+    }
+    var archivo = input.files[0];
+    var formData = new FormData();
+    formData.append('file', archivo);
+    #ocrEstado.text('Extrayendo datos...');
+    #btnExtraerOCR.prop('disabled', true);
+    $.ajax({
+        url: 'http://localhost:5000/ocr/extraer',
+        type: 'POST',
+        data: formData,
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: function (resp) {
+            #btnExtraerOCR.prop('disabled', false);
+            if (resp && resp.success && resp.datos) {
+                var d = resp.datos;
+                if (d.numero_comprobante) #txtNumeroComprobante.val(d.numero_comprobante);
+                if (d.tipo_comprobante) {
+                    var tipo = d.tipo_comprobante.toUpperCase();
+                    if (tipo === 'BOLETA' || tipo === 'FACTURA') {
+                        #cboTipoComprobante.val(tipo);
+                    }
+                }
+                if (d.fecha_emision) {
+                    try {
+                        var f = d.fecha_emision;
+                        if (f.indexOf('/') >= 0) {
+                            var p = f.split('/');
+                            if (p.length === 3) f = p[2] + '-' + p[1] + '-' + p[0];
+                        }
+                        #txtFechaCompra.val(f);
+                    } catch (e) { }
+                }
+                if (typeof d.total !== 'undefined' && d.total !== null) {
+                    #txtTotalCompra.val(formatoMoneda(d.total));
+                    #txtTotal.val(d.total.toFixed ? d.total.toFixed(2) : String(d.total));
+                }
+                if (typeof d.subtotal !== 'undefined' && d.subtotal !== null) {
+                    #txtSubtotalCompraGral.val(formatoMoneda(d.subtotal));
+                    #txtSubTotal.val(d.subtotal.toFixed ? d.subtotal.toFixed(2) : String(d.subtotal));
+                }
+                if (typeof d.igv !== 'undefined' && d.igv !== null) {
+                    #txtIGVCompra.val(formatoMoneda(d.igv));
+                    #txtIgv.val(d.igv.toFixed ? d.igv.toFixed(2) : String(d.igv));
+                }
+                #ocrEstado.text('Datos extraídos. Revisa y corrige si es necesario.');
+            } else {
+                #ocrEstado.text('No se pudo extraer datos del comprobante.');
+            }
+        },
+        error: function (err) {
+            #btnExtraerOCR.prop('disabled', false);
+            #ocrEstado.text('Error al conectar con el servicio OCR.');
+            console.log(err);
+        }
+    });
+}
