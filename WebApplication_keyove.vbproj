@@ -107,8 +107,13 @@
     <Content Include="JScript\Usuarios.js" />
     <Content Include="JScript\Ventas.js" />
     <Content Include="prueba conexion.aspx" />
+    <Content Include="Tests\compras-navigation.test.cjs" />
+    <Content Include="Tests\detalles-ui.test.cjs" />
+    <Content Include="Tests\layout-responsive.test.cjs" />
+    <Content Include="Tests\ventas-navigation.test.cjs" />
     <Content Include="Views\Dashboard\Dashboard.aspx" />
     <Content Include="Views\Inventario\Movimientos_Inventario\Movimientos_Inventario.aspx" />
+    <Content Include="Views\Login.aspx" />
     <Content Include="Views\Mantenimiento\Categorias\Categorias.aspx" />
     <Content Include="Views\Mantenimiento\Personas\Personas.aspx" />
     <Content Include="Views\Mantenimiento\Productos\Productos.aspx" />
@@ -128,6 +133,13 @@
     <Compile Include="Helpers\SeguridadHelper.vb" />
     <Compile Include="Helpers\ValidacionHelper.vb" />
     <Compile Include="Helpers\ComprobanteHelper.vb" />
+    <Compile Include="Views\Login.aspx.designer.vb">
+      <DependentUpon>Login.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Login.aspx.vb">
+      <DependentUpon>Login.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Views\Operaciones\Ventas\Comprobante.aspx.vb">
       <DependentUpon>Comprobante.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
