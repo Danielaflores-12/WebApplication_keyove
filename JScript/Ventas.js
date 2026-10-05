@@ -1,3 +1,32 @@
+function esAdministradorVentas() {
+    return String($("body").attr("data-rol") || "")
+        .trim().toLowerCase() === "administrador";
+}
+
+function aplicarVistaVendedor() {
+    if (esAdministradorVentas()) return;
+
+    var usuario = $("#cboUsuario");
+    var opciones = usuario.find("option").filter(function () {
+        return this.value !== "";
+    });
+
+    if (opciones.length === 1) {
+        usuario.val(opciones.first().val());
+    }
+
+    usuario.prop("disabled", true);
+
+    $("#cboEstado")
+        .val("REGISTRADA")
+        .prop("disabled", true);
+
+    $("button, input, a").filter(function () {
+        return /modificarVenta\s*\(/i.test(
+            $(this).attr("onclick") || ""
+        );
+    }).prop("hidden", true);
+}
 $(document).ready(function () {
 
     $("#buscarVentas").on("input", filtrarVentasRegistradas);
@@ -317,6 +346,7 @@ function listarUsuariosCombo() {
             }
 
             $("#cboUsuario").html(html);
+            aplicarVistaVendedor(); // CAMBIO (paso 3)
 
         },
 
@@ -357,11 +387,11 @@ function listarVentas() {
                 var estado =
                     ventas[i].cEstado === "ANULADA"
                         ? "<span class='badge badge-inactive'>" +
-                            ventas[i].cEstado +
-                            "</span>"
+                        ventas[i].cEstado +
+                        "</span>"
                         : "<span class='badge badge-active'>" +
-                            ventas[i].cEstado +
-                            "</span>";
+                        ventas[i].cEstado +
+                        "</span>";
 
                 filas += "<tr>";
 
@@ -383,12 +413,19 @@ function listarVentas() {
                 filas += "<a class='btn btn-sm btn-primary' target='_blank' rel='noopener' href='Comprobante.aspx?id=" +
                     encodeURIComponent(ventas[i].iCodVenta) + "'>Ver comprobante</a>";
 
-                filas += "<a class='btn btn-sm btn-warning' href='Ventas.aspx?id=" +
-                    encodeURIComponent(ventas[i].iCodVenta) + "' data-editar-venta='" + ventas[i].iCodVenta + "'>Editar</a>";
+                // CAMBIO (paso 4): Editar y Anular solo para administrador
+                if (esAdministradorVentas()) {
 
-                filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarVenta(" +
-                    ventas[i].iCodVenta +
-                    ")'>Anular</button>";
+                    filas += "<a class='btn btn-sm btn-warning' href='Ventas.aspx?id=" +
+                        encodeURIComponent(ventas[i].iCodVenta) +
+                        "' data-editar-venta='" +
+                        ventas[i].iCodVenta +
+                        "'>Editar</a>";
+
+                    filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarVenta(" +
+                        ventas[i].iCodVenta +
+                        ")'>Anular</button>";
+                }
 
                 filas += "</div></td>";
 
@@ -484,7 +521,7 @@ function guardarVenta() {
                 alert(response.d);
 
             }
-
+            aplicarVistaVendedor();
         },
 
         error: function (error) {
@@ -504,6 +541,12 @@ function guardarVenta() {
 //==================================================
 
 function seleccionarVenta(idVenta) {
+
+    // CAMBIO (paso 5)
+    if (!esAdministradorVentas()) {
+        alert("Esta opción está disponible solo para el administrador.");
+        return;
+    }
 
     $.ajax({
         type: "POST",
@@ -550,6 +593,12 @@ function seleccionarVenta(idVenta) {
 //==================================================
 
 function modificarVenta() {
+
+    // CAMBIO (paso 5)
+    if (!esAdministradorVentas()) {
+        alert("Esta opción está disponible solo para el administrador.");
+        return;
+    }
 
     var idVenta = $("#txtIdVenta").val();
 
@@ -622,6 +671,12 @@ function modificarVenta() {
 //==================================================
 
 function eliminarVenta(idVenta) {
+
+    // CAMBIO (paso 5)
+    if (!esAdministradorVentas()) {
+        alert("Esta opción está disponible solo para el administrador.");
+        return;
+    }
 
     var confirmar = confirm(
         "¿Deseas anular esta venta?"
@@ -700,6 +755,8 @@ function limpiarFormulario() {
     $("#txtIGVVenta").val("");
     $("#txtTotalVenta").val("");
 
+    aplicarVistaVendedor(); // CAMBIO (paso 3)
+
 }
 
 function normalizarBusquedaVenta(texto) {
@@ -734,6 +791,7 @@ function mostrarVistaVentas(vista, actualizarUrl) {
         } else {
             $(this).toggleClass("active", activo);
             if (activo) $(this).attr("aria-current", "page");
+
             else $(this).removeAttr("aria-current");
         }
     });
