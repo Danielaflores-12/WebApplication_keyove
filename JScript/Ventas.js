@@ -513,6 +513,7 @@ function guardarVenta() {
 
                 alert("Venta registrada correctamente.");
 
+                guardarComprobanteVentaRegistrada();
                 limpiarFormulario();
                 listarVentas();
 
@@ -806,6 +807,181 @@ function mostrarVistaVentas(vista, actualizarUrl) {
     if (registros) listarVentas();
 }
 
+//==================================================
+// LEER EL ARCHIVO SELECCIONADO COMO BASE64
+// Usa FileReader.readAsDataURL y devuelve unicamente
+// la parte base64 que sigue a la coma.
+//==================================================
+
+function leerArchivoBase64(input, callback) {
+
+    if (!input || !input.files || input.files.length === 0) {
+
+        callback(null);
+
+        return;
+
+    }
+
+    var lector = new FileReader();
+
+    lector.onload = function (evento) {
+
+        var resultado = String(evento.target.result || "");
+
+        var posicion = resultado.indexOf(",");
+
+        callback(posicion >= 0 ? resultado.substring(posicion + 1) : resultado);
+
+    };
+
+    lector.onerror = function () {
+
+        callback(null);
+
+    };
+
+    lector.readAsDataURL(input.files[0]);
+
+}
+
+
+//==================================================
+// DATOS DEL COMPROBANTE LEIDOS CON OCR
+// Se guardan para poder asociarlos al comprobante
+// cuando la venta ya tenga un codigo asignado.
+//==================================================
+
+var comprobanteOCRPendiente = null;
+
+
+//==================================================
+// TEXTO DE ERROR AL GUARDAR EL COMPROBANTE
+//==================================================
+
+function mensajeErrorComprobanteOCR() {
+
+    return "No se pudo guardar el comprobante en la BD " +
+        "(puede que la tabla Comprobantes_OCR no exista; ejecuta el script SQL).";
+
+}
+
+
+//==================================================
+// GUARDAR EL COMPROBANTE OCR EN LA BASE DE DATOS
+//==================================================
+
+function guardarComprobanteOCRVenta(idVenta) {
+
+    var datos = comprobanteOCRPendiente;
+
+    var id = parseInt(idVenta || 0, 10);
+
+    if (!datos || !id || id <= 0) {
+
+        return;
+
+    }
+
+    var input = document.getElementById("txtArchivoComprobanteVenta");
+
+    $("#ocrEstadoVenta").text("Guardando comprobante en la base de datos...");
+
+    leerArchivoBase64(input, function (contenidoBase64) {
+
+        if (!contenidoBase64) {
+
+            $("#ocrEstadoVenta").text(
+                mensajeErrorComprobanteOCR()
+            );
+
+            return;
+
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/Views/Operaciones/Ventas/Ventas.aspx/GuardarComprobanteOCRVenta",
+            data: JSON.stringify({
+                nombreArchivo: datos.nombreArchivo,
+                tipoMime: datos.tipoMime,
+                contenidoBase64: contenidoBase64,
+                textoOcr: datos.textoOcr,
+                rucEmisor: datos.rucEmisor,
+                numeroComprobante: datos.numeroComprobante,
+                tipoComprobante: datos.tipoComprobante,
+                fechaEmision: datos.fechaEmision,
+                subtotal: datos.subtotal,
+                igv: datos.igv,
+                total: datos.total,
+                idVenta: id
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+
+            success: function (response) {
+
+                if (response.d === "OK") {
+
+                    $("#ocrEstadoVenta").text("Comprobante guardado en la base de datos.");
+
+                    comprobanteOCRPendiente = null;
+
+                } else {
+
+                    $("#ocrEstadoVenta").text(mensajeErrorComprobanteOCR());
+
+                    console.log(response.d);
+
+                }
+
+            },
+
+            error: function (error) {
+
+                $("#ocrEstadoVenta").text(mensajeErrorComprobanteOCR());
+
+                console.log(error);
+
+            }
+
+        });
+
+    });
+
+}
+
+
+function guardarComprobanteVentaRegistrada() {
+
+    if (!comprobanteOCRPendiente) return;
+
+    $.ajax({
+        type: "POST",
+        url: "/Views/Operaciones/Ventas/Ventas.aspx/ObtenerUltimaVentaId",
+        data: "{}",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+
+        success: function (response) {
+
+            guardarComprobanteOCRVenta(response.d);
+
+        },
+
+        error: function (error) {
+
+            $("#ocrEstadoVenta").text(mensajeErrorComprobanteOCR());
+
+            console.log(error);
+
+        }
+
+    });
+
+}
+
+
 function extraerOCRVenta() {
     var input = document.getElementById('txtArchivoComprobanteVenta');
     if (!input.files || input.files.length === 0) {
@@ -815,8 +991,8 @@ function extraerOCRVenta() {
     var archivo = input.files[0];
     var formData = new FormData();
     formData.append('file', archivo);
-    #ocrEstadoVenta.text('Extrayendo datos...');
-    #btnExtraerOCRVenta.prop('disabled', true);
+    $("#ocrEstadoVenta").text('Extrayendo datos...');
+    $("#btnExtraerOCRVenta").prop('disabled', true);
     $.ajax({
         url: 'http://localhost:5000/ocr/extraer',
         type: 'POST',
@@ -825,36 +1001,64 @@ function extraerOCRVenta() {
         contentType: false,
         processData: false,
         success: function (resp) {
-            #btnExtraerOCRVenta.prop('disabled', false);
+            $("#btnExtraerOCRVenta").prop('disabled', false);
             if (resp && resp.success && resp.datos) {
                 var d = resp.datos;
-                if (d.numero_comprobante) #txtNumeroComprobante.val(d.numero_comprobante);
+                if (d.numero_comprobante) $("#txtNumeroComprobante").val(d.numero_comprobante);
+                var tipoOCR = d.tipo_comprobante ? d.tipo_comprobante.toUpperCase() : '';
                 if (d.tipo_comprobante) {
                     var tipo = d.tipo_comprobante.toUpperCase();
                     if (tipo === 'BOLETA' || tipo === 'FACTURA') {
-                        #cboTipoComprobante.val(tipo);
+                        $("#cboTipoComprobante").val(tipo);
                     }
                 }
                 if (typeof d.total !== 'undefined' && d.total !== null) {
-                    #txtTotalVenta.val(formatoMoneda(d.total));
-                    #txtTotal.val(d.total.toFixed ? d.total.toFixed(2) : String(d.total));
+                    $("#txtTotalVenta").val(formatoMoneda(d.total));
+                    $("#txtTotal").val(d.total.toFixed ? d.total.toFixed(2) : String(d.total));
                 }
                 if (typeof d.subtotal !== 'undefined' && d.subtotal !== null) {
-                    #txtSubtotalVentaGral.val(formatoMoneda(d.subtotal));
-                    #txtSubTotal.val(d.subtotal.toFixed ? d.subtotal.toFixed(2) : String(d.subtotal));
+                    $("#txtSubtotalVentaGral").val(formatoMoneda(d.subtotal));
+                    $("#txtSubTotal").val(d.subtotal.toFixed ? d.subtotal.toFixed(2) : String(d.subtotal));
                 }
                 if (typeof d.igv !== 'undefined' && d.igv !== null) {
-                    #txtIGVVenta.val(formatoMoneda(d.igv));
-                    #txtIgv.val(d.igv.toFixed ? d.igv.toFixed(2) : String(d.igv));
+                    $("#txtIGVVenta").val(formatoMoneda(d.igv));
+                    $("#txtIgv").val(d.igv.toFixed ? d.igv.toFixed(2) : String(d.igv));
                 }
-                #ocrEstadoVenta.text('Datos extraÌdos. Revisa y corrige si es necesario.');
+
+                // Se conservan los datos del OCR y el archivo
+                // seleccionado para guardarlos en la base de datos.
+                comprobanteOCRPendiente = {
+                    nombreArchivo: archivo.name || 'comprobante_ocr',
+                    tipoMime: archivo.type || '',
+                    textoOcr: resp.texto_ocr || '',
+                    rucEmisor: d.ruc_emisor || '',
+                    numeroComprobante: d.numero_comprobante || '',
+                    tipoComprobante: tipoOCR,
+                    fechaEmision: d.fecha_emision || '',
+                    subtotal: parseFloat(d.subtotal || 0),
+                    igv: parseFloat(d.igv || 0),
+                    total: parseFloat(d.total || 0)
+                };
+
+                var idVenta = parseInt($("#txtIdVenta").val() || 0, 10);
+
+                if (idVenta > 0) {
+
+                    guardarComprobanteOCRVenta(idVenta);
+
+                } else {
+
+                    $("#ocrEstadoVenta").text('Datos extra√≠dos. Revisa y corrige si es necesario.');
+
+                }
+
             } else {
-                #ocrEstadoVenta.text('No se pudo extraer datos del comprobante.');
+                $("#ocrEstadoVenta").text('No se pudo extraer datos del comprobante.');
             }
         },
         error: function (err) {
-            #btnExtraerOCRVenta.prop('disabled', false);
-            #ocrEstadoVenta.text('Error al conectar con el servicio OCR.');
+            $("#btnExtraerOCRVenta").prop('disabled', false);
+            $("#ocrEstadoVenta").text('Error al conectar con el servicio OCR.');
             console.log(err);
         }
     });
