@@ -501,6 +501,7 @@ function guardarCompra() {
 
                 alert("Compra registrada correctamente.");
 
+                guardarComprobanteCompraRegistrada();
                 limpiarFormulario();
                 listarCompras();
 
@@ -766,4 +767,271 @@ function mostrarVistaCompras(vista, actualizarUrl) {
         if (url.href !== window.location.href) history.pushState(null, "", url);
     }
     if (registros) listarCompras();
+}
+
+function guardarComprobanteCompraRegistrada() {
+
+    if (!comprobanteOCRPendiente) return;
+
+    $.ajax({
+        type: "POST",
+        url: "/Views/Operaciones/Compras/Compras.aspx/ObtenerUltimaCompraId",
+        data: "{}",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+
+        success: function (response) {
+
+            guardarComprobanteOCRCompra(response.d);
+
+        },
+
+        error: function (error) {
+
+            $("#ocrEstado").text(mensajeErrorComprobanteOCR());
+
+            console.log(error);
+
+        }
+
+    });
+
+}
+
+
+//==================================================
+// LEER EL ARCHIVO SELECCIONADO COMO BASE64
+// Usa FileReader.readAsDataURL y devuelve unicamente
+// la parte base64 que sigue a la coma.
+//==================================================
+
+function leerArchivoBase64(input, callback) {
+
+    if (!input || !input.files || input.files.length === 0) {
+
+        callback(null);
+
+        return;
+
+    }
+
+    var lector = new FileReader();
+
+    lector.onload = function (evento) {
+
+        var resultado = String(evento.target.result || "");
+
+        var posicion = resultado.indexOf(",");
+
+        callback(posicion >= 0 ? resultado.substring(posicion + 1) : resultado);
+
+    };
+
+    lector.onerror = function () {
+
+        callback(null);
+
+    };
+
+    lector.readAsDataURL(input.files[0]);
+
+}
+
+
+//==================================================
+// DATOS DEL COMPROBANTE LEIDOS CON OCR
+// Se guardan para poder asociarlos al comprobante
+// cuando la compra ya tenga un codigo asignado.
+//==================================================
+
+var comprobanteOCRPendiente = null;
+
+
+//==================================================
+// TEXTO DE ERROR AL GUARDAR EL COMPROBANTE
+//==================================================
+
+function mensajeErrorComprobanteOCR() {
+
+    return "No se pudo guardar el comprobante en la BD " +
+        "(puede que la tabla Comprobantes_OCR no exista; ejecuta el script SQL).";
+
+}
+
+
+//==================================================
+// GUARDAR EL COMPROBANTE OCR EN LA BASE DE DATOS
+//==================================================
+
+function guardarComprobanteOCRCompra(idCompra) {
+
+    var datos = comprobanteOCRPendiente;
+
+    var id = parseInt(idCompra || 0, 10);
+
+    if (!datos || !id || id <= 0) {
+
+        return;
+
+    }
+
+    var input = document.getElementById("txtArchivoComprobante");
+
+    $("#ocrEstado").text("Guardando comprobante en la base de datos...");
+
+    leerArchivoBase64(input, function (contenidoBase64) {
+
+        if (!contenidoBase64) {
+
+            $("#ocrEstado").text(
+                mensajeErrorComprobanteOCR()
+            );
+
+            return;
+
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/Views/Operaciones/Compras/Compras.aspx/GuardarComprobanteOCR",
+            data: JSON.stringify({
+                nombreArchivo: datos.nombreArchivo,
+                tipoMime: datos.tipoMime,
+                contenidoBase64: contenidoBase64,
+                textoOcr: datos.textoOcr,
+                rucEmisor: datos.rucEmisor,
+                numeroComprobante: datos.numeroComprobante,
+                tipoComprobante: datos.tipoComprobante,
+                fechaEmision: datos.fechaEmision,
+                subtotal: datos.subtotal,
+                igv: datos.igv,
+                total: datos.total,
+                idCompra: id
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+
+            success: function (response) {
+
+                if (response.d === "OK") {
+
+                    $("#ocrEstado").text("Comprobante guardado en la base de datos.");
+
+                    comprobanteOCRPendiente = null;
+
+                } else {
+
+                    $("#ocrEstado").text(mensajeErrorComprobanteOCR());
+
+                    console.log(response.d);
+
+                }
+
+            },
+
+            error: function (error) {
+
+                $("#ocrEstado").text(mensajeErrorComprobanteOCR());
+
+                console.log(error);
+
+            }
+
+        });
+
+    });
+
+}
+
+
+function extraerOCRCompra() {
+    var input = document.getElementById('txtArchivoComprobante');
+    if (!input.files || input.files.length === 0) {
+        alert('Selecciona un archivo de comprobante para extraer datos.');
+        return;
+    }
+    var archivo = input.files[0];
+    var formData = new FormData();
+    formData.append('file', archivo);
+    $("#ocrEstado").text('Extrayendo datos...');
+    $("#btnExtraerOCR").prop('disabled', true);
+    $.ajax({
+        url: 'http://localhost:5000/ocr/extraer',
+        type: 'POST',
+        data: formData,
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: function (resp) {
+            $("#btnExtraerOCR").prop('disabled', false);
+            if (resp && resp.success && resp.datos) {
+                var d = resp.datos;
+                if (d.numero_comprobante) $("#txtNumeroComprobante").val(d.numero_comprobante);
+                var tipoOCR = d.tipo_comprobante ? d.tipo_comprobante.toUpperCase() : '';
+                if (d.tipo_comprobante) {
+                    var tipo = d.tipo_comprobante.toUpperCase();
+                    if (tipo === 'BOLETA' || tipo === 'FACTURA') {
+                        $("#cboTipoComprobante").val(tipo);
+                    }
+                }
+                if (d.fecha_emision) {
+                    try {
+                        var f = d.fecha_emision;
+                        if (f.indexOf('/') >= 0) {
+                            var p = f.split('/');
+                            if (p.length === 3) f = p[2] + '-' + p[1] + '-' + p[0];
+                        }
+                        $("#txtFechaCompra").val(f);
+                    } catch (e) { }
+                }
+                if (typeof d.total !== 'undefined' && d.total !== null) {
+                    $("#txtTotalCompra").val(formatoMoneda(d.total));
+                    $("#txtTotal").val(d.total.toFixed ? d.total.toFixed(2) : String(d.total));
+                }
+                if (typeof d.subtotal !== 'undefined' && d.subtotal !== null) {
+                    $("#txtSubtotalCompraGral").val(formatoMoneda(d.subtotal));
+                    $("#txtSubTotal").val(d.subtotal.toFixed ? d.subtotal.toFixed(2) : String(d.subtotal));
+                }
+                if (typeof d.igv !== 'undefined' && d.igv !== null) {
+                    $("#txtIGVCompra").val(formatoMoneda(d.igv));
+                    $("#txtIgv").val(d.igv.toFixed ? d.igv.toFixed(2) : String(d.igv));
+                }
+
+                // Se conservan los datos del OCR y el archivo
+                // seleccionado para guardarlos en la base de datos.
+                comprobanteOCRPendiente = {
+                    nombreArchivo: archivo.name || 'comprobante_ocr',
+                    tipoMime: archivo.type || '',
+                    textoOcr: resp.texto_ocr || '',
+                    rucEmisor: d.ruc_emisor || '',
+                    numeroComprobante: d.numero_comprobante || '',
+                    tipoComprobante: tipoOCR,
+                    fechaEmision: d.fecha_emision || '',
+                    subtotal: parseFloat(d.subtotal || 0),
+                    igv: parseFloat(d.igv || 0),
+                    total: parseFloat(d.total || 0)
+                };
+
+                var idCompra = parseInt($("#txtIdCompra").val() || 0, 10);
+
+                if (idCompra > 0) {
+
+                    guardarComprobanteOCRCompra(idCompra);
+
+                } else {
+
+                    $("#ocrEstado").text('Datos extraídos. Revisa y corrige si es necesario.');
+
+                }
+
+            } else {
+                $("#ocrEstado").text('No se pudo extraer datos del comprobante.');
+            }
+        },
+        error: function (err) {
+            $("#btnExtraerOCR").prop('disabled', false);
+            $("#ocrEstado").text('Error al conectar con el servicio OCR.');
+            console.log(err);
+        }
+    });
 }

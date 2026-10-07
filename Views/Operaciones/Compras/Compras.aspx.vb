@@ -3,6 +3,7 @@ Imports System.Web.Script.Services
 Imports WebApplication_keyove.WebApplication_Keyove.Model
 Imports WebApplication_keyove.WebApplication_Keyove.Data
 Imports ModeloCompra = WebApplication_keyove.WebApplication_Keyove.Model.Compras
+Imports ModeloComprobanteOCR = WebApplication_keyove.WebApplication_Keyove.Model.ComprobantesOCR
 Imports ModeloDetalleCompra = WebApplication_keyove.WebApplication_Keyove.Model.DetalleCompra
 Imports ModeloProveedor = WebApplication_keyove.WebApplication_Keyove.Model.Proveedores
 Imports ModeloProducto = WebApplication_keyove.WebApplication_Keyove.Model.Productos
@@ -243,6 +244,154 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                 Return "ERROR: " & ex.Message
 
             End Try
+
+        End Function
+
+
+        '==================================================
+        ' GUARDAR ARCHIVO DE COMPROBANTE CON OCR
+        ' Persiste la imagen/PDF del comprobante y los datos
+        ' extraidos por el servicio OCR en Comprobantes_OCR,
+        ' vinculandolo a la compra indicada.
+        '==================================================
+
+        <WebMethod()>
+        Public Shared Function GuardarComprobanteOCR(
+            nombreArchivo As String,
+            tipoMime As String,
+            contenidoBase64 As String,
+            textoOcr As String,
+            rucEmisor As String,
+            numeroComprobante As String,
+            tipoComprobante As String,
+            fechaEmision As String,
+            subtotal As Decimal,
+            igv As Decimal,
+            total As Decimal,
+            idCompra As Integer
+        ) As String
+
+            Try
+
+                Dim contenido As Byte() = Nothing
+
+                If Not String.IsNullOrWhiteSpace(contenidoBase64) Then
+
+                    contenido =
+                        Convert.FromBase64String(
+                            LimpiarBase64(contenidoBase64)
+                        )
+
+                End If
+
+                Dim obj As New ModeloComprobanteOCR()
+
+                obj.iCodCompra = idCompra
+                obj.iCodVenta = 0
+                obj.cNombreArchivo =
+                    If(
+                        String.IsNullOrWhiteSpace(nombreArchivo),
+                        "comprobante_ocr",
+                        nombreArchivo.Trim()
+                    )
+                obj.cTipoMime = tipoMime
+                obj.nTamanoBytes =
+                    If(contenido Is Nothing, 0, contenido.Length)
+                obj.cRucEmisor = rucEmisor
+                obj.cNumeroComprobante = numeroComprobante
+                obj.cTipoComprobante = tipoComprobante
+                obj.dFechaEmision = ConvertirFecha(fechaEmision)
+                obj.nSubTotal = subtotal
+                obj.nIgv = igv
+                obj.nTotal = total
+                obj.cTextoOcr = textoOcr
+                obj.imgComprobante = contenido
+
+                Using db As New ConexionBD()
+
+                    db.BeginTransaction()
+
+                    obj.db = db
+                    obj.Insertar()
+
+                    db.CommitTransaction()
+
+                End Using
+
+                Return "OK"
+
+            Catch ex As Exception
+
+                Return "ERROR: " & ex.Message
+
+            End Try
+
+        End Function
+
+
+        '==================================================
+        ' OBTENER EL CODIGO DE LA ULTIMA COMPRA REGISTRADA
+        ' Permite asociar el comprobante OCR recien leido
+        ' con la compra que se acaba de guardar.
+        '==================================================
+
+        <WebMethod()>
+        Public Shared Function ObtenerUltimaCompraId() As Integer
+
+            Dim obj As New ModeloCompra()
+
+            Dim resultado As Object =
+                obj.db.ExecuteScalar(
+                    "SELECT MAX(iCodCompra) FROM Compras"
+                )
+
+            If resultado Is Nothing OrElse IsDBNull(resultado) Then
+                Return 0
+            End If
+
+            Return Convert.ToInt32(resultado)
+
+        End Function
+
+
+        '==================================================
+        ' QUITAR EL PREFIJO DATA:...;BASE64,
+        ' DEJANDO SOLO LA CADENA EN BASE64
+        '==================================================
+
+        Private Shared Function LimpiarBase64(contenido As String) As String
+
+            Dim limpio As String = contenido.Trim()
+
+            Dim posicion As Integer =
+                limpio.IndexOf(","c)
+
+            If posicion >= 0 Then
+                limpio = limpio.Substring(posicion + 1)
+            End If
+
+            Return limpio.Trim()
+
+        End Function
+
+
+        '==================================================
+        ' CONVERTIR TEXTO DE FECHA A DATE
+        '==================================================
+
+        Private Shared Function ConvertirFecha(valor As String) As Date?
+
+            If String.IsNullOrWhiteSpace(valor) Then
+                Return Nothing
+            End If
+
+            Dim fecha As Date
+
+            If Date.TryParse(valor.Trim(), fecha) Then
+                Return fecha.Date
+            End If
+
+            Return Nothing
 
         End Function
 

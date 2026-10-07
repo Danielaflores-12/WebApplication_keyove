@@ -5,6 +5,7 @@ Imports System.Data.SqlClient
 
 Imports WebApplication_keyove.WebApplication_Keyove.Model
 Imports WebApplication_keyove.WebApplication_Keyove.Data
+Imports ModeloComprobanteOCR = WebApplication_keyove.WebApplication_Keyove.Model.ComprobantesOCR
 Imports ModeloDetalleVenta = WebApplication_keyove.WebApplication_Keyove.Model.DetalleVenta
 Imports ModeloProducto = WebApplication_keyove.WebApplication_Keyove.Model.Productos
 Imports ModeloUsuario = WebApplication_keyove.WebApplication_Keyove.Model.Usuarios
@@ -707,6 +708,184 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
                        ex.Message
 
             End Try
+
+        End Function
+
+
+        '==================================================
+        ' GUARDAR ARCHIVO DE COMPROBANTE CON OCR
+        ' Persiste la imagen/PDF del comprobante y los datos
+        ' extraidos por el servicio OCR en Comprobantes_OCR,
+        ' vinculandolo a la venta indicada.
+        '==================================================
+
+        <WebMethod(EnableSession:=True)>
+        Public Shared Function GuardarComprobanteOCRVenta(
+            nombreArchivo As String,
+            tipoMime As String,
+            contenidoBase64 As String,
+            textoOcr As String,
+            rucEmisor As String,
+            numeroComprobante As String,
+            tipoComprobante As String,
+            fechaEmision As String,
+            subtotal As Decimal,
+            igv As Decimal,
+            total As Decimal,
+            idVenta As Integer
+        ) As String
+
+            Try
+
+                Dim sesionActual = System.Web.HttpContext.Current.Session
+
+                If sesionActual Is Nothing OrElse
+                    sesionActual("iCodUsuario") Is Nothing Then
+
+                    Return "ERROR: Debe iniciar sesión."
+
+                End If
+
+                Dim contenido As Byte() = Nothing
+
+                If Not String.IsNullOrWhiteSpace(contenidoBase64) Then
+
+                    contenido =
+                        Convert.FromBase64String(
+                            LimpiarBase64(contenidoBase64)
+                        )
+
+                End If
+
+                Dim obj As New ModeloComprobanteOCR()
+
+                obj.iCodCompra = 0
+                obj.iCodVenta = idVenta
+                obj.cNombreArchivo =
+                    If(
+                        String.IsNullOrWhiteSpace(nombreArchivo),
+                        "comprobante_ocr",
+                        nombreArchivo.Trim()
+                    )
+                obj.cTipoMime = tipoMime
+                obj.nTamanoBytes =
+                    If(contenido Is Nothing, 0, contenido.Length)
+                obj.cRucEmisor = rucEmisor
+                obj.cNumeroComprobante = numeroComprobante
+                obj.cTipoComprobante = tipoComprobante
+                obj.dFechaEmision = ConvertirFecha(fechaEmision)
+                obj.nSubTotal = subtotal
+                obj.nIgv = igv
+                obj.nTotal = total
+                obj.cTextoOcr = textoOcr
+                obj.imgComprobante = contenido
+
+                Using db As New ConexionBD()
+
+                    db.BeginTransaction()
+
+                    obj.db = db
+                    obj.Insertar()
+
+                    db.CommitTransaction()
+
+                End Using
+
+                Return "OK"
+
+            Catch ex As Exception
+
+                Return "ERROR: " & ex.Message
+
+            End Try
+
+        End Function
+
+
+        '==================================================
+        ' OBTENER EL CODIGO DE LA ULTIMA VENTA REGISTRADA
+        ' Permite asociar el comprobante OCR recien leido
+        ' con la venta que se acaba de guardar.
+        '==================================================
+
+        <WebMethod(EnableSession:=True)>
+        Public Shared Function ObtenerUltimaVentaId() As Integer
+
+            Dim sesionActual = System.Web.HttpContext.Current.Session
+
+            If sesionActual Is Nothing OrElse
+                sesionActual("iCodUsuario") Is Nothing Then
+
+                Return 0
+
+            End If
+
+            Dim parametros As New List(Of System.Data.SqlClient.SqlParameter)
+
+            parametros.Add(
+                New System.Data.SqlClient.SqlParameter(
+                    "@iCodUsuario",
+                    System.Data.SqlDbType.Int
+                ) With {
+                    .Value = Convert.ToInt32(sesionActual("iCodUsuario"))
+                }
+            )
+
+            Dim obj As New ModeloVenta()
+
+            Dim resultado As Object =
+                obj.db.ExecuteScalar(
+                    "SELECT MAX(iCodVenta) FROM Ventas WHERE iCodUsuario = @iCodUsuario",
+                    parametros
+                )
+
+            If resultado Is Nothing OrElse IsDBNull(resultado) Then
+                Return 0
+            End If
+
+            Return Convert.ToInt32(resultado)
+
+        End Function
+
+
+        '==================================================
+        ' QUITAR EL PREFIJO DATA:...;BASE64,
+        ' DEJANDO SOLO LA CADENA EN BASE64
+        '==================================================
+
+        Private Shared Function LimpiarBase64(contenido As String) As String
+
+            Dim limpio As String = contenido.Trim()
+
+            Dim posicion As Integer =
+                limpio.IndexOf(","c)
+
+            If posicion >= 0 Then
+                limpio = limpio.Substring(posicion + 1)
+            End If
+
+            Return limpio.Trim()
+
+        End Function
+
+
+        '==================================================
+        ' CONVERTIR TEXTO DE FECHA A DATE
+        '==================================================
+
+        Private Shared Function ConvertirFecha(valor As String) As Date?
+
+            If String.IsNullOrWhiteSpace(valor) Then
+                Return Nothing
+            End If
+
+            Dim fecha As Date
+
+            If Date.TryParse(valor.Trim(), fecha) Then
+                Return fecha.Date
+            End If
+
+            Return Nothing
 
         End Function
 

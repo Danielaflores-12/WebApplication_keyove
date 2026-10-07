@@ -109,6 +109,7 @@
     <Content Include="JScript\Usuarios.js" />
     <Content Include="JScript\Ventas.js" />
     <Content Include="prueba conexion.aspx" />
+    <Content Include="Scripts\01_crear_comprobantes_ocr.sql" />
     <Content Include="Tests\compras-navigation.test.cjs" />
     <Content Include="Tests\detalles-ui.test.cjs" />
     <Content Include="Tests\layout-responsive.test.cjs" />
@@ -140,13 +141,7 @@
     <Compile Include="Helpers\SeguridadHelper.vb" />
     <Compile Include="Helpers\ValidacionHelper.vb" />
     <Compile Include="Helpers\ComprobanteHelper.vb" />
-    <Compile Include="Views\Inventario\Alertas_Stock\Alertas_Stock.aspx.designer.vb">
-      <DependentUpon>Alertas_Stock.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\Inventario\Alertas_Stock\Alertas_Stock.aspx.vb">
-      <DependentUpon>Alertas_Stock.aspx</DependentUpon>
-      <SubType>ASPXCodebehind</SubType>
-    </Compile>
+
     <Compile Include="Views\Login.aspx.designer.vb">
       <DependentUpon>Login.aspx</DependentUpon>
     </Compile>
@@ -160,6 +155,7 @@
     </Compile>
     <Compile Include="Model\Categorias.vb" />
     <Compile Include="Model\Compras.vb" />
+    <Compile Include="Model\Comprobantes_OCR.vb" />
     <Compile Include="Model\Detalle_Compra.vb" />
     <Compile Include="Model\Detalle_Venta.vb" />
     <Compile Include="Model\Movimientos_Inventario.vb" />

@@ -37,6 +37,15 @@
             Nueva venta
         </div>
 
+        <div class="form-group">
+            <label for="txtArchivoComprobanteVenta">Cargar comprobante (imagen/PDF) para OCR</label>
+            <input type="file" id="txtArchivoComprobanteVenta" class="input-control" accept="image/*,.pdf" />
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="btnExtraerOCRVenta" onclick="extraerOCRVenta()">Extraer datos con OCR</button>
+                <span id="ocrEstadoVenta" style="margin-left:10px;"></span>
+            </div>
+        </div>
+
         <input type="hidden" id="txtIdVenta" />
         <input type="hidden" id="txtSubTotal" />
         <input type="hidden" id="txtIgv" />
