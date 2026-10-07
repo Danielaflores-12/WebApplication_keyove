@@ -1,5 +1,8 @@
 Imports System.Web.Services
 Imports System.Web.Script.Services
+Imports System.Data
+Imports System.Data.SqlClient
+
 Imports WebApplication_keyove.WebApplication_Keyove.Model
 Imports WebApplication_keyove.WebApplication_Keyove.Data
 Imports ModeloDetalleVenta = WebApplication_keyove.WebApplication_Keyove.Model.DetalleVenta
@@ -12,7 +15,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
     Partial Public Class Venta1
         Inherits Global.System.Web.UI.Page
 
-        Protected Sub Page_Load(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles Me.Load
+        Protected Sub Page_Load(
+            ByVal sender As Object,
+            ByVal e As Global.System.EventArgs
+        ) Handles Me.Load
 
         End Sub
 
@@ -36,50 +42,71 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarUsuariosCombo() As List(Of OpcionCombo)
-            Dim sesionActual = System.Web.HttpContext.Current.Session
+
+            Dim sesionActual =
+                System.Web.HttpContext.Current.Session
 
             If sesionActual Is Nothing OrElse
                 sesionActual("iCodUsuario") Is Nothing Then
 
                 Throw New System.Web.HttpException(
                     401,
-                "Debe iniciar sesión."
-            )
+                    "Debe iniciar sesión."
+                )
+
             End If
 
+
             If String.Equals(
-                 Convert.ToString(sesionActual("Rol")).Trim(),
-                     "Vendedor",
-                 StringComparison.OrdinalIgnoreCase
+                Convert.ToString(
+                    sesionActual("Rol")
+                ).Trim(),
+                "Vendedor",
+                StringComparison.OrdinalIgnoreCase
             ) Then
 
                 Return New List(Of OpcionCombo) From {
-        New OpcionCombo With {
-            .v = Convert.ToString(sesionActual("iCodUsuario")),
-            .t = Convert.ToString(sesionActual("Usuario"))
-        }
-    }
+                    New OpcionCombo With {
+                        .v = Convert.ToString(
+                            sesionActual("iCodUsuario")
+                        ),
+                        .t = Convert.ToString(
+                            sesionActual("Usuario")
+                        )
+                    }
+                }
 
             End If
 
+
             Dim lista As New List(Of OpcionCombo)()
+
 
             Dim tabla As DataTable =
                 New ModeloUsuario().ListaDatosCombo()
+
 
             For Each fila As DataRow In tabla.Rows
 
                 Dim opcion As New OpcionCombo()
 
+
                 opcion.v =
-                    Convert.ToString(fila("ValueMember"))
+                    Convert.ToString(
+                        fila("ValueMember")
+                    )
+
 
                 opcion.t =
-                    Convert.ToString(fila("DisplayMember"))
+                    Convert.ToString(
+                        fila("DisplayMember")
+                    )
+
 
                 lista.Add(opcion)
 
             Next
+
 
             Return lista
 
@@ -96,26 +123,38 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
             Dim lista As New List(Of OpcionCombo)()
 
+
             Dim tabla As DataTable =
                 New ModeloProducto().ListaDatosShort()
 
+
             For Each fila As DataRow In tabla.Rows
 
-                If Convert.ToBoolean(fila("bEstado")) Then
+                If Convert.ToBoolean(
+                    fila("bEstado")
+                ) Then
 
                     Dim opcion As New OpcionCombo()
 
+
                     opcion.v =
-                        Convert.ToString(fila("iCodProducto"))
+                        Convert.ToString(
+                            fila("iCodProducto")
+                        )
+
 
                     opcion.t =
-                        Convert.ToString(fila("cNombre"))
+                        Convert.ToString(
+                            fila("cNombre")
+                        )
+
 
                     lista.Add(opcion)
 
                 End If
 
             Next
+
 
             Return lista
 
@@ -132,70 +171,137 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
             Dim lista As New List(Of ModeloVenta)()
 
+
             Dim tabla As DataTable =
                 New ModeloVenta().ListaDatosShort()
+
 
             For Each fila As DataRow In tabla.Rows
 
                 Dim obj As New ModeloVenta()
 
+
                 obj.iCodVenta =
-                    Convert.ToInt32(fila("iCodVenta"))
+                    Convert.ToInt32(
+                        fila("iCodVenta")
+                    )
+
 
                 obj.iCodUsuario =
-                    Convert.ToInt32(fila("iCodUsuario"))
+                    Convert.ToInt32(
+                        fila("iCodUsuario")
+                    )
+
 
                 obj.cNombreUsuario =
-                    Convert.ToString(fila("Usuario"))
+                    Convert.ToString(
+                        fila("Usuario")
+                    )
+
 
                 obj.cTipoComprobante =
-                    Convert.ToString(fila("cTipoComprobante"))
+                    Convert.ToString(
+                        fila("cTipoComprobante")
+                    )
 
-                If IsDBNull(fila("cDocumentoCliente")) Then
-                    obj.cDocumentoCliente = Nothing
-                Else
+
+                If IsDBNull(
+                    fila("cDocumentoCliente")
+                ) Then
+
                     obj.cDocumentoCliente =
-                        Convert.ToString(fila("cDocumentoCliente"))
+                        Nothing
+
+                Else
+
+                    obj.cDocumentoCliente =
+                        Convert.ToString(
+                            fila("cDocumentoCliente")
+                        )
+
                 End If
 
-                If IsDBNull(fila("cNumeroCelular")) Then
-                    obj.cNumeroCelular = Nothing
-                Else
+
+                If IsDBNull(
+                    fila("cNumeroCelular")
+                ) Then
+
                     obj.cNumeroCelular =
-                        Convert.ToString(fila("cNumeroCelular"))
+                        Nothing
+
+                Else
+
+                    obj.cNumeroCelular =
+                        Convert.ToString(
+                            fila("cNumeroCelular")
+                        )
+
                 End If
+
 
                 obj.cNumeroComprobante =
-                    Convert.ToString(fila("cNumeroComprobante"))
+                    Convert.ToString(
+                        fila("cNumeroComprobante")
+                    )
+
 
                 obj.dFechaVenta =
-                    Convert.ToDateTime(fila("dFechaVenta"))
+                    Convert.ToDateTime(
+                        fila("dFechaVenta")
+                    )
+
 
                 obj.nSubTotal =
-                    Convert.ToDecimal(fila("nSubTotal"))
+                    Convert.ToDecimal(
+                        fila("nSubTotal")
+                    )
+
 
                 obj.nIgv =
-                    Convert.ToDecimal(fila("nIgv"))
+                    Convert.ToDecimal(
+                        fila("nIgv")
+                    )
+
 
                 obj.nTotal =
-                    Convert.ToDecimal(fila("nTotal"))
+                    Convert.ToDecimal(
+                        fila("nTotal")
+                    )
+
 
                 obj.cMetodoPago =
-                    Convert.ToString(fila("cMetodoPago"))
+                    Convert.ToString(
+                        fila("cMetodoPago")
+                    )
 
-                If IsDBNull(fila("cObservacion")) Then
-                    obj.cObservacion = Nothing
-                Else
+
+                If IsDBNull(
+                    fila("cObservacion")
+                ) Then
+
                     obj.cObservacion =
-                        Convert.ToString(fila("cObservacion"))
+                        Nothing
+
+                Else
+
+                    obj.cObservacion =
+                        Convert.ToString(
+                            fila("cObservacion")
+                        )
+
                 End If
 
+
                 obj.cEstado =
-                    Convert.ToString(fila("cEstado"))
+                    Convert.ToString(
+                        fila("cEstado")
+                    )
+
 
                 lista.Add(obj)
 
             Next
+
 
             Return lista
 
@@ -203,7 +309,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
 
         '==================================================
-        ' GUARDAR VENTA CON SUS DETALLES
+        ' GUARDAR VENTA
+        '
+        ' AHORA UTILIZA:
+        ' sp_RegistrarVenta
         '==================================================
 
         <WebMethod(EnableSession:=True)>
@@ -213,56 +322,389 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         ) As String
 
             Try
-                Dim sesionActual = System.Web.HttpContext.Current.Session
+
+                '------------------------------------------
+                ' VALIDAR SESIÓN
+                '------------------------------------------
+
+                Dim sesionActual =
+                    System.Web.HttpContext.Current.Session
+
 
                 If sesionActual Is Nothing OrElse
-                     sesionActual("iCodUsuario") Is Nothing Then
+                    sesionActual("iCodUsuario") Is Nothing Then
 
                     Return "ERROR: Debe iniciar sesión."
+
                 End If
 
-                If venta Is Nothing OrElse
-                 detalles Is Nothing OrElse
-                 detalles.Count = 0 Then
+
+                '------------------------------------------
+                ' VALIDAR VENTA
+                '------------------------------------------
+
+                If venta Is Nothing Then
+
+                    Return "ERROR: Los datos de la venta son obligatorios."
+
+                End If
+
+
+                '------------------------------------------
+                ' VALIDAR DETALLES
+                '------------------------------------------
+
+                If detalles Is Nothing OrElse
+                    detalles.Count = 0 Then
 
                     Return "ERROR: Agregue al menos un producto."
+
                 End If
 
-                ' El usuario que registra la venta se toma de la sesión.
+
+                '------------------------------------------
+                ' OBTENER USUARIO DE LA SESIÓN
+                '------------------------------------------
+
                 venta.iCodUsuario =
-    Convert.ToInt32(sesionActual("iCodUsuario"))
+                    Convert.ToInt32(
+                        sesionActual("iCodUsuario")
+                    )
 
-                venta.cEstado = "REGISTRADA"
-                Using db As New ConexionBD()
 
-                    db.BeginTransaction()
+                '------------------------------------------
+                ' CREAR DATATABLE
+                '
+                ' DEBE COINCIDIR CON:
+                '
+                ' TipoDetalleVenta
+                '------------------------------------------
 
-                    venta.db = db
-                    venta.InsertarTransact()
+                Dim tablaDetalles As New DataTable()
 
-                    If detalles IsNot Nothing Then
 
-                        For Each detalle As ModeloDetalleVenta In detalles
+                tablaDetalles.Columns.Add(
+                    "iCodProducto",
+                    GetType(Integer)
+                )
 
-                            detalle.iCodVenta =
-                                venta.iCodVenta
 
-                            detalle.db = db
-                            detalle.InsertarTransact()
+                tablaDetalles.Columns.Add(
+                    "iCantidad",
+                    GetType(Integer)
+                )
 
-                        Next
+
+                tablaDetalles.Columns.Add(
+                    "nPrecioVenta",
+                    GetType(Decimal)
+                )
+
+
+                tablaDetalles.Columns.Add(
+                    "nDescuento",
+                    GetType(Decimal)
+                )
+
+
+                '------------------------------------------
+                ' CARGAR DETALLES
+                '------------------------------------------
+
+                For Each detalle As ModeloDetalleVenta In detalles
+
+                    If detalle Is Nothing Then
+
+                        Return "ERROR: Existe un detalle de venta inválido."
 
                     End If
 
-                    db.CommitTransaction()
+
+                    Dim fila As DataRow =
+                        tablaDetalles.NewRow()
+
+
+                    fila("iCodProducto") =
+                        detalle.iCodProducto
+
+
+                    fila("iCantidad") =
+                        detalle.iCantidad
+
+
+                    fila("nPrecioVenta") =
+                        detalle.nPrecioVenta
+
+
+                    fila("nDescuento") =
+                        detalle.nDescuento
+
+
+                    tablaDetalles.Rows.Add(fila)
+
+                Next
+
+
+                '------------------------------------------
+                ' CREAR PARÁMETROS
+                '------------------------------------------
+
+                Dim parametros As New List(Of SqlParameter)()
+
+
+                '------------------------------------------
+                ' iCodUsuario
+                '------------------------------------------
+
+                parametros.Add(
+                    New SqlParameter(
+                        "@iCodUsuario",
+                        SqlDbType.Int
+                    ) With {
+                        .Value =
+                            venta.iCodUsuario
+                    }
+                )
+
+
+                '------------------------------------------
+                ' cTipoComprobante
+                '------------------------------------------
+
+                parametros.Add(
+                    New SqlParameter(
+                        "@cTipoComprobante",
+                        SqlDbType.NVarChar,
+                        30
+                    ) With {
+                        .Value =
+                            If(
+                                String.IsNullOrWhiteSpace(
+                                    venta.cTipoComprobante
+                                ),
+                                "BOLETA",
+                                venta.cTipoComprobante
+                            )
+                    }
+                )
+
+
+                '------------------------------------------
+                ' cDocumentoCliente
+                '------------------------------------------
+
+                Dim parametroDocumento As New SqlParameter(
+                    "@cDocumentoCliente",
+                    SqlDbType.NVarChar,
+                    11
+                )
+
+
+                If String.IsNullOrWhiteSpace(
+                    venta.cDocumentoCliente
+                ) Then
+
+                    parametroDocumento.Value =
+                        DBNull.Value
+
+                Else
+
+                    parametroDocumento.Value =
+                        venta.cDocumentoCliente
+
+                End If
+
+
+                parametros.Add(
+                    parametroDocumento
+                )
+
+
+                '------------------------------------------
+                ' cNumeroCelular
+                '------------------------------------------
+
+                Dim parametroCelular As New SqlParameter(
+                    "@cNumeroCelular",
+                    SqlDbType.VarChar,
+                    9
+                )
+
+
+                If String.IsNullOrWhiteSpace(
+                    venta.cNumeroCelular
+                ) Then
+
+                    parametroCelular.Value =
+                        DBNull.Value
+
+                Else
+
+                    parametroCelular.Value =
+                        venta.cNumeroCelular
+
+                End If
+
+
+                parametros.Add(
+                    parametroCelular
+                )
+
+
+                '------------------------------------------
+                ' cNumeroComprobante
+                '------------------------------------------
+
+                parametros.Add(
+                    New SqlParameter(
+                        "@cNumeroComprobante",
+                        SqlDbType.NVarChar,
+                        50
+                    ) With {
+                        .Value =
+                            venta.cNumeroComprobante
+                    }
+                )
+
+
+                '------------------------------------------
+                ' cMetodoPago
+                '------------------------------------------
+
+                parametros.Add(
+                    New SqlParameter(
+                        "@cMetodoPago",
+                        SqlDbType.NVarChar,
+                        50
+                    ) With {
+                        .Value =
+                            If(
+                                String.IsNullOrWhiteSpace(
+                                    venta.cMetodoPago
+                                ),
+                                "EFECTIVO",
+                                venta.cMetodoPago
+                            )
+                    }
+                )
+
+
+                '------------------------------------------
+                ' cObservacion
+                '------------------------------------------
+
+                Dim parametroObservacion As New SqlParameter(
+                    "@cObservacion",
+                    SqlDbType.NVarChar,
+                    300
+                )
+
+
+                If String.IsNullOrWhiteSpace(
+                    venta.cObservacion
+                ) Then
+
+                    parametroObservacion.Value =
+                        DBNull.Value
+
+                Else
+
+                    parametroObservacion.Value =
+                        venta.cObservacion
+
+                End If
+
+
+                parametros.Add(
+                    parametroObservacion
+                )
+
+
+                '------------------------------------------
+                ' @Detalles
+                '
+                ' TIPO TABLA:
+                ' dbo.TipoDetalleVenta
+                '------------------------------------------
+
+                Dim parametroDetalles As New SqlParameter(
+                    "@Detalles",
+                    SqlDbType.Structured
+                )
+
+
+                parametroDetalles.TypeName =
+                    "dbo.TipoDetalleVenta"
+
+
+                parametroDetalles.Value =
+                    tablaDetalles
+
+
+                parametros.Add(
+                    parametroDetalles
+                )
+
+
+                '------------------------------------------
+                ' EJECUTAR PROCEDIMIENTO ALMACENADO
+                '------------------------------------------
+
+                Using db As New ConexionBD()
+
+
+                    Dim resultado As DataTable =
+                        db.ExecuteDataTable(
+                            "EXEC dbo.sp_RegistrarVenta " &
+                            "@iCodUsuario, " &
+                            "@cTipoComprobante, " &
+                            "@cDocumentoCliente, " &
+                            "@cNumeroCelular, " &
+                            "@cNumeroComprobante, " &
+                            "@cMetodoPago, " &
+                            "@cObservacion, " &
+                            "@Detalles",
+                            parametros
+                        )
+
+
+                    '--------------------------------------
+                    ' COMPROBAR RESULTADO
+                    '--------------------------------------
+
+                    If resultado IsNot Nothing AndAlso
+                        resultado.Rows.Count > 0 Then
+
+
+                        Dim idVenta As Integer =
+                            Convert.ToInt32(
+                                resultado.Rows(0)(
+                                    "iCodVenta"
+                                )
+                            )
+
+
+                        Return "OK"
+
+                    End If
+
 
                 End Using
 
-                Return "OK"
+
+                Return "ERROR: No se pudo registrar la venta."
+
+
+            Catch ex As SqlException
+
+                Return "ERROR: " &
+                       ex.Message
+
 
             Catch ex As Exception
 
-                Return "ERROR: " & ex.Message
+                Return "ERROR: " &
+                       ex.Message
 
             End Try
 
@@ -274,7 +716,9 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         '==================================================
 
         <WebMethod(EnableSession:=True)>
-        Public Shared Function ModificarVenta(venta As ModeloVenta) As String
+        Public Shared Function ModificarVenta(
+            venta As ModeloVenta
+        ) As String
 
             Try
 
@@ -284,7 +728,8 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
             Catch ex As Exception
 
-                Return "ERROR: " & ex.Message
+                Return "ERROR: " &
+                       ex.Message
 
             End Try
 
@@ -296,20 +741,28 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         '==================================================
 
         <WebMethod(EnableSession:=True)>
-        Public Shared Function EliminarVenta(idVenta As Integer) As String
+        Public Shared Function EliminarVenta(
+            idVenta As Integer
+        ) As String
 
             Try
 
                 Dim objVenta As New ModeloVenta()
 
-                objVenta.iCodVenta = idVenta
+
+                objVenta.iCodVenta =
+                    idVenta
+
+
                 objVenta.Eliminar()
+
 
                 Return "OK"
 
             Catch ex As Exception
 
-                Return "ERROR: " & ex.Message
+                Return "ERROR: " &
+                       ex.Message
 
             End Try
 
@@ -322,12 +775,19 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
 
         <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
-        Public Shared Function ObtenerVenta(idVenta As Integer) As ModeloVenta
+        Public Shared Function ObtenerVenta(
+            idVenta As Integer
+        ) As ModeloVenta
 
             Dim objVenta As New ModeloVenta()
 
-            objVenta.iCodVenta = idVenta
+
+            objVenta.iCodVenta =
+                idVenta
+
+
             objVenta.getRecord()
+
 
             Return objVenta
 

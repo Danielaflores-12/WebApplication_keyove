@@ -1,72 +1,91 @@
-﻿<%@ Page Title="Alertas de Stock" 
-    Language="vb" 
-    AutoEventWireup="false" 
-    CodeBehind="Alertas_Stock.aspx.vb" 
-    Inherits="WebApplication_keyove.Alertas_Stock" 
+﻿<%@ Page Title="Alertas de Stock"
+    Language="vb"
+    AutoEventWireup="false"
+    CodeBehind="Alertas_Stock.aspx.vb"
+    Inherits="WebApplication_keyove.Alertas_Stock"
     MasterPageFile="~/Views/Master/Site.Master" %>
 
 
-<asp:Content ID="Content1" 
-    ContentPlaceHolderID="head" 
+<asp:Content
+    ID="Content1"
+    ContentPlaceHolderID="head"
     runat="server">
 
 </asp:Content>
 
 
-<asp:Content ID="Content2" 
-    ContentPlaceHolderID="ContentPlaceHolder1" 
+<asp:Content
+    ID="Content2"
+    ContentPlaceHolderID="ContentPlaceHolder1"
     runat="server">
 
 
-    <div class="container-fluid">
+    <!-- ====================================================== -->
+    <!-- TITULO -->
+    <!-- ====================================================== -->
 
-        <h1 class="mb-3">
+    <div class="page-title">
+
+        <h1>
             Alertas de Stock
         </h1>
-
 
         <p>
             Productos con stock bajo o agotado.
         </p>
 
+    </div>
 
-        <div class="card">
 
-            <div class="card-body">
+    <!-- ====================================================== -->
+    <!-- TABLA DE ALERTAS -->
+    <!-- ====================================================== -->
 
-                <asp:GridView 
-                    ID="gvAlertasStock"
-                    runat="server"
-                    AutoGenerateColumns="False"
-                    CssClass="table table-bordered table-striped"
-                    EmptyDataText="No existen productos con alerta de stock">
+    <div class="card">
 
-                    <Columns>
-
-                        <asp:BoundField 
-                            DataField="NombreProducto"
-                            HeaderText="Producto" />
-
-                        <asp:BoundField 
-                            DataField="iStockActual"
-                            HeaderText="Stock Actual" />
-
-                        <asp:BoundField 
-                            DataField="iStockMinimo"
-                            HeaderText="Stock Mínimo" />
-
-                        <asp:BoundField 
-                            DataField="EstadoStock"
-                            HeaderText="Estado" />
-
-                    </Columns>
-
-                </asp:GridView>
-
-            </div>
-
+        <div class="card-title">
+            Productos que necesitan atención
         </div>
 
+
+        <div class="table-container">
+
+            <asp:GridView
+                ID="gvAlertasStock"
+                runat="server"
+                AutoGenerateColumns="False"
+                CssClass="table"
+                ShowHeaderWhenEmpty="True"
+                EmptyDataText="No existen productos con alerta de stock.">
+
+                <Columns>
+
+
+                    <asp:BoundField
+                        DataField="NombreProducto"
+                        HeaderText="Producto" />
+
+
+                    <asp:BoundField
+                        DataField="iStockActual"
+                        HeaderText="Stock Actual" />
+
+
+                    <asp:BoundField
+                        DataField="iStockMinimo"
+                        HeaderText="Stock Mínimo" />
+
+
+                    <asp:BoundField
+                        DataField="EstadoStock"
+                        HeaderText="Estado" />
+
+
+                </Columns>
+
+            </asp:GridView>
+
+        </div>
 
     </div>
 

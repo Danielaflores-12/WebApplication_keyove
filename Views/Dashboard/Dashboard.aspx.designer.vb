@@ -51,13 +51,31 @@ Namespace Views.Dashboard
         Protected WithEvents lblComprasRealizadas As Global.System.Web.UI.WebControls.Label
 
         '''<summary>
-        '''Control lblEstadoPrediccion.
+        '''Control pnlGraficoVentas.
         '''</summary>
         '''<remarks>
         '''Campo generado automáticamente.
         '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         '''</remarks>
-        Protected WithEvents lblEstadoPrediccion As Global.System.Web.UI.WebControls.Label
+        Protected WithEvents pnlGraficoVentas As Global.System.Web.UI.WebControls.Panel
+
+        '''<summary>
+        '''Control rptGraficoVentas.
+        '''</summary>
+        '''<remarks>
+        '''Campo generado automáticamente.
+        '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        '''</remarks>
+        Protected WithEvents rptGraficoVentas As Global.System.Web.UI.WebControls.Repeater
+
+        '''<summary>
+        '''Control pnlSinVentas.
+        '''</summary>
+        '''<remarks>
+        '''Campo generado automáticamente.
+        '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        '''</remarks>
+        Protected WithEvents pnlSinVentas As Global.System.Web.UI.WebControls.Panel
 
         '''<summary>
         '''Control gvMasVendidos.

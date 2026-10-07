@@ -1,73 +1,44 @@
-﻿Imports System.Data
-Imports WebApplication_keyove.Data
-Imports WebApplication_keyove.WebApplication_Keyove.Data
-
-Public Class Alertas_Stock
+﻿Public Class Alertas_Stock
     Inherits System.Web.UI.Page
-
 
     Protected Sub Page_Load(
         ByVal sender As Object,
         ByVal e As EventArgs
     ) Handles Me.Load
 
-
         If Not IsPostBack Then
-
             CargarAlertasStock()
-
         End If
 
-
     End Sub
-
 
 
     Private Sub CargarAlertasStock()
 
+        Using conexion As New WebApplication_Keyove.Data.ConexionBD()
 
-        Using conexion As New ConexionBD()
+            Dim consulta As String =
+                "SELECT " &
+                "p.cNombre AS NombreProducto, " &
+                "p.iStockActual, " &
+                "p.iStockMinimo, " &
+                "CASE " &
+                "WHEN p.iStockActual = 0 THEN 'AGOTADO' " &
+                "WHEN p.iStockActual <= p.iStockMinimo THEN 'STOCK MÍNIMO' " &
+                "ELSE 'NORMAL' " &
+                "END AS EstadoStock " &
+                "FROM dbo.Productos AS p " &
+                "WHERE p.bEstado = 1 " &
+                "AND p.iStockActual <= p.iStockMinimo " &
+                "ORDER BY p.iStockActual ASC, p.cNombre ASC"
 
-
-            Dim sql As String = "
-
-                SELECT
-                    cNombre AS NombreProducto,
-                    iStockActual,
-                    iStockMinimo,
-
-                    CASE
-                        WHEN iStockActual = 0
-                            THEN 'AGOTADO'
-
-                        WHEN iStockActual <= iStockMinimo
-                            THEN 'STOCK BAJO'
-
-                    END AS EstadoStock
-
-                FROM Productos
-
-                WHERE bEstado = 1
-                AND iStockActual <= iStockMinimo
-
-                ORDER BY iStockActual ASC
-
-            "
-
-
-            Dim dt As DataTable =
-                conexion.ExecuteDataTable(sql)
-
-
-            gvAlertasStock.DataSource = dt
+            gvAlertasStock.DataSource =
+                conexion.ExecuteDataTable(consulta)
 
             gvAlertasStock.DataBind()
 
-
         End Using
 
-
     End Sub
-
 
 End Class
