@@ -1,4 +1,4 @@
-<%@ Page Language="vb"
+﻿<%@ Page Language="vb"
     AutoEventWireup="false"
     MasterPageFile="~/Views/Master/Site.Master"
     CodeBehind="Ventas.aspx.vb"
@@ -37,15 +37,6 @@
             Nueva venta
         </div>
 
-        <div class="form-group">
-            <label for="txtArchivoComprobanteVenta">Cargar comprobante (imagen/PDF) para OCR</label>
-            <input type="file" id="txtArchivoComprobanteVenta" class="input-control" accept="image/*,.pdf" />
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="btnExtraerOCRVenta" onclick="extraerOCRVenta()">Extraer datos con OCR</button>
-                <span id="ocrEstadoVenta" style="margin-left:10px;"></span>
-            </div>
-        </div>
-
         <input type="hidden" id="txtIdVenta" />
         <input type="hidden" id="txtSubTotal" />
         <input type="hidden" id="txtIgv" />
@@ -76,7 +67,7 @@
 
             <div class="form-group">
 
-                <label for="txtNumeroComprobante">Número de Comprobante</label>
+                <label for="txtNumeroComprobante">NÃºmero de Comprobante</label>
 
                 <input type="text"
                        id="txtNumeroComprobante" readonly placeholder="Se genera al guardar"
@@ -97,7 +88,7 @@
 
             <div class="form-group">
 
-                <label for="txtNumeroCelular">Número de Celular</label>
+                <label for="txtNumeroCelular">NÃºmero de Celular</label>
 
                 <input type="text"
                        id="txtNumeroCelular"
@@ -108,7 +99,7 @@
 
             <div class="form-group">
 
-                <label for="cboMetodoPago">Método de Pago</label>
+                <label for="cboMetodoPago">MÃ©todo de Pago</label>
 
                 <select id="cboMetodoPago"
                         class="input-control">
@@ -121,7 +112,7 @@
 
             <div class="form-group">
 
-                <label for="txtObservacion">Observación</label>
+                <label for="txtObservacion">ObservaciÃ³n</label>
 
                 <input type="text"
                        id="txtObservacion"
@@ -183,7 +174,7 @@
 
             <div class="form-group">
 
-                <label for="txtSubtotalLineaVenta">Subtotal de línea</label>
+                <label for="txtSubtotalLineaVenta">Subtotal de lÃ­nea</label>
 
                 <input type="text"
                        id="txtSubtotalLineaVenta"
@@ -216,7 +207,7 @@
                         <th>Cantidad</th>
                         <th>Precio</th>
                         <th>Subtotal</th>
-                        <th>Acción</th>
+                        <th>AcciÃ³n</th>
                     </tr>
 
                 </thead>
@@ -319,7 +310,7 @@
                         <th>ID</th>
                         <th>Usuario</th>
                         <th>Comprobante</th>
-                        <th>N° Comprobante</th>
+                        <th>NÂ° Comprobante</th>
                         <th>Documento</th>
                         <th>Celular</th>
                         <th>Fecha</th>

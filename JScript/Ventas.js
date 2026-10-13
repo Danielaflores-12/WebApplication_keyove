@@ -1,4 +1,4 @@
-function esAdministradorVentas() {
+﻿function esAdministradorVentas() {
     return String($("body").attr("data-rol") || "")
         .trim().toLowerCase() === "administrador";
 }
@@ -158,7 +158,7 @@ function listarProductosCombo() {
 
 
 //==================================================
-// ACTUALIZAR SUBTOTAL DE LA LÍNEA EN EDICIÓN
+// ACTUALIZAR SUBTOTAL DE LA LÃNEA EN EDICIÃ“N
 //==================================================
 
 function actualizarSubtotalLineaVenta() {
@@ -516,48 +516,33 @@ function guardarVenta() {
                 guardarComprobanteVentaRegistrada();
                 limpiarFormulario();
                 listarVentas();
-
             } else {
-
                 alert(response.d);
-
             }
             aplicarVistaVendedor();
-        },
-
+            } else {
         error: function (error) {
-
             console.log(error);
-
-            alert("Error al registrar la venta.");
-
+            alert('Error al registrar la venta.');
         }
     });
-
 }
-
-
 //==================================================
-// SELECCIONAR VENTA PARA EDITAR
-//==================================================
-
 function seleccionarVenta(idVenta) {
-
     // CAMBIO (paso 5)
     if (!esAdministradorVentas()) {
-        alert("Esta opción está disponible solo para el administrador.");
+        alert('Esta opción está disponible solo para el administrador.');
         return;
     }
-
-    $.ajax({
+            alert('Error al registrar la venta.');
+    });
+}
+    // CAMBIO (paso 5)
+    }
         type: "POST",
-        url: "/Views/Operaciones/Ventas/Ventas.aspx/ObtenerVenta",
         data: JSON.stringify({
-            idVenta: idVenta
         }),
-        contentType: "application/json; charset=utf-8",
         dataType: "json",
-
         success: function (response) {
 
             var venta = response.d;
@@ -597,7 +582,7 @@ function modificarVenta() {
 
     // CAMBIO (paso 5)
     if (!esAdministradorVentas()) {
-        alert("Esta opción está disponible solo para el administrador.");
+        alert("Esta opciÃ³n estÃ¡ disponible solo para el administrador.");
         return;
     }
 
@@ -675,12 +660,12 @@ function eliminarVenta(idVenta) {
 
     // CAMBIO (paso 5)
     if (!esAdministradorVentas()) {
-        alert("Esta opción está disponible solo para el administrador.");
+        alert("Esta opciÃ³n estÃ¡ disponible solo para el administrador.");
         return;
     }
 
     var confirmar = confirm(
-        "¿Deseas anular esta venta?"
+        "Â¿Deseas anular esta venta?"
     );
 
     if (!confirmar) {
@@ -774,8 +759,8 @@ function filtrarVentasRegistradas() {
         $(this).toggle(coincide);
         if (coincide) visibles++;
     });
-    $("#estadoBusquedaVentas").text(filas.length === 0 ? "Todavía no hay ventas registradas." :
-        visibles === 0 ? "No se encontraron ventas para esta búsqueda." : visibles + " de " + filas.length + " ventas");
+    $("#estadoBusquedaVentas").text(filas.length === 0 ? "TodavÃ­a no hay ventas registradas." :
+        visibles === 0 ? "No se encontraron ventas para esta bÃºsqueda." : visibles + " de " + filas.length + " ventas");
 }
 function vistaVentasDesdeUrl() {
     return new URLSearchParams(window.location.search).get("vista") === "registros" ? "registros" : "registro";
@@ -1048,7 +1033,7 @@ function extraerOCRVenta() {
 
                 } else {
 
-                    $("#ocrEstadoVenta").text('Datos extraídos. Revisa y corrige si es necesario.');
+                    $("#ocrEstadoVenta").text('Datos extraÃ­dos. Revisa y corrige si es necesario.');
 
                 }
 
