@@ -1,4 +1,4 @@
-Imports System.Data.SqlClient
+﻿Imports System.Data.SqlClient
 Imports System.Globalization
 Imports System.IO
 Imports System.Net
@@ -117,44 +117,34 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                 If Math.Abs(suma - If(preciosIncluyenIgv, compra.nTotal, compra.nSubTotal)) > 0.02D Then Throw New ArgumentException("La suma de los productos no coincide con el comprobante. Revisa las líneas y si los precios incluyen IGV.")
                 Dim content As Byte() = Nothing
                 If comprobante IsNot Nothing Then content = LeerArchivo(comprobante)
+                Dim tabla As New DataTable()
+                tabla.Columns.Add("iCodProducto", GetType(Integer))
+                tabla.Columns.Add("iCantidad", GetType(Integer))
+                tabla.Columns.Add("nPrecioCompra", GetType(Decimal))
+                For Each detalle In detalles
+                    tabla.Rows.Add(detalle.iCodProducto, detalle.iCantidad, detalle.nPrecioCompra)
+                Next
+                Dim parametros As New List(Of SqlParameter) From {
+                    New SqlParameter("@iCodProveedor", compra.iCodProveedor),
+                    New SqlParameter("@iCodUsuario", compra.iCodUsuario),
+                    New SqlParameter("@cTipoComprobante", SqlDbType.NVarChar, 30) With {.Value = compra.cTipoComprobante},
+                    New SqlParameter("@cNumeroComprobante", SqlDbType.NVarChar, 50) With {.Value = compra.cNumeroComprobante},
+                    New SqlParameter("@dFechaCompra", SqlDbType.Date) With {.Value = fecha},
+                    New SqlParameter("@nSubTotal", SqlDbType.Decimal) With {.Precision = 18, .Scale = 2, .Value = compra.nSubTotal},
+                    New SqlParameter("@nIgv", SqlDbType.Decimal) With {.Precision = 18, .Scale = 2, .Value = compra.nIgv},
+                    New SqlParameter("@nTotal", SqlDbType.Decimal) With {.Precision = 18, .Scale = 2, .Value = compra.nTotal},
+                    New SqlParameter("@bPreciosIncluyenIgv", SqlDbType.Bit) With {.Value = preciosIncluyenIgv},
+                    New SqlParameter("@Detalles", SqlDbType.Structured) With {.TypeName = "dbo.TipoDetalleCompra", .Value = tabla},
+                    New SqlParameter("@cObservacion", SqlDbType.NVarChar, 300) With {.Value = If(CType(compra.cObservacion, Object), DBNull.Value)},
+                    New SqlParameter("@cNombreArchivo", SqlDbType.NVarChar, 255) With {.Value = If(comprobante Is Nothing, DBNull.Value, CType(Path.GetFileName(comprobante.nombreArchivo), Object))},
+                    New SqlParameter("@cTipoMime", SqlDbType.NVarChar, 100) With {.Value = If(comprobante Is Nothing, DBNull.Value, CType(MimeArchivo(comprobante.nombreArchivo), Object))},
+                    New SqlParameter("@cTextoOcr", SqlDbType.NVarChar, -1) With {.Value = If(comprobante Is Nothing, DBNull.Value, If(CType(comprobante.textoOcr, Object), DBNull.Value))},
+                    New SqlParameter("@cRucEmisor", SqlDbType.NVarChar, 20) With {.Value = If(comprobante Is Nothing, DBNull.Value, If(CType(comprobante.rucEmisor, Object), DBNull.Value))},
+                    New SqlParameter("@imgComprobante", SqlDbType.VarBinary, -1) With {.Value = If(CType(content, Object), DBNull.Value)}}
                 Using db As New ConexionBD()
-                    db.BeginTransaction()
-                    Try
-                        Dim proveedorActivo = Convert.ToInt32(db.ExecuteScalarTransact("SELECT COUNT(*) FROM Proveedores WHERE iCodProveedor=@id AND bEstado=1", New List(Of SqlParameter) From {New SqlParameter("@id", compra.iCodProveedor)}))
-                        If proveedorActivo <> 1 Then Throw New ArgumentException("El proveedor no está activo.")
-                        compra.db = db
-                        compra.InsertarTransact()
-                        ' Orden estable de bloqueos para compras simultáneas.
-                        detalles.Sort(Function(a, b) a.iCodProducto.CompareTo(b.iCodProducto))
-                        For Each detalle In detalles
-                            detalle.iCodCompra = compra.iCodCompra
-                            detalle.db = db
-                            detalle.InsertarTransact()
-                            db.ExecuteQueryTransact(
-                                "DECLARE @anterior int; SELECT @anterior=iStockActual FROM Productos WITH (UPDLOCK,HOLDLOCK) WHERE iCodProducto=@producto AND bEstado=1; " &
-                                "IF @anterior IS NULL THROW 50001, 'El producto no está activo.', 1; " &
-                                "UPDATE Productos SET iStockActual=iStockActual+@cantidad, nPrecioCompra=@precio WHERE iCodProducto=@producto; " &
-                                "INSERT INTO Movimientos_Inventario(iCodProducto,iCodUsuario,iCodCompra,cTipoMovimiento,iCantidad,iStockAnterior,iStockNuevo,cMotivo) " &
-                                "VALUES(@producto,@usuario,@compra,'ENTRADA',@cantidad,@anterior,@anterior+@cantidad,'Registro de compra');",
-                                New List(Of SqlParameter) From {
-                                    New SqlParameter("@producto", detalle.iCodProducto), New SqlParameter("@cantidad", detalle.iCantidad),
-                                    New SqlParameter("@precio", detalle.nPrecioCompra), New SqlParameter("@usuario", compra.iCodUsuario), New SqlParameter("@compra", compra.iCodCompra)})
-                        Next
-                        If comprobante IsNot Nothing Then
-                            Dim saved As New ModeloComprobante With {
-                                .db = db, .iCodCompra = compra.iCodCompra, .iCodVenta = 0,
-                                .cNombreArchivo = Path.GetFileName(comprobante.nombreArchivo), .cTipoMime = MimeArchivo(comprobante.nombreArchivo),
-                                .nTamanoBytes = content.Length, .imgComprobante = content,
-                                .cTextoOcr = comprobante.textoOcr, .cRucEmisor = comprobante.rucEmisor,
-                                .cNumeroComprobante = compra.cNumeroComprobante, .cTipoComprobante = compra.cTipoComprobante,
-                                .dFechaEmision = fecha, .nSubTotal = compra.nSubTotal, .nIgv = compra.nIgv, .nTotal = compra.nTotal}
-                            saved.Insertar()
-                        End If
-                        db.CommitTransaction()
-                    Catch
-                        db.RollbackTransaction()
-                        Throw
-                    End Try
+                    ' SQL Server confirma o revierte toda la compra, incluido el archivo OCR.
+                    compra.iCodCompra = Convert.ToInt32(db.ExecuteScalar(
+                        "EXEC dbo.sp_RegistrarCompra @iCodProveedor,@iCodUsuario,@cTipoComprobante,@cNumeroComprobante,@dFechaCompra,@nSubTotal,@nIgv,@nTotal,@bPreciosIncluyenIgv,@Detalles,@cObservacion,@cNombreArchivo,@cTipoMime,@cTextoOcr,@cRucEmisor,@imgComprobante", parametros))
                 End Using
                 Return New ResultadoCompra With {.ok = True, .idCompra = compra.iCodCompra, .mensaje = "Compra, comprobante e inventario registrados."}
             Catch ex As SqlException

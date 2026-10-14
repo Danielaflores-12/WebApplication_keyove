@@ -15,13 +15,6 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
     Partial Public Class Venta1
         Inherits Global.System.Web.UI.Page
 
-        Private Shared Sub ExigirUsuarioVentas(Optional administrador As Boolean = False)
-            Dim sesion = System.Web.HttpContext.Current.Session
-            If sesion Is Nothing OrElse sesion("iCodUsuario") Is Nothing Then Throw New System.Web.HttpException(401, "Inicia sesión.")
-            Dim rol = Convert.ToString(sesion("Rol"))
-            If rol <> "Administrador" AndAlso (administrador OrElse rol <> "Vendedor") Then Throw New System.Web.HttpException(403, "No tienes permiso para esta operación.")
-        End Sub
-
         Protected Sub Page_Load(
             ByVal sender As Object,
             ByVal e As Global.System.EventArgs
@@ -56,7 +49,6 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
                     401,
                     "Debe iniciar sesión."
                 )
-
             End If
 
 
@@ -121,7 +113,6 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarProductosCombo() As List(Of OpcionCombo)
-            ExigirUsuarioVentas()
 
             Dim lista As New List(Of OpcionCombo)()
 
@@ -168,7 +159,6 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarVentas() As List(Of ModeloVenta)
-            ExigirUsuarioVentas()
 
             Dim lista As New List(Of ModeloVenta)()
 
@@ -319,7 +309,6 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
             venta As ModeloVenta,
             detalles As List(Of ModeloDetalleVenta)
         ) As String
-            ExigirUsuarioVentas()
 
             Try
 
@@ -735,17 +724,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         Public Shared Function ModificarVenta(
             venta As ModeloVenta
         ) As String
-            ExigirUsuarioVentas(True)
 
             Try
 
-                Using db As New ConexionBD()
-                    db.ExecuteQuery("UPDATE Ventas SET cDocumentoCliente=@documento, cNumeroCelular=@celular, cMetodoPago=@pago, cObservacion=@observacion WHERE iCodVenta=@id AND cEstado='REGISTRADA'", New List(Of SqlParameter) From {
-                        New SqlParameter("@documento", If(String.IsNullOrWhiteSpace(venta.cDocumentoCliente), CType(DBNull.Value, Object), venta.cDocumentoCliente)),
-                        New SqlParameter("@celular", If(String.IsNullOrWhiteSpace(venta.cNumeroCelular), CType(DBNull.Value, Object), venta.cNumeroCelular)),
-                        New SqlParameter("@pago", venta.cMetodoPago), New SqlParameter("@observacion", If(venta.cObservacion, "")), New SqlParameter("@id", venta.iCodVenta)
-                    })
-                End Using
+                venta.Modificar()
 
                 Return "OK"
 
@@ -765,7 +747,6 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         Public Shared Function EliminarVenta(
             idVenta As Integer
         ) As String
-            ExigirUsuarioVentas(True)
 
             Try
 
@@ -776,11 +757,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
                     idVenta
 
 
-                Using db As New ConexionBD()
-                    db.ExecuteQuery("EXEC dbo.sp_AnularVenta @id, @usuario", New List(Of SqlParameter) From {
-                        New SqlParameter("@id", idVenta), New SqlParameter("@usuario", Convert.ToInt32(System.Web.HttpContext.Current.Session("iCodUsuario")))
-                    })
-                End Using
+                objVenta.Eliminar()
 
 
                 Return "OK"
@@ -802,7 +779,6 @@ Namespace WebApplication_Keyove.Views.Operaciones.Ventas
         Public Shared Function ObtenerVenta(
             idVenta As Integer
         ) As ModeloVenta
-            ExigirUsuarioVentas()
 
             Dim objVenta As New ModeloVenta()
 

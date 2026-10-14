@@ -108,11 +108,10 @@
     <Content Include="JScript\Roles.js" />
     <Content Include="JScript\Usuarios.js" />
     <Content Include="JScript\Ventas.js" />
-    <Content Include="prueba conexion.aspx" />
     <Content Include="Assets\js\jquery-3.7.1.min.js" />
     <Content Include="Scripts\01_crear_comprobantes_ocr.sql" />
-    <Content Include="Scripts\02_registro_ventas_inventario.sql" />
-    <Content Include="Scripts\03_compras_comprobante_activo.sql" />
+    <Content Include="Scripts\02_compras_comprobante_activo.sql" />
+    <Content Include="Scripts\03_registrar_compra_transaccion.sql" />
     <Content Include="servicio_ocr\app.py" />
     <Content Include="servicio_ocr\extractor.py" />
     <Content Include="servicio_ocr\ocr.py" />
@@ -192,14 +191,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="prueba conexion.aspx.designer.vb">
-      <DependentUpon>prueba conexion.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="prueba conexion.aspx.vb">
-      <DependentUpon>prueba conexion.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="IniciarSistema.vb" />
     <Compile Include="Views\Dashboard\Dashboard.aspx.designer.vb">
       <DependentUpon>Dashboard.aspx</DependentUpon>
     </Compile>
@@ -330,7 +321,6 @@
     <Folder Include="Assets\bootstrap\" />
     <Folder Include="Assets\img\" />
     <Folder Include="Business\" />
-    <Folder Include="SQLScripts\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
