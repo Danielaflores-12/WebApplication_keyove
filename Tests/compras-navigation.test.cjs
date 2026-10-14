@@ -5,22 +5,18 @@ const assert = require('node:assert/strict');
 
 (async () => {
     const root = path.resolve(__dirname, '..');
-    const read = name => fs.readFileSync(path.join(root, name), 'utf8');
-    const master = read('Views/Master/Site.Master');
+    const read = name => fs.readFileSync(path.join(root, name), 'utf8').replace(/<%=\s*ResolveUrl\("~([^"]+)"\)\s*%>/g, '$1');
+    const master = read('Views/Master/Site.Master').replace(/^<body.*$/m, '<body data-rol="Administrador">');
     const view = read('Views/Operaciones/Compras/Compras.aspx');
     const content = view.match(/<asp:Content\s+ID="Content2"[\s\S]*?>([\s\S]*?)<\/asp:Content>/)[1];
     const html = master.replace(/<%@[^]*?%>/g, '')
-        .replace(/<asp:ContentPlaceHolder\s+ID="ContentPlaceHolder1"[^]*?<\/asp:ContentPlaceHolder>/, content)
-        .replace(/<asp:ContentPlaceHolder[^]*?<\/asp:ContentPlaceHolder>/g, '<script src="/JScript/Compras.js"></script>');
+        .replace(/<asp:ContentPlaceHolder\s+ID="ContentPlaceHolder1"[^]*?\/>/, content)
+        .replace(/<asp:ContentPlaceHolder\s+ID="head"[^]*?\/>/g, '<script src="/JScript/Compras.js"></script>');
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     try {
         const page = await browser.newPage();
         const errors = [];
-        page.on('pageerror', error => errors.push(error.message));
-        const jquery = await page.request.get('https://code.jquery.com/jquery-3.7.1.min.js');
-        assert.ok(jquery.ok(), 'jQuery disponible');
-        const jqueryBody = await jquery.text();
-        await page.route('https://code.jquery.com/**', route => route.fulfill({ contentType: 'text/javascript', body: jqueryBody }));
+        page.on('pageerror', error => { errors.push(error.message); console.error(error.message); });
         let documents = 0;
         await page.route('http://keyove.test/**', async route => {
             const request = route.request();
@@ -40,7 +36,7 @@ const assert = require('node:assert/strict');
         });
         await page.goto('http://keyove.test/Views/Operaciones/Compras/Compras.aspx');
         await page.locator('#cboUsuario option[value="1"]').waitFor({ state: 'attached' });
-        await page.locator('#btnOcultarPanel').click();
+        await page.locator('#btnMenuToggle').click();
         assert.equal(await page.locator('#btnMenuToggle').getAttribute('aria-expanded'), 'false');
         assert.equal(await page.locator('#textoPanelControl').textContent(), 'Mostrar panel');
         assert.equal(await page.evaluate(() => localStorage.getItem('keyoveMenuContraido')), 'true');
@@ -68,6 +64,8 @@ const assert = require('node:assert/strict');
                 await page.locator('.ventas-vistas [data-vista-compras="registros"]').click();
         await page.locator('#buscarCompras').fill('');
         await page.locator('#bodyCompras tr').waitFor();
+        await page.waitForLoadState("networkidle");
+        await page.locator("#bodyCompras tr:first-child td:last-child").waitFor({state:"visible"});
         var accion = await page.locator('#bodyCompras tr:first-child td:last-child').boundingBox();
         assert.ok(accion.x >= 0 && accion.x + accion.width <= 320, 'Acciones visibles en móvil');
         await page.locator('#bodyCompras tr:first-child button').first().click();

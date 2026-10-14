@@ -1,4 +1,4 @@
-<%@ Page Language="vb"
+﻿<%@ Page Language="vb"
     AutoEventWireup="false"
     MasterPageFile="~/Views/Master/Site.Master"
     CodeBehind="Compras.aspx.vb"
@@ -39,13 +39,19 @@
 
         <div class="form-group">
             <label for="txtArchivoComprobante">Cargar comprobante (imagen/PDF) para OCR</label>
-            <input type="file" id="txtArchivoComprobante" class="input-control" accept="image/*,.pdf" />
+            <input type="file" id="txtArchivoComprobante" class="input-control" accept=".jpg,.jpeg,.png,.bmp,.tif,.tiff,.pdf" />
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" id="btnExtraerOCR" onclick="extraerOCRCompra()">Extraer datos con OCR</button>
-                <span id="ocrEstado" style="margin-left:10px;"></span>
+                <span id="ocrEstado" role="status" aria-live="polite" style="margin-left:10px;"></span>
             </div>
         </div>
 
+        <p>Sube una foto o un PDF (máximo 10 MB y 5 páginas). Revisa los productos y guarda la compra para actualizar el inventario.</p>
+        <div id="revisionOCR" hidden>
+            <p id="advertenciasOCR" role="status"></p>
+            <details><summary>Ver texto leído del comprobante</summary><pre id="textoOCR" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
+            <label><input type="checkbox" id="confirmarOCR" /> Revisé el proveedor, los productos y los importes del documento.</label>
+        </div>
         <input type="hidden" id="txtIdCompra" />
         <input type="hidden" id="txtSubTotal" />
         <input type="hidden" id="txtIgv" />
@@ -88,7 +94,7 @@
                 <label for="txtNumeroComprobante">Número de Comprobante</label>
 
                 <input type="text"
-                       id="txtNumeroComprobante" readonly placeholder="Se genera al guardar"
+                       id="txtNumeroComprobante" maxlength="50" placeholder="Número del comprobante del proveedor"
                        class="input-control" />
 
             </div>
@@ -107,7 +113,7 @@
 
                 <label for="cboEstado">Estado</label>
 
-                <select id="cboEstado"
+                <select id="cboEstado" disabled
                         class="input-control">
                     <option value="REGISTRADA">REGISTRADA</option>
                     <option value="ANULADA">ANULADA</option>
@@ -117,6 +123,10 @@
 
         </div>
 
+        <div class="form-grid">
+            <div class="form-group"><label for="txtFechaCompra">Fecha del comprobante</label><input type="date" id="txtFechaCompra" class="input-control" /></div>
+            <div class="form-group"><label for="preciosIncluyenIgv">Precios de los productos</label><select id="preciosIncluyenIgv" class="input-control" onchange="recalcTotalesCompra()"><option value="no">Sin IGV</option><option value="si">Incluyen IGV</option></select></div>
+        </div>
         <div class="card-title">
             Productos de la compra
         </div>
@@ -209,21 +219,21 @@
 
                 <label for="txtSubtotalCompraGral">Subtotal general</label>
 
-                <input type="text"
+                <input type="number" step="0.01" min="0"
                        id="txtSubtotalCompraGral"
                        class="input-control"
-                       readonly />
+                       onchange="actualizarMontosCompra()" />
 
             </div>
 
             <div class="form-group">
 
-                <label for="txtIGVCompra">IGV 18%</label>
+                <label for="txtIGVCompra">IGV del comprobante</label>
 
-                <input type="text"
+                <input type="number" step="0.01" min="0"
                        id="txtIGVCompra"
                        class="input-control"
-                       readonly />
+                       onchange="actualizarMontosCompra()" />
 
             </div>
 
@@ -231,10 +241,10 @@
 
                 <label for="txtTotalCompra">Total</label>
 
-                <input type="text"
+                <input type="number" step="0.01" min="0"
                        id="txtTotalCompra"
                        class="input-control"
-                       readonly />
+                       onchange="actualizarMontosCompra()" />
 
             </div>
 
@@ -244,19 +254,19 @@
 
             <button type="button"
                     class="btn btn-primary"
-                    onclick="guardarCompra()">
+                    id="btnGuardarCompra" onclick="guardarCompra()">
                 Guardar
             </button>
 
             <button type="button"
                     class="btn btn-warning"
-                    onclick="modificarCompra()">
-                Modificar
+                    id="btnModificarCompra" onclick="modificarCompra()">
+                Guardar observación
             </button>
 
             <button type="button"
                     class="btn btn-secondary"
-                    onclick="limpiarFormulario()">
+                    id="btnLimpiarCompra" onclick="limpiarFormulario()">
                 Limpiar
             </button>
 

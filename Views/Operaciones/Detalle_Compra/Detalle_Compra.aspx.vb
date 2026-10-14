@@ -1,4 +1,4 @@
-Imports System.Web.Services
+﻿Imports System.Web.Services
 Imports System.Web.Script.Services
 Imports WebApplication_keyove.WebApplication_Keyove.Model
 Imports ModeloDetalleCompra = WebApplication_keyove.WebApplication_Keyove.Model.DetalleCompra
@@ -10,7 +10,16 @@ Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
     Partial Public Class DetalleCompra1
         Inherits Global.System.Web.UI.Page
 
+        Private Shared Sub ExigirAccesoDetalle()
+            Dim sesion = System.Web.HttpContext.Current.Session
+            If sesion Is Nothing OrElse sesion("iCodUsuario") Is Nothing Then Throw New System.Web.HttpException(401, "Inicia sesión.")
+            Dim rol = Convert.ToString(sesion("Rol"))
+            If rol <> "Administrador" Then Throw New System.Web.HttpException(403, "No tienes permiso para consultar estos detalles.")
+        End Sub
+
+
         Protected Sub Page_Load(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles Me.Load
+            ExigirAccesoDetalle()
 
         End Sub
 
@@ -31,9 +40,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
         ' LISTAR COMPRAS PARA COMBOBOX
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarComprasCombo() As List(Of OpcionCombo)
+            ExigirAccesoDetalle()
 
             Dim lista As New List(Of OpcionCombo)()
 
@@ -63,9 +73,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
         ' LISTAR PRODUCTOS PARA COMBOBOX
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarProductosCombo() As List(Of OpcionCombo)
+            ExigirAccesoDetalle()
 
             Dim lista As New List(Of OpcionCombo)()
 
@@ -95,9 +106,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
         ' LISTAR DETALLES DE COMPRA
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarDetallesCompra() As List(Of ModeloDetalleCompra)
+            ExigirAccesoDetalle()
 
             Dim lista As New List(Of ModeloDetalleCompra)()
 
@@ -145,21 +157,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
         ' GUARDAR DETALLE DE COMPRA
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         Public Shared Function GuardarDetalleCompra(detalle As ModeloDetalleCompra) As String
-
-            Try
-
-                detalle.Insertar()
-
-                Return "OK"
-
-            Catch ex As Exception
-
-                Return "ERROR: " & ex.Message
-
-            End Try
-
+            ExigirAccesoDetalle()
+            Return "ERROR: Los productos de una operación registrada son de consulta. Para corregir cantidades, anula la operación y regístrala nuevamente."
         End Function
 
 
@@ -167,21 +168,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
         ' MODIFICAR DETALLE DE COMPRA
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         Public Shared Function ModificarDetalleCompra(detalle As ModeloDetalleCompra) As String
-
-            Try
-
-                detalle.Modificar()
-
-                Return "OK"
-
-            Catch ex As Exception
-
-                Return "ERROR: " & ex.Message
-
-            End Try
-
+            ExigirAccesoDetalle()
+            Return "ERROR: Los productos de una operación registrada son de consulta. Para corregir cantidades, anula la operación y regístrala nuevamente."
         End Function
 
 
@@ -189,24 +179,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
         ' ELIMINAR DETALLE DE COMPRA
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         Public Shared Function EliminarDetalleCompra(idDetalleCompra As Integer) As String
-
-            Try
-
-                Dim objDetalle As New ModeloDetalleCompra()
-
-                objDetalle.iCodDetalleCompra = idDetalleCompra
-                objDetalle.Eliminar()
-
-                Return "OK"
-
-            Catch ex As Exception
-
-                Return "ERROR: " & ex.Message
-
-            End Try
-
+            ExigirAccesoDetalle()
+            Return "ERROR: Los productos de una operación registrada son de consulta. Para corregir cantidades, anula la operación y regístrala nuevamente."
         End Function
 
 
@@ -214,9 +190,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Detalle_Compra
         ' OBTENER DETALLE DE COMPRA POR ID
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ObtenerDetalleCompra(idDetalleCompra As Integer) As ModeloDetalleCompra
+            ExigirAccesoDetalle()
 
             Dim objDetalle As New ModeloDetalleCompra()
 

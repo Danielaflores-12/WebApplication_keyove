@@ -16,7 +16,7 @@ const path = require('node:path');
             const view = fs.readFileSync(path.join(root, `Views/Operaciones/Ventas/${name}.aspx`), 'utf8');
             const content = view.match(/<asp:Content\s+ID="Content2"[\s\S]*?>([\s\S]*?)<\/asp:Content>/)[1];
             let html = master.replace(/<%@[^]*?%>/g, '')
-                .replace(/<asp:ContentPlaceHolder\s+ID="ContentPlaceHolder1"[^]*?<\/asp:ContentPlaceHolder>/, content)
+                .replace(/<asp:ContentPlaceHolder\s+ID="ContentPlaceHolder1"[^]*?\/>/, content)
                 .replace(/<asp:ContentPlaceHolder[^]*?<\/asp:ContentPlaceHolder>/g, '')
                 .replace(/<script[^]*?<\/script>/g, '').replace(/<link[^>]*>/g, '')
                 .replace('</head>', `<style>${css}</style></head>`);

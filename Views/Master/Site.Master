@@ -128,6 +128,8 @@
 
     </style>
 
+    <script src="<%= ResolveUrl("~/Assets/js/jquery-3.7.1.min.js") %>"></script>
+
     <asp:ContentPlaceHolder
         ID="head"
         runat="server" />

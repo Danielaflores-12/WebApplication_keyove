@@ -122,6 +122,7 @@ Namespace WebApplication_Keyove.Model
 
             End If
 
+            parametros.Add(New SqlParameter("@dFechaCompra", SqlDbType.DateTime2) With {.Value = Me.dFechaCompra})
             Return parametros
 
         End Function
@@ -213,19 +214,20 @@ Namespace WebApplication_Keyove.Model
 
         Public Sub InsertarTransact()
             Me.cTipoComprobante = If(Me.cTipoComprobante, "").Trim().ToUpperInvariant()
-            Me.cNumeroComprobante = ComprobanteHelper.GenerarNumero(db, "Compras", Me.cTipoComprobante)
+            Me.cNumeroComprobante = If(Me.cNumeroComprobante, "").Trim()
+            If Me.cNumeroComprobante.Length = 0 Then Throw New ArgumentException("Ingresa el número del comprobante del proveedor.")
 
             Dim Query As String =
                 "INSERT INTO Compras " &
                 "(iCodProveedor, iCodUsuario, " &
                 "cTipoComprobante, cNumeroComprobante, " &
                 "nSubTotal, nIgv, nTotal, " &
-                "cObservacion, cEstado) " &
+                "cObservacion, cEstado, dFechaCompra) " &
                 "VALUES " &
                 "(@iCodProveedor, @iCodUsuario, " &
                 "@cTipoComprobante, @cNumeroComprobante, " &
                 "@nSubTotal, @nIgv, @nTotal, " &
-                "@cObservacion, @cEstado); " &
+                "@cObservacion, @cEstado, @dFechaCompra); " &
                 "SELECT CAST(SCOPE_IDENTITY() AS INT);"
 
             Dim parametros As List(Of SqlParameter) =

@@ -1,4 +1,4 @@
-Imports System.Data
+﻿Imports System.Data
 Imports System.Data.SqlClient
 Imports WebApplication_Keyove.WebApplication_Keyove.Data
 
@@ -8,12 +8,12 @@ Namespace WebApplication_Keyove.Model
 
         '==================================================
         ' LIMITE DE TAMANO PARA GUARDAR EL BINARIO
-        ' Si el archivo supera este limite se guardan solo
-        ' los metadatos (nombre y tamano) y el texto OCR,
-        ' evitando enviar megabytes por la red en cada operacion.
+        ' Los archivos superiores al límite se rechazan; nunca se descartan.
+        ' Se conserva el comprobante completo junto con sus metadatos.
+        ' El guardado comparte la transacción de la compra.
         '==================================================
 
-        Public Const LIMITE_BYTES As Integer = 2 * 1024 * 1024
+        Public Const LIMITE_BYTES As Integer = 10 * 1024 * 1024
 
         '==================================================
         ' VARIABLES
@@ -236,9 +236,8 @@ Namespace WebApplication_Keyove.Model
 
         '==================================================
         ' INSERTAR COMPROBANTE
-        ' Si el binario supera LIMITE_BYTES se guarda solo
-        ' la metadata (cNombreArchivo y nTamanoBytes) y el
-        ' texto del OCR, no el archivo completo.
+        ' Si el binario supera LIMITE_BYTES se rechaza la operación.
+        ' El archivo se conserva completo.
         '==================================================
 
         Public Sub Insertar()
@@ -246,7 +245,7 @@ Namespace WebApplication_Keyove.Model
             If Me.imgComprobante IsNot Nothing AndAlso
                Me.imgComprobante.Length > LIMITE_BYTES Then
 
-                Me.imgComprobante = Nothing
+                Throw New ArgumentException("El comprobante supera el límite de 10 MB.")
 
             End If
 
@@ -289,7 +288,7 @@ Namespace WebApplication_Keyove.Model
 
             Me.iCodComprobante =
                 Convert.ToInt32(
-                    db.ExecuteScalar(Query, parametros)
+                    db.ExecuteScalarTransact(Query, parametros)
                 )
 
         End Sub

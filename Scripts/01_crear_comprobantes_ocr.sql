@@ -1,8 +1,8 @@
---==================================================
+﻿--==================================================
 -- KEYOVE - SCRIPT 01: TABLA COMPROBANTES_OCR
 -- Almacena el archivo del comprobante (imagen/PDF)
 -- junto con los datos extraidos por OCR y el vinculo
--- con la compra o la venta registrada.
+-- con la compra registrada. iCodVenta se conserva por compatibilidad.
 -- Idempotente: puede ejecutarse varias veces.
 --==================================================
 
@@ -41,8 +41,7 @@ BEGIN
         cTextoOcr             NVARCHAR(MAX) NULL,
 
         -- Archivo binario (imagen/PDF).
-        -- Si el archivo supera el limite de 2 MB solo se
-        -- guardan los metadatos y el texto OCR.
+        -- Se conserva completo. La aplicación admite archivos de hasta 10 MB.
         imgComprobante        VARBINARY(MAX) NULL,
 
         dFechaCarga           DATETIME NOT NULL
@@ -116,94 +115,4 @@ BEGIN
     END
 
 END
-GO
-
---==================================================
--- CONSULTAS DE VERIFICACION
---==================================================
-
--- 1) Verificar que la tabla existe y con que columnas
-SELECT
-    c.COLUMN_NAME,
-    c.DATA_TYPE,
-    c.CHARACTER_MAXIMUM_LENGTH,
-    c.NUMERIC_PRECISION,
-    c.NUMERIC_SCALE,
-    c.IS_NULLABLE,
-    c.COLUMN_DEFAULT
-FROM INFORMATION_SCHEMA.COLUMNS c
-WHERE c.TABLE_NAME = 'Comprobantes_OCR'
-ORDER BY c.ORDINAL_POSITION;
-GO
-
--- 2) Verificar restricciones (PK, CHECK, FK)
-SELECT
-    tc.CONSTRAINT_TYPE,
-    tc.CONSTRAINT_NAME,
-    kcu.COLUMN_NAME
-FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-    ON kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
-WHERE tc.TABLE_NAME = 'Comprobantes_OCR'
-ORDER BY tc.CONSTRAINT_TYPE, tc.CONSTRAINT_NAME;
-GO
-
--- 3) Verificar indices
-SELECT
-    i.name AS Indice,
-    i.type_desc AS Tipo,
-    c.name AS Columna
-FROM sys.indexes i
-JOIN sys.index_columns ic
-    ON ic.object_id = i.object_id AND ic.index_id = i.index_id
-JOIN sys.columns c
-    ON c.object_id = ic.object_id AND c.column_id = ic.column_id
-WHERE i.object_id = OBJECT_ID('dbo.Comprobantes_OCR')
-ORDER BY i.name, ic.key_ordinal;
-GO
-
--- 4) Listar comprobantes almacenados (sin el binario)
-SELECT
-    iCodComprobante,
-    iCodCompra,
-    iCodVenta,
-    cNombreArchivo,
-    cTipoMime,
-    nTamanoBytes,
-    cRucEmisor,
-    cNumeroComprobante,
-    cTipoComprobante,
-    cFechaEmision,
-    nSubTotal,
-    nIgv,
-    nTotal,
-    dFechaCarga,
-    CASE
-        WHEN imgComprobante IS NULL THEN 'SIN BINARIO'
-        ELSE 'CON BINARIO'
-    AS EstadoArchivo
-FROM dbo.Comprobantes_OCR
-ORDER BY iCodComprobante DESC;
-GO
-
--- 5) Comprobantes asociados a una compra
-SELECT
-    co.iCodComprobante,
-    co.cNombreArchivo,
-    co.cNumeroComprobante,
-    co.nTotal
-FROM dbo.Comprobantes_OCR co
-WHERE co.iCodCompra IS NOT NULL
-ORDER BY co.iCodComprobante DESC;
-GO
-
--- 6) Comprobantes asociados a una venta
-SELECT
-    co.iCodComprobante,
-    co.cNombreArchivo,
-    co.cNumeroComprobante,
-    co.nTotal
-FROM dbo.Comprobantes_OCR co
-WHERE co.iCodVenta IS NOT NULL
-ORDER BY co.iCodComprobante DESC;
 GO

@@ -1,4 +1,4 @@
-$(document).ready(function () {
+﻿$(document).ready(function () {
 
     listarProveedoresCombo();
     listarUsuariosCombo();
@@ -27,6 +27,12 @@ $(document).ready(function () {
 var cIGV = 0.18;
 
 var compraDetalles = [];
+var catalogoProductos = [];
+var catalogoProveedores = [];
+var comprobanteOCRPendiente = null;
+var guardandoCompra = false;
+var extrayendoCompra = false;
+var montosDocumento = false;
 
 
 //==================================================
@@ -80,48 +86,12 @@ function formatearFecha(valor) {
 //==================================================
 
 function listarProductosCombo() {
-
-    $.ajax({
-        type: "POST",
-        url: "/Views/Operaciones/Compras/Compras.aspx/ListarProductosCombo",
-        data: "{}",
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-
-        success: function (response) {
-
-            var opciones = response.d;
-
-            var html = "<option value=''>-- Seleccionar --</option>";
-
-            for (var i = 0; i < opciones.length; i++) {
-
-                html += "<option value='" +
-                    opciones[i].v +
-                    "'>" +
-                    opciones[i].t +
-                    "</option>";
-
-            }
-
-            $("#cboProducto").html(html);
-
-        },
-
-        error: function (error) {
-
-            console.log("Error al listar productos:");
-            console.log(error);
-
-        }
+    return $.ajax({type: "POST", url: "/Views/Operaciones/Compras/Compras.aspx/ListarProductosCombo", data: "{}", contentType: "application/json; charset=utf-8", dataType: "json"}).done(function (response) {
+        catalogoProductos = response.d;
+        var combo = $("#cboProducto").empty().append($("<option>").val("").text("-- Seleccionar --"));
+        catalogoProductos.forEach(function(p) { combo.append($("<option>").val(p.v).text(p.t + " — stock: " + p.stock)); });
     });
-
 }
-
-
-//==================================================
-// ACTUALIZAR SUBTOTAL DE LA LÍNEA EN EDICIÓN
-//==================================================
 
 function actualizarSubtotalLineaCompra() {
 
@@ -142,7 +112,7 @@ function actualizarSubtotalLineaCompra() {
 function agregarProductoCompra() {
 
     var idProducto = parseInt($("#cboProducto").val() || 0, 10);
-    var cantidad = parseInt($("#txtCantidadCompra").val() || 0, 10);
+    var cantidad = Number($("#txtCantidadCompra").val());
     var precio = parseFloat($("#txtPrecioCompra").val() || 0);
 
     if (!idProducto) {
@@ -153,7 +123,7 @@ function agregarProductoCompra() {
 
     }
 
-    if (cantidad <= 0) {
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
 
         alert("La cantidad debe ser mayor a 0.");
 
@@ -161,7 +131,7 @@ function agregarProductoCompra() {
 
     }
 
-    if (precio <= 0) {
+    if (!Number.isFinite(precio) || precio < 0) {
 
         alert("El precio de compra debe ser mayor a 0.");
 
@@ -170,10 +140,11 @@ function agregarProductoCompra() {
     }
 
     var nombreProducto =
-        $("#cboProducto option:selected").text();
+        (catalogoProductos.find(function(p) { return Number(p.v) === idProducto; }) || {}).t || "Producto";
 
     var subtotal = Math.round(precio * cantidad * 100) / 100;
 
+    $("#confirmarOCR").prop("checked", false);
     compraDetalles.push({
         iCodProducto: idProducto,
         cNombreProducto: nombreProducto,
@@ -205,6 +176,7 @@ function quitarProductoCompra(index) {
     }
 
     compraDetalles.splice(index, 1);
+    $("#confirmarOCR").prop("checked", false);
 
     dibujarDetalleCompra();
 
@@ -215,115 +187,51 @@ function quitarProductoCompra(index) {
 // DIBUJAR DETALLE DE COMPRA
 //==================================================
 
+function escaparCompra(texto) { return $("<span>").text(texto == null ? "" : texto).html(); }
 function dibujarDetalleCompra() {
-
-    var filas = "";
-
-    for (var i = 0; i < compraDetalles.length; i++) {
-
-        filas += "<tr>";
-
-        filas += "<td>" + compraDetalles[i].cNombreProducto + "</td>";
-        filas += "<td>" + compraDetalles[i].iCantidad + "</td>";
-        filas += "<td>" + formatoMoneda(compraDetalles[i].nPrecioCompra) + "</td>";
-        filas += "<td>" + formatoMoneda(compraDetalles[i].nSubTotal) + "</td>";
-
-        filas += "<td><div class='table-actions'>";
-
-        filas += "<button type='button' class='btn btn-sm btn-danger' onclick='quitarProductoCompra(" +
-            i +
-            ")'>Quitar</button>";
-
-        filas += "</div></td>";
-
-        filas += "</tr>";
-
-    }
-
+    var filas = compraDetalles.map(function(d, i) {
+        var opciones = '<option value="0">Relacionar con inventario</option>';
+        catalogoProductos.forEach(function(p) { opciones += '<option value="' + Number(p.v) + '"' + (Number(p.v) === d.iCodProducto ? ' selected' : '') + '>' + escaparCompra(p.t + ' — stock: ' + p.stock) + '</option>'; });
+        return '<tr><td>' + escaparCompra(d.cNombreProducto) + '<select class="input-control" aria-label="Producto de inventario" onchange="editarLineaCompra(' + i + ', \'producto\', this.value)">' + opciones + '</select></td>' +
+            '<td><input class="input-control" aria-label="Cantidad" type="number" min="1" step="1" value="' + d.iCantidad + '" onchange="editarLineaCompra(' + i + ', \'cantidad\', this.value)" /></td>' +
+            '<td><input class="input-control" aria-label="Precio" type="number" min="0" step="0.01" value="' + d.nPrecioCompra + '" onchange="editarLineaCompra(' + i + ', \'precio\', this.value)" /></td>' +
+            '<td>' + formatoMoneda(d.nSubTotal) + '</td><td><button type="button" class="btn btn-sm btn-danger" onclick="quitarProductoCompra(' + i + ')">Quitar</button></td></tr>';
+    }).join('');
     $("#bodyDetalleCompra").html(filas);
-
     recalcTotalesCompra();
-
 }
-
-
-//==================================================
-// RECALCULAR TOTALES: SUBTOTAL, IGV 18% Y TOTAL
-//==================================================
-
+function editarLineaCompra(index, campo, valor) {
+    var d = compraDetalles[index];
+    if (campo === 'producto') d.iCodProducto = Number(valor);
+    if (campo === 'cantidad') d.iCantidad = Number(valor);
+    if (campo === 'precio') d.nPrecioCompra = Number(valor);
+    d.nSubTotal = Math.round(d.iCantidad * d.nPrecioCompra * 100) / 100;
+    $("#confirmarOCR").prop("checked", false);
+    dibujarDetalleCompra();
+}
+function actualizarMontosCompra() {
+    montosDocumento = true;
+    [["#txtSubTotal", "#txtSubtotalCompraGral"], ["#txtIgv", "#txtIGVCompra"], ["#txtTotal", "#txtTotalCompra"]].forEach(function(ids) { $(ids[0]).val($(ids[1]).val()); });
+    $("#confirmarOCR").prop("checked", false);
+}
 function recalcTotalesCompra() {
-
-    var subtotal = 0;
-
-    for (var i = 0; i < compraDetalles.length; i++) {
-
-        subtotal += compraDetalles[i].nSubTotal;
-
-    }
-
-    subtotal = Math.round(subtotal * 100) / 100;
-
-    var igv = Math.round(subtotal * cIGV * 100) / 100;
+    if (montosDocumento) return;
+    var suma = compraDetalles.reduce(function(total, d) { return total + d.nSubTotal; }, 0);
+    var subtotal = $("#preciosIncluyenIgv").val() === "si" ? Math.round(suma / 1.18 * 100) / 100 : Math.round(suma * 100) / 100;
+    var igv = $("#preciosIncluyenIgv").val() === "si" ? Math.round((suma - subtotal) * 100) / 100 : Math.round(subtotal * cIGV * 100) / 100;
     var total = Math.round((subtotal + igv) * 100) / 100;
-
-    $("#txtSubtotalCompraGral").val(formatoMoneda(subtotal));
-    $("#txtIGVCompra").val(formatoMoneda(igv));
-    $("#txtTotalCompra").val(formatoMoneda(total));
-
-    $("#txtSubTotal").val(subtotal.toFixed(2));
-    $("#txtIgv").val(igv.toFixed(2));
-    $("#txtTotal").val(total.toFixed(2));
-
+    $("#txtSubtotalCompraGral, #txtSubTotal").val(subtotal.toFixed(2));
+    $("#txtIGVCompra, #txtIgv").val(igv.toFixed(2));
+    $("#txtTotalCompra, #txtTotal").val(total.toFixed(2));
 }
-
-
-//==================================================
-// LISTAR PROVEEDORES PARA COMBOBOX
-//==================================================
 
 function listarProveedoresCombo() {
-
-    $.ajax({
-        type: "POST",
-        url: "/Views/Operaciones/Compras/Compras.aspx/ListarProveedoresCombo",
-        data: "{}",
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-
-        success: function (response) {
-
-            var opciones = response.d;
-
-            var html = "<option value=''>-- Seleccionar --</option>";
-
-            for (var i = 0; i < opciones.length; i++) {
-
-                html += "<option value='" +
-                    opciones[i].v +
-                    "'>" +
-                    opciones[i].t +
-                    "</option>";
-
-            }
-
-            $("#cboProveedor").html(html);
-
-        },
-
-        error: function (error) {
-
-            console.log("Error al listar proveedores:");
-            console.log(error);
-
-        }
+    return $.ajax({type: "POST", url: "/Views/Operaciones/Compras/Compras.aspx/ListarProveedoresCombo", data: "{}", contentType: "application/json; charset=utf-8", dataType: "json"}).done(function(response) {
+        catalogoProveedores = response.d;
+        var combo = $("#cboProveedor").empty().append($("<option>").val("").text("-- Seleccionar --"));
+        catalogoProveedores.forEach(function(p) { combo.append($("<option>").val(p.v).text(p.t)); });
     });
-
 }
-
-
-//==================================================
-// LISTAR USUARIOS PARA COMBOBOX
-//==================================================
 
 function listarUsuariosCombo() {
 
@@ -350,7 +258,7 @@ function listarUsuariosCombo() {
 
             }
 
-            $("#cboUsuario").html(html);
+            $("#cboUsuario").html(html).val(opciones.length ? opciones[0].v : "").prop("disabled", true);
 
         },
 
@@ -402,7 +310,7 @@ function listarCompras() {
                 filas += "<td>" + $("<span>").text(compras[i].cNombreProveedor || "Sin proveedor").html() + "</td>";
                 filas += "<td>" + $("<span>").text(compras[i].cNombreUsuario || "Sin usuario").html() + "</td>";
                 filas += "<td>" + compras[i].cTipoComprobante + "</td>";
-                filas += "<td>" + compras[i].cNumeroComprobante + "</td>";
+                filas += "<td>" + escaparCompra(compras[i].cNumeroComprobante) + "</td>";
                 filas += "<td>" + formatearFecha(compras[i].dFechaCompra) + "</td>";
                 filas += "<td>" + compras[i].nSubTotal + "</td>";
                 filas += "<td>" + compras[i].nIgv + "</td>";
@@ -419,6 +327,7 @@ function listarCompras() {
                     compras[i].iCodCompra +
                     ")'>Anular</button>";
 
+                filas += "<a class='btn btn-sm btn-secondary' href='?archivoCompra=" + compras[i].iCodCompra + "'>Comprobante</a>";
                 filas += "</div></td>";
 
                 filas += "</tr>";
@@ -447,89 +356,39 @@ function listarCompras() {
 //==================================================
 
 function guardarCompra() {
-
-    if (compraDetalles.length === 0) {
-
-        alert("Agrega al menos un producto a la compra.");
-
-        return;
-
-    }
-
-    var compra = {
-
-        iCodCompra: 0,
-
-        iCodProveedor: parseInt($("#cboProveedor").val() || 0),
-        iCodUsuario: parseInt($("#cboUsuario").val() || 0),
-        cTipoComprobante: $("#cboTipoComprobante").val(),
-        cNumeroComprobante: $("#txtNumeroComprobante").val(),
-        nSubTotal: parseFloat($("#txtSubTotal").val()),
-        nIgv: parseFloat($("#txtIgv").val()),
-        nTotal: parseFloat($("#txtTotal").val()),
-        cObservacion: $("#txtObservacion").val(),
-        cEstado: $("#cboEstado").val()
-
-    };
-
-    var detalles = [];
-
-    for (var i = 0; i < compraDetalles.length; i++) {
-
-        detalles.push({
-            iCodProducto: compraDetalles[i].iCodProducto,
-            iCantidad: compraDetalles[i].iCantidad,
-            nPrecioCompra: compraDetalles[i].nPrecioCompra,
-            nSubTotal: compraDetalles[i].nSubTotal
-        });
-
-    }
-
-    $.ajax({
-        type: "POST",
-        url: "/Views/Operaciones/Compras/Compras.aspx/GuardarCompra",
-        data: JSON.stringify({
-            compra: compra,
-            detalles: detalles
-        }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-
-        success: function (response) {
-
-            if (response.d === "OK") {
-
-                alert("Compra registrada correctamente.");
-
-                guardarComprobanteCompraRegistrada();
-                limpiarFormulario();
-                listarCompras();
-
-            } else {
-
-                alert(response.d);
-
-            }
-
-        },
-
-        error: function (error) {
-
-            console.log(error);
-
-            alert("Error al registrar la compra.");
-
-        }
-    });
-
+    if (guardandoCompra || extrayendoCompra) return;
+    if (document.getElementById("txtArchivoComprobante").files.length && !comprobanteOCRPendiente) { alert("Primero extrae los datos del archivo seleccionado."); return; }
+    if ($("#txtIdCompra").val()) { alert("Esta compra ya está registrada. Limpia el formulario para crear otra."); return; }
+    if (!compraDetalles.length || compraDetalles.some(function(d) { return !d.iCodProducto || !Number.isInteger(d.iCantidad) || d.iCantidad <= 0 || !Number.isFinite(d.nPrecioCompra) || d.nPrecioCompra < 0; })) { alert("Relaciona todos los productos y revisa cantidades y precios."); return; }
+    if (new Set(compraDetalles.map(function(d) { return d.iCodProducto; })).size !== compraDetalles.length) { alert("Agrupa las cantidades de los productos repetidos en una sola línea."); return; }
+    if (!$("#cboProveedor").val() || !$("#txtNumeroComprobante").val().trim() || !$("#txtFechaCompra").val()) { alert("Completa proveedor, número y fecha del comprobante."); return; }
+    var subtotal = parseFloat($("#txtSubTotal").val()), igv = parseFloat($("#txtIgv").val()), total = parseFloat($("#txtTotal").val());
+    if (![subtotal, igv, total].every(Number.isFinite) || subtotal < 0 || igv < 0 || total <= 0 || Math.abs(subtotal + igv - total) > .005) { alert("Revisa los montos: subtotal más IGV debe ser igual al total."); return; }
+    var incluidos = $("#preciosIncluyenIgv").val() === "si";
+    var suma = compraDetalles.reduce(function(t,d) { return t + d.nSubTotal; }, 0);
+    if (Math.abs(suma - (incluidos ? total : subtotal)) > .02) { alert("La suma de productos no coincide con el comprobante. Revisa las líneas y si los precios incluyen IGV."); return; }
+    if (comprobanteOCRPendiente && !$("#confirmarOCR").prop("checked")) { alert("Revisa los datos leídos y marca la confirmación antes de guardar."); return; }
+    var compra = { iCodCompra: 0, iCodProveedor: Number($("#cboProveedor").val()), cTipoComprobante: $("#cboTipoComprobante").val(), cNumeroComprobante: $("#txtNumeroComprobante").val().trim(), nSubTotal: subtotal, nIgv: igv, nTotal: total, cObservacion: $("#txtObservacion").val(), cEstado: "REGISTRADA" };
+    guardandoCompra = true;
+    bloquearCompra(true);
+    $.ajax({type: "POST", url: "/Views/Operaciones/Compras/Compras.aspx/GuardarCompra", contentType: "application/json; charset=utf-8", dataType: "json", data: JSON.stringify({ compra: compra, detalles: compraDetalles, comprobante: comprobanteOCRPendiente, fechaCompra: $("#txtFechaCompra").val(), preciosIncluyenIgv: incluidos })})
+        .done(function(response) {
+            if (!response.d.ok) { alert(response.d.mensaje); return; }
+            guardandoCompra = false;
+            limpiarFormulario();
+            $("#ocrEstado").text("Compra " + response.d.idCompra + " registrada. Inventario actualizado.");
+            listarCompras(); listarProductosCombo();
+        }).fail(function() { alert("No se recibió confirmación. Revisa las compras realizadas antes de reintentar; se conserva el formulario."); })
+        .always(function() { guardandoCompra = false; bloquearCompra(false); });
+}
+function bloquearCompra(bloquear) {
+    $("#panelRegistroCompra input, #panelRegistroCompra select, #panelRegistroCompra button").prop("disabled", bloquear);
+    $("#cboUsuario, #cboEstado").prop("disabled", true);
 }
 
-
-//==================================================
-// SELECCIONAR COMPRA PARA EDITAR
-//==================================================
-
 function seleccionarCompra(idCompra) {
+    if (guardandoCompra || extrayendoCompra) return;
+    limpiarFormulario();
     mostrarVistaCompras("registro", true);
 
     $.ajax({
@@ -546,6 +405,13 @@ function seleccionarCompra(idCompra) {
             var compra = response.d;
 
             $("#txtIdCompra").val(compra.iCodCompra);
+            $("#txtFechaCompra").val(fechaCompraInput(compra.dFechaCompra));
+            $("#txtSubtotalCompraGral").val(compra.nSubTotal);
+            $("#txtIGVCompra").val(compra.nIgv);
+            $("#txtTotalCompra").val(compra.nTotal);
+            $("#panelRegistroCompra input, #panelRegistroCompra select, #panelRegistroCompra button").prop("disabled", true);
+            $("#txtObservacion, #btnModificarCompra, #btnLimpiarCompra").prop("disabled", false);
+            $("#ocrEstado").text("Compra registrada: puedes actualizar su observación o consultar sus productos en Detalle de compra.");
             $("#cboProveedor").val(compra.iCodProveedor);
             $("#cboUsuario").val(compra.iCodUsuario);
             $("#cboTipoComprobante").val(compra.cTipoComprobante).prop("disabled", true);
@@ -699,10 +565,21 @@ function eliminarCompra(idCompra) {
 //==================================================
 
 function limpiarFormulario() {
+    if (guardandoCompra || extrayendoCompra) return;
+    comprobanteOCRPendiente = null;
+    montosDocumento = false;
+    $("#panelRegistroCompra input, #panelRegistroCompra select, #panelRegistroCompra button").prop("disabled", false);
+    $("#cboUsuario, #cboEstado").prop("disabled", true);
+    $("#txtArchivoComprobante").val("");
+    $("#ocrEstado, #advertenciasOCR, #textoOCR").text("");
+    $("#confirmarOCR").prop("checked", false);
+    $("#revisionOCR").prop("hidden", true);
+    $("#txtFechaCompra").val(fechaCompraInput(new Date()));
+    $("#preciosIncluyenIgv").val("no");
 
     $("#txtIdCompra").val("");
     $("#cboProveedor").val("");
-    $("#cboUsuario").val("");
+
     $("#cboTipoComprobante").val("FACTURA").prop("disabled", false);
     $("#txtNumeroComprobante").val("");
     $("#txtSubTotal").val("");
@@ -769,269 +646,89 @@ function mostrarVistaCompras(vista, actualizarUrl) {
     if (registros) listarCompras();
 }
 
-function guardarComprobanteCompraRegistrada() {
 
-    if (!comprobanteOCRPendiente) return;
-
-    $.ajax({
-        type: "POST",
-        url: "/Views/Operaciones/Compras/Compras.aspx/ObtenerUltimaCompraId",
-        data: "{}",
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-
-        success: function (response) {
-
-            guardarComprobanteOCRCompra(response.d);
-
-        },
-
-        error: function (error) {
-
-            $("#ocrEstado").text(mensajeErrorComprobanteOCR());
-
-            console.log(error);
-
-        }
-
+function fechaCompraInput(valor) {
+    var m = /\/Date\((\d+)\)\//.exec(String(valor));
+    var fecha = m ? new Date(Number(m[1])) : new Date(valor);
+    if (isNaN(fecha.getTime())) return "";
+    return fecha.getFullYear() + '-' + String(fecha.getMonth() + 1).padStart(2, '0') + '-' + String(fecha.getDate()).padStart(2, '0');
+}
+function claveProductoOCR(texto) {
+    return normalizarBusquedaCompra(texto).replace(/[^a-z0-9]/g, '');
+}
+function productoParaOCR(descripcion) {
+    var clave = claveProductoOCR(descripcion);
+    var codigo = claveProductoOCR(String(descripcion).trim().split(/\s+/)[0]);
+    var coincidencias = catalogoProductos.filter(function(p) { return claveProductoOCR(p.t) === clave || (p.codigo && (claveProductoOCR(p.codigo) === clave || claveProductoOCR(p.codigo) === codigo)); });
+    // Las coincidencias parciales pueden confundir marcas, tamaños y modelos.
+    return coincidencias.length === 1 ? Number(coincidencias[0].v) : 0;
+}
+function aplicarOCRCompra(respuesta, archivo) {
+    var d = respuesta.datos;
+    comprobanteOCRPendiente = Object.assign({}, archivo, { textoOcr: respuesta.texto_ocr || '', rucEmisor: d.ruc_emisor || '' });
+    montosDocumento = true;
+    $("#txtNumeroComprobante").val(d.numero_comprobante || '');
+    $("#txtFechaCompra").val(d.fecha_emision || '');
+    $("#cboTipoComprobante").val(d.tipo_comprobante || '');
+    var proveedores = catalogoProveedores.filter(function(p) { return d.ruc_emisor && p.codigo === d.ruc_emisor; });
+    $("#cboProveedor").val(proveedores.length === 1 ? proveedores[0].v : '');
+    [["subtotal", "#txtSubtotalCompraGral", "#txtSubTotal"], ["igv", "#txtIGVCompra", "#txtIgv"], ["total", "#txtTotalCompra", "#txtTotal"]].forEach(function(c) {
+        $(c[1] + ', ' + c[2]).val(d[c[0]] == null ? '' : d[c[0]]);
     });
-
-}
-
-
-//==================================================
-// LEER EL ARCHIVO SELECCIONADO COMO BASE64
-// Usa FileReader.readAsDataURL y devuelve unicamente
-// la parte base64 que sigue a la coma.
-//==================================================
-
-function leerArchivoBase64(input, callback) {
-
-    if (!input || !input.files || input.files.length === 0) {
-
-        callback(null);
-
-        return;
-
-    }
-
-    var lector = new FileReader();
-
-    lector.onload = function (evento) {
-
-        var resultado = String(evento.target.result || "");
-
-        var posicion = resultado.indexOf(",");
-
-        callback(posicion >= 0 ? resultado.substring(posicion + 1) : resultado);
-
-    };
-
-    lector.onerror = function () {
-
-        callback(null);
-
-    };
-
-    lector.readAsDataURL(input.files[0]);
-
-}
-
-
-//==================================================
-// DATOS DEL COMPROBANTE LEIDOS CON OCR
-// Se guardan para poder asociarlos al comprobante
-// cuando la compra ya tenga un codigo asignado.
-//==================================================
-
-var comprobanteOCRPendiente = null;
-
-
-//==================================================
-// TEXTO DE ERROR AL GUARDAR EL COMPROBANTE
-//==================================================
-
-function mensajeErrorComprobanteOCR() {
-
-    return "No se pudo guardar el comprobante en la BD " +
-        "(puede que la tabla Comprobantes_OCR no exista; ejecuta el script SQL).";
-
-}
-
-
-//==================================================
-// GUARDAR EL COMPROBANTE OCR EN LA BASE DE DATOS
-//==================================================
-
-function guardarComprobanteOCRCompra(idCompra) {
-
-    var datos = comprobanteOCRPendiente;
-
-    var id = parseInt(idCompra || 0, 10);
-
-    if (!datos || !id || id <= 0) {
-
-        return;
-
-    }
-
-    var input = document.getElementById("txtArchivoComprobante");
-
-    $("#ocrEstado").text("Guardando comprobante en la base de datos...");
-
-    leerArchivoBase64(input, function (contenidoBase64) {
-
-        if (!contenidoBase64) {
-
-            $("#ocrEstado").text(
-                mensajeErrorComprobanteOCR()
-            );
-
-            return;
-
-        }
-
-        $.ajax({
-            type: "POST",
-            url: "/Views/Operaciones/Compras/Compras.aspx/GuardarComprobanteOCR",
-            data: JSON.stringify({
-                nombreArchivo: datos.nombreArchivo,
-                tipoMime: datos.tipoMime,
-                contenidoBase64: contenidoBase64,
-                textoOcr: datos.textoOcr,
-                rucEmisor: datos.rucEmisor,
-                numeroComprobante: datos.numeroComprobante,
-                tipoComprobante: datos.tipoComprobante,
-                fechaEmision: datos.fechaEmision,
-                subtotal: datos.subtotal,
-                igv: datos.igv,
-                total: datos.total,
-                idCompra: id
-            }),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-
-            success: function (response) {
-
-                if (response.d === "OK") {
-
-                    $("#ocrEstado").text("Comprobante guardado en la base de datos.");
-
-                    comprobanteOCRPendiente = null;
-
-                } else {
-
-                    $("#ocrEstado").text(mensajeErrorComprobanteOCR());
-
-                    console.log(response.d);
-
-                }
-
-            },
-
-            error: function (error) {
-
-                $("#ocrEstado").text(mensajeErrorComprobanteOCR());
-
-                console.log(error);
-
-            }
-
-        });
-
+    compraDetalles = (d.detalles || []).map(function(linea) {
+        return { iCodProducto: productoParaOCR(linea.descripcion), cNombreProducto: linea.descripcion, iCantidad: linea.cantidad, nPrecioCompra: linea.precio_unitario, nSubTotal: Math.round(linea.cantidad * linea.precio_unitario * 100) / 100 };
     });
-
+    var suma = compraDetalles.reduce(function(t, linea) { return t + linea.nSubTotal; }, 0);
+    $("#preciosIncluyenIgv").val(d.total != null && Math.abs(suma - d.total) < .02 ? 'si' : 'no');
+    dibujarDetalleCompra();
+    var avisos = (d.advertencias || []).slice();
+    if (proveedores.length !== 1) avisos.push('Selecciona el proveedor. Si es nuevo, regístralo primero en Proveedores.');
+    if (compraDetalles.some(function(linea) { return !linea.iCodProducto; })) avisos.push('Relaciona los productos pendientes con el inventario. Si son nuevos, créalos primero en Productos.');
+    $("#advertenciasOCR").text(avisos.join(' '));
+    $("#textoOCR").text(respuesta.texto_ocr || '');
+    $("#revisionOCR").prop('hidden', false);
+    $("#confirmarOCR").prop('checked', false);
+    $("#ocrEstado").text('Datos leídos. Revisa las líneas e importes y pulsa Guardar.');
 }
-
-
 function extraerOCRCompra() {
+    if (extrayendoCompra || guardandoCompra || $("#txtIdCompra").val()) return;
     var input = document.getElementById('txtArchivoComprobante');
-    if (!input.files || input.files.length === 0) {
-        alert('Selecciona un archivo de comprobante para extraer datos.');
-        return;
+    var file = input.files && input.files[0];
+    if (!file || !/\.(png|jpe?g|bmp|tiff?|pdf)$/i.test(file.name) || file.size === 0 || file.size > 10 * 1024 * 1024) { alert('Selecciona una imagen o PDF de hasta 10 MB.'); return; }
+    extrayendoCompra = true;
+    bloquearCompra(true);
+    $("#ocrEstado").text('Leyendo comprobante...');
+    var lector = new FileReader();
+    lector.onerror = function() { terminar('No se pudo leer el archivo.'); };
+    lector.onload = function() {
+        var archivo = { nombreArchivo: file.name, tipoMime: file.type, contenidoBase64: String(lector.result).split(',')[1] };
+        $.when(listarProductosCombo(), listarProveedoresCombo()).done(function() {
+            $.ajax({ type: 'POST', url: '/Views/Operaciones/Compras/Compras.aspx/ExtraerComprobante', contentType: 'application/json; charset=utf-8', dataType: 'json', timeout: 175000, data: JSON.stringify({ archivo: archivo }) })
+                .done(function(response) {
+                    if (!response.d || !response.d.success) { terminar(response.d && response.d.mensaje || 'No se pudo leer el comprobante.'); return; }
+                    aplicarOCRCompra(response.d, archivo);
+                    terminar();
+                }).fail(function() { terminar('No se pudo extraer el comprobante. Verifica tu sesión y el servicio OCR.'); });
+        }).fail(function() { terminar('No se pudo cargar el catálogo de productos y proveedores. Reintenta.'); });
+    };
+    lector.readAsDataURL(file);
+    function terminar(mensaje) {
+        extrayendoCompra = false;
+        bloquearCompra(false);
+        if (mensaje) $("#ocrEstado").text(mensaje);
     }
-    var archivo = input.files[0];
-    var formData = new FormData();
-    formData.append('file', archivo);
-    $("#ocrEstado").text('Extrayendo datos...');
-    $("#btnExtraerOCR").prop('disabled', true);
-    $.ajax({
-        url: 'http://localhost:5000/ocr/extraer',
-        type: 'POST',
-        data: formData,
-        cache: false,
-        contentType: false,
-        processData: false,
-        success: function (resp) {
-            $("#btnExtraerOCR").prop('disabled', false);
-            if (resp && resp.success && resp.datos) {
-                var d = resp.datos;
-                if (d.numero_comprobante) $("#txtNumeroComprobante").val(d.numero_comprobante);
-                var tipoOCR = d.tipo_comprobante ? d.tipo_comprobante.toUpperCase() : '';
-                if (d.tipo_comprobante) {
-                    var tipo = d.tipo_comprobante.toUpperCase();
-                    if (tipo === 'BOLETA' || tipo === 'FACTURA') {
-                        $("#cboTipoComprobante").val(tipo);
-                    }
-                }
-                if (d.fecha_emision) {
-                    try {
-                        var f = d.fecha_emision;
-                        if (f.indexOf('/') >= 0) {
-                            var p = f.split('/');
-                            if (p.length === 3) f = p[2] + '-' + p[1] + '-' + p[0];
-                        }
-                        $("#txtFechaCompra").val(f);
-                    } catch (e) { }
-                }
-                if (typeof d.total !== 'undefined' && d.total !== null) {
-                    $("#txtTotalCompra").val(formatoMoneda(d.total));
-                    $("#txtTotal").val(d.total.toFixed ? d.total.toFixed(2) : String(d.total));
-                }
-                if (typeof d.subtotal !== 'undefined' && d.subtotal !== null) {
-                    $("#txtSubtotalCompraGral").val(formatoMoneda(d.subtotal));
-                    $("#txtSubTotal").val(d.subtotal.toFixed ? d.subtotal.toFixed(2) : String(d.subtotal));
-                }
-                if (typeof d.igv !== 'undefined' && d.igv !== null) {
-                    $("#txtIGVCompra").val(formatoMoneda(d.igv));
-                    $("#txtIgv").val(d.igv.toFixed ? d.igv.toFixed(2) : String(d.igv));
-                }
-
-                // Se conservan los datos del OCR y el archivo
-                // seleccionado para guardarlos en la base de datos.
-                comprobanteOCRPendiente = {
-                    nombreArchivo: archivo.name || 'comprobante_ocr',
-                    tipoMime: archivo.type || '',
-                    textoOcr: resp.texto_ocr || '',
-                    rucEmisor: d.ruc_emisor || '',
-                    numeroComprobante: d.numero_comprobante || '',
-                    tipoComprobante: tipoOCR,
-                    fechaEmision: d.fecha_emision || '',
-                    subtotal: parseFloat(d.subtotal || 0),
-                    igv: parseFloat(d.igv || 0),
-                    total: parseFloat(d.total || 0)
-                };
-
-                var idCompra = parseInt($("#txtIdCompra").val() || 0, 10);
-
-                if (idCompra > 0) {
-
-                    guardarComprobanteOCRCompra(idCompra);
-
-                } else {
-
-                    $("#ocrEstado").text('Datos extraídos. Revisa y corrige si es necesario.');
-
-                }
-
-            } else {
-                $("#ocrEstado").text('No se pudo extraer datos del comprobante.');
-            }
-        },
-        error: function (err) {
-            $("#btnExtraerOCR").prop('disabled', false);
-            $("#ocrEstado").text('Error al conectar con el servicio OCR.');
-            console.log(err);
-        }
-    });
 }
+$(function() {
+    $("#txtFechaCompra").val(fechaCompraInput(new Date()));
+    $("#txtArchivoComprobante").on('change', function() {
+        comprobanteOCRPendiente = null;
+        compraDetalles = [];
+        montosDocumento = true;
+        $("#revisionOCR").prop('hidden', true);
+        $("#confirmarOCR").prop('checked', false);
+        $("#txtNumeroComprobante, #txtFechaCompra, #txtSubTotal, #txtIgv, #txtTotal, #txtSubtotalCompraGral, #txtIGVCompra, #txtTotalCompra, #cboProveedor").val('');
+        dibujarDetalleCompra();
+        $("#ocrEstado").text('Archivo seleccionado.');
+        if (this.files && this.files.length) extraerOCRCompra();
+    });
+});

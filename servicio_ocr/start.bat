@@ -1,4 +1,7 @@
 @echo off
-echo Iniciando servicio OCR...
-cd /d %~dp0
-python app.py
+cd /d "%~dp0"
+if exist ".venv\Scripts\python.exe" (
+  ".venv\Scripts\python.exe" app.py
+) else (
+  python app.py
+)

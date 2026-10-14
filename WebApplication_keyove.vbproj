@@ -109,7 +109,15 @@
     <Content Include="JScript\Usuarios.js" />
     <Content Include="JScript\Ventas.js" />
     <Content Include="prueba conexion.aspx" />
+    <Content Include="Assets\js\jquery-3.7.1.min.js" />
     <Content Include="Scripts\01_crear_comprobantes_ocr.sql" />
+    <Content Include="Scripts\02_registro_ventas_inventario.sql" />
+    <Content Include="Scripts\03_compras_comprobante_activo.sql" />
+    <Content Include="servicio_ocr\app.py" />
+    <Content Include="servicio_ocr\extractor.py" />
+    <Content Include="servicio_ocr\ocr.py" />
+    <Content Include="servicio_ocr\requirements-test.txt" />
+    <Content Include="servicio_ocr\requirements.txt" />
     <Content Include="Tests\compras-navigation.test.cjs" />
     <Content Include="Tests\detalles-ui.test.cjs" />
     <Content Include="Tests\layout-responsive.test.cjs" />
@@ -141,7 +149,6 @@
     <Compile Include="Helpers\SeguridadHelper.vb" />
     <Compile Include="Helpers\ValidacionHelper.vb" />
     <Compile Include="Helpers\ComprobanteHelper.vb" />
-
     <Compile Include="Views\Login.aspx.designer.vb">
       <DependentUpon>Login.aspx</DependentUpon>
     </Compile>
@@ -259,6 +266,9 @@
     <Compile Include="Views\Operaciones\Compras\Compras.aspx.designer.vb">
       <DependentUpon>Compras.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\Operaciones\Compras\ComprasOCR.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Views\Operaciones\Compras\Compras.aspx.vb">
       <DependentUpon>Compras.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -305,6 +315,10 @@
     </None>
     <None Include="packages.config" />
     <Content Include="Views\Master\Site.Master" />
+    <Content Include="servicio_ocr\README.md" />
+    <Content Include="servicio_ocr\setup.ps1" />
+    <Content Include="servicio_ocr\start.bat" />
+    <Content Include="servicio_ocr\start.ps1" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

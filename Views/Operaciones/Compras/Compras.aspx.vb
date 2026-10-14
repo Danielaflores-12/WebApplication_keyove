@@ -1,4 +1,4 @@
-Imports System.Web.Services
+﻿Imports System.Web.Services
 Imports System.Web.Script.Services
 Imports WebApplication_keyove.WebApplication_Keyove.Model
 Imports WebApplication_keyove.WebApplication_Keyove.Data
@@ -15,7 +15,8 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         Inherits Global.System.Web.UI.Page
 
         Protected Sub Page_Load(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles Me.Load
-
+            ExigirAdministradora()
+            DescargarArchivoCompra()
         End Sub
 
 
@@ -27,6 +28,8 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
 
             Public v As String
             Public t As String
+            Public codigo As String
+            Public stock As Integer
 
         End Class
 
@@ -35,14 +38,15 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         ' LISTAR PROVEEDORES PARA COMBOBOX
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarProveedoresCombo() As List(Of OpcionCombo)
+            ExigirAdministradora()
 
             Dim lista As New List(Of OpcionCombo)()
 
             Dim tabla As DataTable =
-                New ModeloProveedor().ListaDatosCombo()
+                New ConexionBD().ExecuteDataTable("SELECT iCodProveedor AS ValueMember, cRazonSocial AS DisplayMember, cRuc FROM Proveedores WHERE bEstado = 1")
 
             For Each fila As DataRow In tabla.Rows
 
@@ -53,6 +57,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
 
                 opcion.t =
                     Convert.ToString(fila("DisplayMember"))
+                opcion.codigo = Convert.ToString(fila("cRuc"))
 
                 lista.Add(opcion)
 
@@ -67,30 +72,15 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         ' LISTAR USUARIOS PARA COMBOBOX
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarUsuariosCombo() As List(Of OpcionCombo)
+            ExigirAdministradora()
 
-            Dim lista As New List(Of OpcionCombo)()
-
-            Dim tabla As DataTable =
-                New ModeloUsuario().ListaDatosCombo()
-
-            For Each fila As DataRow In tabla.Rows
-
-                Dim opcion As New OpcionCombo()
-
-                opcion.v =
-                    Convert.ToString(fila("ValueMember"))
-
-                opcion.t =
-                    Convert.ToString(fila("DisplayMember"))
-
-                lista.Add(opcion)
-
-            Next
-
-            Return lista
+            Dim sesion = System.Web.HttpContext.Current.Session
+            Return New List(Of OpcionCombo) From {
+                New OpcionCombo With {.v = Convert.ToString(sesion("iCodUsuario")), .t = Convert.ToString(sesion("Usuario"))}
+            }
 
         End Function
 
@@ -99,9 +89,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         ' LISTAR PRODUCTOS PARA COMBOBOX
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarProductosCombo() As List(Of OpcionCombo)
+            ExigirAdministradora()
 
             Dim lista As New List(Of OpcionCombo)()
 
@@ -119,6 +110,8 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
 
                     opcion.t =
                         Convert.ToString(fila("cNombre"))
+                    opcion.codigo = Convert.ToString(fila("cCodigo"))
+                    opcion.stock = Convert.ToInt32(fila("iStockActual"))
 
                     lista.Add(opcion)
 
@@ -135,9 +128,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         ' LISTAR COMPRAS
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ListarCompras() As List(Of ModeloCompra)
+            ExigirAdministradora()
 
             Dim lista As New List(Of ModeloCompra)()
 
@@ -204,208 +198,22 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         ' GUARDAR COMPRA CON SUS DETALLES
         '==================================================
 
-        <WebMethod()>
-        Public Shared Function GuardarCompra(
-            compra As ModeloCompra,
-            detalles As List(Of ModeloDetalleCompra)
-        ) As String
-
-            Try
-
-                Using db As New ConexionBD()
-
-                    db.BeginTransaction()
-
-                    compra.db = db
-                    compra.InsertarTransact()
-
-                    If detalles IsNot Nothing Then
-
-                        For Each detalle As ModeloDetalleCompra In detalles
-
-                            detalle.iCodCompra =
-                                compra.iCodCompra
-
-                            detalle.db = db
-                            detalle.InsertarTransact()
-
-                        Next
-
-                    End If
-
-                    db.CommitTransaction()
-
-                End Using
-
-                Return "OK"
-
-            Catch ex As Exception
-
-                Return "ERROR: " & ex.Message
-
-            End Try
-
-        End Function
-
-
-        '==================================================
-        ' GUARDAR ARCHIVO DE COMPROBANTE CON OCR
-        ' Persiste la imagen/PDF del comprobante y los datos
-        ' extraidos por el servicio OCR en Comprobantes_OCR,
-        ' vinculandolo a la compra indicada.
-        '==================================================
-
-        <WebMethod()>
-        Public Shared Function GuardarComprobanteOCR(
-            nombreArchivo As String,
-            tipoMime As String,
-            contenidoBase64 As String,
-            textoOcr As String,
-            rucEmisor As String,
-            numeroComprobante As String,
-            tipoComprobante As String,
-            fechaEmision As String,
-            subtotal As Decimal,
-            igv As Decimal,
-            total As Decimal,
-            idCompra As Integer
-        ) As String
-
-            Try
-
-                Dim contenido As Byte() = Nothing
-
-                If Not String.IsNullOrWhiteSpace(contenidoBase64) Then
-
-                    contenido =
-                        Convert.FromBase64String(
-                            LimpiarBase64(contenidoBase64)
-                        )
-
-                End If
-
-                Dim obj As New ModeloComprobanteOCR()
-
-                obj.iCodCompra = idCompra
-                obj.iCodVenta = 0
-                obj.cNombreArchivo =
-                    If(
-                        String.IsNullOrWhiteSpace(nombreArchivo),
-                        "comprobante_ocr",
-                        nombreArchivo.Trim()
-                    )
-                obj.cTipoMime = tipoMime
-                obj.nTamanoBytes =
-                    If(contenido Is Nothing, 0, contenido.Length)
-                obj.cRucEmisor = rucEmisor
-                obj.cNumeroComprobante = numeroComprobante
-                obj.cTipoComprobante = tipoComprobante
-                obj.dFechaEmision = ConvertirFecha(fechaEmision)
-                obj.nSubTotal = subtotal
-                obj.nIgv = igv
-                obj.nTotal = total
-                obj.cTextoOcr = textoOcr
-                obj.imgComprobante = contenido
-
-                Using db As New ConexionBD()
-
-                    db.BeginTransaction()
-
-                    obj.db = db
-                    obj.Insertar()
-
-                    db.CommitTransaction()
-
-                End Using
-
-                Return "OK"
-
-            Catch ex As Exception
-
-                Return "ERROR: " & ex.Message
-
-            End Try
-
-        End Function
-
-
-        '==================================================
-        ' OBTENER EL CODIGO DE LA ULTIMA COMPRA REGISTRADA
-        ' Permite asociar el comprobante OCR recien leido
-        ' con la compra que se acaba de guardar.
-        '==================================================
-
-        <WebMethod()>
-        Public Shared Function ObtenerUltimaCompraId() As Integer
-
-            Dim obj As New ModeloCompra()
-
-            Dim resultado As Object =
-                obj.db.ExecuteScalar(
-                    "SELECT MAX(iCodCompra) FROM Compras"
-                )
-
-            If resultado Is Nothing OrElse IsDBNull(resultado) Then
-                Return 0
-            End If
-
-            Return Convert.ToInt32(resultado)
-
-        End Function
-
-
-        '==================================================
-        ' QUITAR EL PREFIJO DATA:...;BASE64,
-        ' DEJANDO SOLO LA CADENA EN BASE64
-        '==================================================
-
-        Private Shared Function LimpiarBase64(contenido As String) As String
-
-            Dim limpio As String = contenido.Trim()
-
-            Dim posicion As Integer =
-                limpio.IndexOf(","c)
-
-            If posicion >= 0 Then
-                limpio = limpio.Substring(posicion + 1)
-            End If
-
-            Return limpio.Trim()
-
-        End Function
-
-
-        '==================================================
-        ' CONVERTIR TEXTO DE FECHA A DATE
-        '==================================================
-
-        Private Shared Function ConvertirFecha(valor As String) As Date?
-
-            If String.IsNullOrWhiteSpace(valor) Then
-                Return Nothing
-            End If
-
-            Dim fecha As Date
-
-            If Date.TryParse(valor.Trim(), fecha) Then
-                Return fecha.Date
-            End If
-
-            Return Nothing
-
-        End Function
-
-
         '==================================================
         ' MODIFICAR COMPRA
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         Public Shared Function ModificarCompra(compra As ModeloCompra) As String
+            ExigirAdministradora()
 
             Try
 
-                compra.Modificar()
+                Using db As New ConexionBD()
+                    db.ExecuteQuery("UPDATE Compras SET cObservacion=@observacion WHERE iCodCompra=@id AND cEstado='REGISTRADA'", New List(Of System.Data.SqlClient.SqlParameter) From {
+                        New System.Data.SqlClient.SqlParameter("@observacion", If(compra.cObservacion, "")),
+                        New System.Data.SqlClient.SqlParameter("@id", compra.iCodCompra)
+                    })
+                End Using
 
                 Return "OK"
 
@@ -422,15 +230,16 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         ' ANULAR COMPRA
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         Public Shared Function EliminarCompra(idCompra As Integer) As String
+            ExigirAdministradora()
 
             Try
 
                 Dim objCompra As New ModeloCompra()
 
                 objCompra.iCodCompra = idCompra
-                objCompra.Eliminar()
+                AnularCompraConInventario(idCompra)
 
                 Return "OK"
 
@@ -447,9 +256,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         ' OBTENER COMPRA POR ID
         '==================================================
 
-        <WebMethod()>
+        <WebMethod(EnableSession:=True)>
         <ScriptMethod(ResponseFormat:=ResponseFormat.Json)>
         Public Shared Function ObtenerCompra(idCompra As Integer) As ModeloCompra
+            ExigirAdministradora()
 
             Dim objCompra As New ModeloCompra()
 

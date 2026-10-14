@@ -3,3 +3,9 @@ bin/
 obj/
 *.user
 *.suo
+servicio_ocr/.venv/
+__pycache__/
+*.pyc
+Tests/artifacts/
+servicio_ocr/tessdata/
+servicio_ocr/.runtime/

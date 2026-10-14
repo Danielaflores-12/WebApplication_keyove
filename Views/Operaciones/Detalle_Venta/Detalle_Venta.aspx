@@ -1,15 +1,16 @@
-<%@ Page Language="vb"
+﻿<%@ Page Language="vb"
     AutoEventWireup="false"
     MasterPageFile="~/Views/Master/Site.Master"
     CodeBehind="Detalle_Venta.aspx.vb"
     Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Operaciones.Detalle_Venta.DetalleVenta1" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
+    <style>#editorDetalleRegistrado { display: none; } #tablaDetalleVenta th:last-child, #tablaDetalleVenta td:last-child { display: none; }</style>
     <script src="../../../JScript/Detalle_Venta.js"></script>
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
     <div class="page-title">
         <h1>Productos de la venta</h1>
-        <p>Elige un comprobante para consultar o agregar sus productos.</p>
+        <p>Consulta los productos del comprobante. Para corregir cantidades o precios, anula la operación y regístrala nuevamente.</p>
     </div>
     <div class="card">
         <div class="card-title">1. Selecciona el comprobante</div>
@@ -18,7 +19,7 @@
             <select id="cboVenta" class="input-control"><option value="">Cargando comprobantes...</option></select>
         </div>
     </div>
-    <div class="card">
+    <div class="card" id="editorDetalleRegistrado">
         <div class="card-title" id="tituloEditor">2. Agrega un producto</div>
         <p id="mensajeDetalle" role="status" aria-live="polite"></p>
         <fieldset id="editorDetalle" class="detalle-editor" disabled>
