@@ -1,4 +1,5 @@
 ﻿Imports System.Data.SqlClient
+Imports System.Configuration
 Imports System.Security.Cryptography
 Imports System.Text
 
@@ -6,10 +7,7 @@ Partial Public Class Login
     Inherits Global.System.Web.UI.Page
 
     Private ReadOnly cadenaConexion As String =
-        "Data Source=.\SQLEXPRESS;" &
-        "Initial Catalog=DB_keyove_inventario;" &
-        "Integrated Security=True;" &
-        "TrustServerCertificate=True;"
+        ConfigurationManager.ConnectionStrings("ConexionInventario").ConnectionString
 
     Protected Sub btnIngresar_Click(
         sender As Object,
@@ -73,10 +71,10 @@ Partial Public Class Login
                             Dim destino As String =
                                             "~/Views/Dashboard/Dashboard.aspx"
 
-                            If String.Equals(rol, "Vendedor",
-                                StringComparison.OrdinalIgnoreCase) Then
-                                destino = "~/Views/Operaciones/Ventas/Ventas.aspx"
-                            End If
+                            'If String.Equals(rol, "Vendedor",
+                            '    StringComparison.OrdinalIgnoreCase) Then
+                            '    destino = "~/Views/Operaciones/Ventas/Ventas.aspx"
+                            'End If
 
                             Response.Redirect(destino, False)
                             Context.ApplicationInstance.CompleteRequest()

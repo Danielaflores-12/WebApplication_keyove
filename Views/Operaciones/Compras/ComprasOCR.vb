@@ -155,6 +155,11 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         Private Shared Function GuardarCompraInterna(compra As ModeloCompra, detalles As List(Of ModeloDetalleCompra), comprobante As ArchivoCompra, fechaCompra As String, preciosIncluyenIgv As Boolean, transaccion As ConexionBD) As ResultadoCompra
             ExigirAdministradora()
             Try
+                If transaccion Is Nothing Then
+                    Using dbInfraestructura As New ConexionBD()
+                        GarantizarInfraestructuraCompra(dbInfraestructura)
+                    End Using
+                End If
                 If compra Is Nothing OrElse detalles Is Nothing OrElse detalles.Count = 0 Then Throw New ArgumentException("Agrega los productos de la compra.")
                 If compra.iCodCompra <> 0 Then Throw New ArgumentException("Esta compra ya está registrada.")
                 compra.iCodUsuario = Convert.ToInt32(System.Web.HttpContext.Current.Session("iCodUsuario"))
@@ -162,7 +167,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                 compra.cTipoComprobante = If(compra.cTipoComprobante, "").Trim().ToUpperInvariant()
                 compra.cNumeroComprobante = If(compra.cNumeroComprobante, "").Trim().ToUpperInvariant()
                 If compra.iCodProveedor <= 0 Then Throw New ArgumentException("Selecciona el proveedor.")
-                If Not New String() {"BOLETA", "FACTURA"}.Contains(compra.cTipoComprobante) Then Throw New ArgumentException("Selecciona boleta o factura.")
+                If Not New String() {"BOLETA", "FACTURA", "PEDIDO", "TICKET", "NOTA_VENTA", "OTRO"}.Contains(compra.cTipoComprobante) Then Throw New ArgumentException("Selecciona un tipo de documento válido.")
                 If compra.cNumeroComprobante.Length = 0 OrElse compra.cNumeroComprobante.Length > 50 Then Throw New ArgumentException("Completa el número del comprobante del proveedor.")
                 Dim fecha As DateTime
                 If Not DateTime.TryParseExact(fechaCompra, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, fecha) Then Throw New ArgumentException("Completa una fecha válida.")

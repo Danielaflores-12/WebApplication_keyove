@@ -30,7 +30,7 @@
       .compra-subseccion header button { color:#263247; }
       .compra-subseccion .modal-cuerpo { padding:16px; }
       .compra-subseccion h2 { font-size:16px; }
-      .compra-completa input, .compra-completa select { min-width:0; max-width:100%; }
+      .compra-completa input, .compra-completa select, .compra-completa textarea { min-width:0; max-width:100%; }
       @media(max-width:480px) { .compra-dialog .form-grid { grid-template-columns:1fr; } }
     </style>
 
@@ -54,8 +54,6 @@
         <button type="button" class="btn btn-secondary" data-vista-compras="registros" aria-controls="panelComprasRegistradas" aria-pressed="false">Ver compras realizadas</button>
     </nav>
     <section id="panelRegistroCompra" aria-label="Registrar compra">
-    <button type="button" class="btn btn-secondary" id="btnRevisarCompra" onclick="abrirRevisionCompra()">Revisar / modificar compra</button>
-    <div id="ubicacionFormularioCompra"></div>
     <div class="card" id="formularioCompletoCompra">
 
         <div class="card-title">
@@ -76,9 +74,8 @@
             <p id="advertenciasOCR" role="status"></p>
             <button type="button" class="btn btn-secondary" onclick="prepararAltasCompra()">Revisar proveedor y productos nuevos</button>
             <details><summary>Ver texto leído del comprobante</summary><pre id="textoOCR" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
-            <label><input type="checkbox" id="confirmarOCR" /> Revisé el proveedor, los productos y los importes del documento.</label>
         </div>
-    <section hidden id="modalProveedorCompra" class="compra-subseccion" aria-labelledby="tituloProveedorCompra">
+    <dialog id="modalProveedorCompra" class="compra-dialog" aria-labelledby="tituloProveedorCompra">
       <header><h2 id="tituloProveedorCompra">Modificar proveedor</h2><button type="button" aria-label="Cerrar" onclick="cerrarModalCompra('modalProveedorCompra')">×</button></header>
       <div class="modal-cuerpo">
         <p>Actualiza los datos del proveedor en el catálogo. No cambia el proveedor asociado a compras ya guardadas.</p>
@@ -91,8 +88,8 @@
         <p id="errorProveedorModal" class="modal-error" role="alert"></p>
       </div>
       <footer><button id="guardarProveedorModal" type="button" class="btn btn-primary" onclick="guardarProveedorDesdeCompra()">Guardar cambios</button><button type="button" class="btn btn-secondary" onclick="cerrarModalCompra('modalProveedorCompra')">Cancelar</button></footer>
-    </section>
-    <section hidden id="modalAltasCompra" class="compra-subseccion" aria-labelledby="tituloAltasCompra">
+    </dialog>
+    <dialog id="modalAltasCompra" class="compra-dialog" aria-labelledby="tituloAltasCompra">
       <header><h2 id="tituloAltasCompra">Preparar nuevos registros</h2><button type="button" aria-label="Cerrar" onclick="cerrarModalCompra('modalAltasCompra')">×</button></header>
       <div class="modal-cuerpo">
         <p>Revisa los datos reconocidos. Se crearán junto con la compra cuando pulses Guardar; todavía no se modifica el inventario.</p>
@@ -104,7 +101,7 @@
         <p id="errorAltasCompra" class="modal-error" role="alert"></p>
       </div>
       <footer><button type="button" class="btn btn-primary" onclick="confirmarAltasCompra()">Usar estos datos</button><button type="button" class="btn btn-secondary" onclick="cerrarModalCompra('modalAltasCompra')">Cancelar</button></footer>
-    </section>
+    </dialog>
         <input type="hidden" id="txtIdCompra" />
         <input type="hidden" id="txtSubTotal" />
         <input type="hidden" id="txtIgv" />
@@ -137,8 +134,12 @@
 
                 <select id="cboTipoComprobante"
                         class="input-control">
-                    <option value="BOLETA">BOLETA</option>
-                    <option value="FACTURA">FACTURA</option>
+                    <option value="BOLETA">Boleta de venta electrónica</option>
+                    <option value="FACTURA">Factura electrónica</option>
+                    <option value="PEDIDO">Pedido</option>
+                    <option value="TICKET">Ticket</option>
+                    <option value="NOTA_VENTA">Nota de venta</option>
+                    <option value="OTRO">Otro documento / no identificado</option>
                 </select>
 
             </div>
@@ -306,6 +307,8 @@
 
         <div class="form-actions">
 
+            <label id="confirmarOCRContenedor" class="form-check" hidden><input type="checkbox" id="confirmarOCR" /> Revisé el proveedor, los productos y los importes del documento.</label>
+
             <button type="button"
                     class="btn btn-primary"
                     id="btnGuardarCompra" onclick="guardarCompra()">
@@ -328,12 +331,6 @@
 
     </div>
 
-    <dialog id="modalRevisionCompra" class="compra-dialog compra-completa" aria-labelledby="tituloRevisionCompra">
-      <header><h2 id="tituloRevisionCompra">Revisar y modificar compra</h2><button type="button" aria-label="Cerrar revisión" onclick="cerrarRevisionCompra()">×</button></header>
-      <p class="aviso-revision">Revisa todos los campos de la compra. Cerrar conserva el borrador; Guardar registra la compra.</p>
-      <div id="contenidoRevisionCompra"></div>
-      <footer><button type="button" class="btn btn-secondary" onclick="cerrarRevisionCompra()">Volver al formulario</button></footer>
-    </dialog>
     </section>
     <section id="panelComprasRegistradas" aria-label="Compras realizadas" hidden>
         <div class="card">

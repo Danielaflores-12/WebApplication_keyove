@@ -24,7 +24,7 @@ class ExtractorTests(unittest.TestCase):
         self.assertIsNone(result['igv'])
         self.assertIsNone(result['subtotal'])
         self.assertIsNone(result['fecha_emision'])
-        self.assertIsNone(result['tipo_comprobante'])
+        self.assertEqual(result['tipo_comprobante'], 'TICKET')
 
     def test_lecturas_alternativas_no_duplican_productos(self):
         result = ComprobanteExtractor().extract('18 CARGADOR 5.50 99.00\n'
@@ -77,6 +77,29 @@ class ExtractorTests(unittest.TestCase):
         self.assertEqual(result['numero_comprobante'], '001-000345')
         self.assertEqual(result['tipo_comprobante'], 'BOLETA')
         self.assertEqual(result['detalles'][0]['descripcion'], 'CABLE 14')
+
+    def test_boleta_hdg_con_errores_tipicos_del_ocr(self):
+        text = ('HDG IMPORT & TECNOLOGY S.A.C.\nRUC 20612773169\n'
+                'Boleta De Venta Electronica\nBBO01-00014394\nF. Emision: 2026-10-17\n'
+                'UND UGREEN 55545 Receptor de Audio BT Hi-Res LDAC Jack 62.00 124.00\n'
+                'Op. Gravadas: $/105.08 q ES\nIGV: S/ 18.92 19\nTotal a pagar: 5/124.00 $e')
+        result = ComprobanteExtractor().extract(text)
+        self.assertEqual(result['numero_comprobante'], 'BB01-00014394')
+        self.assertEqual(result['ruc_emisor'], '20612773169')
+        self.assertEqual(result['razon_social'], 'HDG IMPORT & TECNOLOGY S.A.C')
+        self.assertEqual((result['subtotal'], result['igv'], result['total']), (105.08, 18.92, 124))
+        self.assertEqual(result['detalles'][0]['cantidad'], 2)
+        self.assertEqual(result['detalles'][0]['precio_unitario'], 62)
+
+    def test_tipos_de_documento_y_otro(self):
+        extractor = ComprobanteExtractor()
+        self.assertEqual(extractor.extract('FACTURA ELECTRONICA F001-0001')['tipo_comprobante'], 'FACTURA')
+        self.assertEqual(extractor.extract('BOLETA DE VENTA ELECTRONICA B001-0001')['tipo_comprobante'], 'BOLETA')
+        self.assertEqual(extractor.extract('PEDIDO 100')['tipo_comprobante'], 'PEDIDO')
+        self.assertEqual(extractor.extract('NOTA DE VENTA 100')['tipo_comprobante'], 'NOTA_VENTA')
+        other = extractor.extract('DOCUMENTO INTERNO 100')
+        self.assertEqual(other['tipo_comprobante'], 'OTRO')
+        self.assertTrue(any('No se reconoció el tipo' in warning for warning in other['advertencias']))
 
     def test_ruc_ambiguo_y_linea_inconsistente(self):
         result = ComprobanteExtractor().extract('RUC 20123456789\nRUC 20987654321\n3 MARTILLO 10.00 25.00')

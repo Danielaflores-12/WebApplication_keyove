@@ -45,8 +45,8 @@ BEGIN
 
         SET @cTipoComprobante = UPPER(LTRIM(RTRIM(@cTipoComprobante)));
         SET @cNumeroComprobante = UPPER(LTRIM(RTRIM(@cNumeroComprobante)));
-        IF @cTipoComprobante IS NULL OR @cTipoComprobante NOT IN ('BOLETA','FACTURA')
-            THROW 50001, 'Selecciona boleta o factura.', 1;
+        IF @cTipoComprobante IS NULL OR @cTipoComprobante NOT IN ('BOLETA','FACTURA','PEDIDO','TICKET','NOTA_VENTA','OTRO')
+            THROW 50001, 'Selecciona un tipo de documento válido.', 1;
         IF NULLIF(@cNumeroComprobante,'') IS NULL OR @dFechaCompra IS NULL
             THROW 50001, 'Completa el número y la fecha del comprobante del proveedor.', 1;
         IF @nSubTotal IS NULL OR @nIgv IS NULL OR @nTotal IS NULL OR @bPreciosIncluyenIgv IS NULL

@@ -81,6 +81,14 @@ class OCRService:
         # Si el fondo domina la lectura, aislar la región clara del papel.
         from extractor import ComprobanteExtractor
         result = ComprobanteExtractor().extract(text)
+        # Las facturas con tablas suelen leerse mejor con PSM 4. Sólo se usa como
+        # segunda lectura cuando la lectura principal dejó datos esenciales vacíos.
+        if (not result['detalles'] or
+                any(result[key] is None for key in ('numero_comprobante', 'ruc_emisor', 'total'))):
+            invoice_text = pytesseract.image_to_string(gray, config='--oem 3 --psm 4', lang='spa', timeout=25)
+            if invoice_text.strip():
+                text += '\n[LECTURA_ALTERNATIVA]\n' + invoice_text
+                result = ComprobanteExtractor().extract(text)
         if not result['detalles']:
             mask = cv2.threshold(cv2.GaussianBlur(original, (31,31), 0), 170, 255, cv2.THRESH_BINARY)[1]
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)

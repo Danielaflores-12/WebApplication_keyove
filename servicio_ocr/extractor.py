@@ -23,6 +23,57 @@ def importe(texto):
 
 
 class ComprobanteExtractor:
+    TIPOS = (
+        ('BOLETA', r'\bBOLETA(?:\s+DE\s+VENTA)?(?:\s+ELECTR[OÓ]NICA)?\b'),
+        ('FACTURA', r'\bFACTURA(?:\s+ELECTR[OÓ]NICA)?\b'),
+        ('PEDIDO', r'\b(?:PEDIDO|ORDEN\s+DE\s+COMPRA)\b'),
+        ('TICKET', r'\b(?:TICKET|TIKET)\b'),
+        ('NOTA_VENTA', r'\bNOTA\s+DE\s+VENTA\b'),
+    )
+
+    def tipo_documento(self, text):
+        """Clasifica antes de extraer: cada documento tiene su propio formato."""
+        for code, pattern in self.TIPOS:
+            if re.search(pattern, text, re.I):
+                return code
+        # Una serie electrónica legible también identifica el documento.
+        series = re.search(r'\b([FB])[A-Z0-9]{3,4}\s*[-–]', text, re.I)
+        if series:
+            return 'FACTURA' if series[1].upper() == 'F' else 'BOLETA'
+        return 'OTRO'
+
+    def numero_documento(self, text, tipo):
+        """Busca el correlativo con reglas específicas del tipo clasificado."""
+        patterns = {
+            'FACTURA': (r'\b(F[A-Z0-9]{3,4})\s*[-–]\s*(\d{1,10})\b',
+                         r'(?:FACTURA(?:\s+ELECTR[OÓ]NICA)?\s*)?(?:N(?:[°º.]|RO\.?)?|N[ÚU]MERO)\s*:?\s*(\d{3,4})\s*[-–]\s*(\d{1,10})\b'),
+            'BOLETA': (r'\b(B[A-Z0-9]{3,5})\s*[-–]\s*(\d{1,10})\b',
+                        r'(?:BOLETA(?:\s+DE\s+VENTA)?(?:\s+ELECTR[OÓ]NICA)?\s*)?(?:N(?:[°º.]|RO\.?)?|N[ÚU]MERO)\s*:?\s*(\d{3,4})\s*[-–]\s*(\d{1,10})\b'),
+            'TICKET': (r'\b(TK\d{2})\s*[-–]\s*(\d{1,10})\b',
+                       r'(?:TICKET|TIKET|N(?:[°º.]|RO\.?)?|N[ÚU]MERO)\s*:?\s*([A-Z]{0,5}\d{0,4})\s*[-–]\s*(\d{1,10})\b'),
+            'PEDIDO': (r'(?:PEDIDO|ORDEN\s+DE\s+COMPRA)\s*(?:N(?:[°º.]|RO\.?)?|N[ÚU]MERO)?\s*:?\s*([A-Z]{0,6}\d{0,4})\s*[-–]\s*(\d{1,10})\b',
+                        r'(?:PEDIDO|ORDEN\s+DE\s+COMPRA)\s*(?:N(?:[°º.]|RO\.?)?|N[ÚU]MERO)?\s*:?\s*(\d{3,10})\b'),
+            'NOTA_VENTA': (r'(?:NOTA\s+DE\s+VENTA|N(?:[°º.]|RO\.?)?|N[ÚU]MERO)\s*:?\s*([A-Z]{0,6}\d{0,4})\s*[-–]\s*(\d{1,10})\b',
+                            r'(?:NOTA\s+DE\s+VENTA)\s*(?:N(?:[°º.]|RO\.?)?|N[ÚU]MERO)?\s*:?\s*(\d{3,10})\b'),
+            'OTRO': (r'(?:N(?:[°º.]|RO\.?)?|N[ÚU]MERO)\s*:?\s*(\d{3,4})\s*[-–]\s*(\d{1,10})\b',),
+        }
+        for pattern in patterns.get(tipo, ()):
+            match = re.search(pattern, text, re.I)
+            if not match:
+                continue
+            groups = match.groups()
+            if len(groups) == 1:
+                return groups[0]
+            serie, correlativo = groups[-2], groups[-1]
+            serie = serie.upper().replace(' ', '')
+            if serie:
+                if re.fullmatch(r'BB[O0]\d{2}', serie):
+                    serie = 'BB' + serie[-2:]
+                elif re.fullmatch(r'[FB][O0-9]{3}', serie):
+                    serie = serie.replace('O', '0')
+                return serie + '-' + correlativo
+        return None
+
     def extract(self, text):
         variants = text.split('\n[LECTURA_ALTERNATIVA]\n')
         if len(variants) == 1:
@@ -44,23 +95,28 @@ class ComprobanteExtractor:
         result = dict(numero_comprobante=None, fecha_emision=None, ruc_emisor=None,
                       razon_social=None, igv=None, subtotal=None, total=None,
                       moneda='PEN', tipo_comprobante=None, detalles=[], advertencias=[])
-        number = re.search(r'\b([FB][A-Z0-9]{3})\s*[-–]\s*(\d{1,10})\b', text, re.I)
-        if not number:
-            number = re.search(r'\b(TK\d{2})\s*[-–]\s*(\d{1,10})\b', text, re.I)
-        if not number:
-            number = re.search(r'(?:N[°º.]|NRO\.?|N[ÚU]MERO|BOLETA(?:\s+DE\s+VENTA)?|FACTURA)\s*:?\s*(\d{3,4})\s*[-–]\s*(\d{1,10})\b', text, re.I)
-        if number:
-            result['numero_comprobante'] = number[1].upper() + '-' + number[2]
-            if re.fullmatch(r'[FB][O0-9]{3}', number[1], re.I):
-                result['numero_comprobante'] = number[1].upper().replace('O', '0') + '-' + number[2]
-        kind = re.search(r'\b(FACTURA|BOLETA)\b', text, re.I)
-        if kind:
-            result['tipo_comprobante'] = kind[1].upper()
-        elif number and number[1].upper().startswith(('F', 'B')):
-            result['tipo_comprobante'] = 'FACTURA' if number[1].upper().startswith('F') else 'BOLETA'
+        result['tipo_comprobante'] = self.tipo_documento(text)
+        result['numero_comprobante'] = self.numero_documento(text, result['tipo_comprobante'])
+        if result['tipo_comprobante'] == 'OTRO':
+            result['tipo_comprobante'] = 'OTRO'
+            result['advertencias'].append('No se reconoció el tipo del documento. Se marcó como OTRO; revísalo antes de guardar.')
         rucs = list(dict.fromkeys(re.findall(r'\bR\.?U\.?C\.?\s*[:\s]*(\d{11})\b', text, re.I)))
         if len(rucs) == 1:
             result['ruc_emisor'] = rucs[0]
+            # Normalmente la razón social está en la línea previa al RUC.
+            lines = [line.strip(' .:|-') for line in text.splitlines()]
+            for index, line in enumerate(lines):
+                if rucs[0] not in line:
+                    continue
+                candidates = reversed(lines[max(0, index - 3):index])
+                result['razon_social'] = next((candidate for candidate in candidates
+                                                if len(candidate) >= 4 and
+                                                re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]', candidate) and
+                                                not re.search(r'\bR\.?U\.?C\b', candidate, re.I)), None)
+                if result['razon_social']:
+                    # En el logotipo de HDG, el símbolo & suele leerse como €.
+                    result['razon_social'] = re.sub(r'(?<=\s)€(?=\s)', '&', result['razon_social'])
+                break
         elif rucs:
             result['advertencias'].append('Hay varios RUC: confirma el proveedor del comprobante.')
         date_lines = re.findall(r'^.*?\bFECHA\s*:\s*(.*)$', text, re.I | re.M)
@@ -77,11 +133,31 @@ class ComprobanteExtractor:
         if re.search(r'\b(?:USD|DOLARES|DÓLARES)\b|US\$', text, re.I):
             result['moneda'] = 'USD'
             result['advertencias'].append('Este formulario registra soles; convierte los importes antes de guardar.')
-        labels = {'subtotal': r'(?:SUB\s*TOTAL|TOTAL\s+GRAVADO|OP\.?\s*GRAVADAS|OPERACIONES\s+GRAVADAS|VALOR\s+VENTA)',
-                  'igv': r'[I1]\.?G\.?V\.?',
-                  'total': r'(?:(?:IMPORTE|MONTO)\s+TOTAL|TOTAL(?:\s+A\s+PAGAR)?)'}
+        labels_by_type = {
+            # Comprobantes electrónicos: separan valor de venta e impuesto.
+            'FACTURA': {'subtotal': r'(?:SUB\s*TOTAL|TOTAL\s+GRAVADO|OP\.?\s*GRAVADAS|OPERACIONES\s+GRAVADAS|VALOR\s+VENTA)',
+                         'igv': r'[I1]\.?G\.?V\.?',
+                         'total': r'(?:(?:IMPORTE|MONTO)\s+TOTAL|TOTAL(?:\s+A\s+PAGAR)?)'},
+            'BOLETA': {'subtotal': r'(?:SUB\s*TOTAL|TOTAL\s+GRAVADO|OP\.?\s*GRAVADAS|OPERACIONES\s+GRAVADAS|VALOR\s+VENTA)',
+                        'igv': r'[I1]\.?G\.?V\.?',
+                        'total': r'(?:(?:IMPORTE|MONTO)\s+TOTAL|TOTAL(?:\s+A\s+PAGAR)?)'},
+            # Pedidos y notas suelen mostrar importe cotizado, con IGV opcional.
+            'PEDIDO': {'subtotal': r'(?:SUB\s*TOTAL|VALOR\s+VENTA|IMPORTE\s+DEL\s+PEDIDO)',
+                       'igv': r'[I1]\.?G\.?V\.?',
+                       'total': r'(?:(?:TOTAL\s+DEL\s+PEDIDO|IMPORTE\s+TOTAL|TOTAL))'},
+            'NOTA_VENTA': {'subtotal': r'(?:SUB\s*TOTAL|VALOR\s+VENTA)',
+                            'igv': r'[I1]\.?G\.?V\.?',
+                            'total': r'(?:(?:IMPORTE\s+TOTAL|TOTAL(?:\s+A\s+PAGAR)?))'},
+            # Ticket normalmente usa un único total pagado.
+            'TICKET': {'subtotal': r'(?:SUB\s*TOTAL|CONSUMO)',
+                       'igv': r'[I1]\.?G\.?V\.?',
+                       'total': r'(?:(?:TOTAL\s+PAGADO|IMPORTE\s+PAGADO|TOTAL(?:\s+A\s+PAGAR)?))'},
+        }
+        labels = labels_by_type.get(result['tipo_comprobante'], labels_by_type['NOTA_VENTA'])
         for key, label in labels.items():
-            pattern = r'\b' + label + r'\s*(?:\(?18\s*%\)?)?\s*[:=]?\s*(?:S\s*[/|íi\]]\.?\s*:?|PEN|US\$|\$)?\s*([\d][\d.,]*)\s*[|]?\s*$'
+            # Acepta las variaciones frecuentes del OCR: $/105.08 y 5/124.00
+            # corresponden visualmente a S/105.08 y S/124.00.
+            pattern = r'\b' + label + r'\s*(?:\(?18\s*%\)?)?\s*[:=]?\s*(?:[S5$]\s*[/|íi\]]\.?\s*:?|PEN|US\$|\$)?\s*([\d][\d.,]*)(?:\s+[^\n]*)?$'
             values = [importe(m) for m in re.findall(pattern, text, re.I | re.M)]
             values = list(dict.fromkeys(v for v in values if v is not None))
             if len(values) == 1:
@@ -92,11 +168,13 @@ class ComprobanteExtractor:
         amount = r'(\d[\d.,]*)'
         reconstructed = re.findall(r'\[DETALLE_RECONSTRUIDO\](.*?)\[/DETALLE_RECONSTRUIDO\]', text, re.S)
         detail_text = '\n'.join(reconstructed) if reconstructed else text
+        detalle_abierto = False
         for line in detail_text.splitlines():
             if result['detalles'] and re.match(r'^\s*(?:UND|UNID|UNIDAD|PCS)\s+\S', line, re.I):
                 result['detalles'][-1]['descripcion'] += ' ' + re.sub(r'^\s*(?:UND|UNID|UNIDAD|PCS)\s+', '', line, flags=re.I).strip()
                 continue
             if re.search(r'\b(?:TOTAL|SUBTOTAL|IGV|RUC|FECHA|GRAVADAS|DESCUENTO|EXONERAD[AO])\b', line, re.I):
+                detalle_abierto = False
                 continue
             # Código de proveedor, cantidad, unidad, descripción, precio, importe.
             line = re.sub(r'^\s*[A-Z0-9-]+\s+(?=\d+(?:[.,]\d+)?\s+(?:UND|UNID|PZA|PCS)\b)', '', line, flags=re.I)
@@ -106,8 +184,26 @@ class ComprobanteExtractor:
             else:
                 match = re.fullmatch(r'\s*(.+?)\s+' + amount + r'\s+' + amount + r'\s+' + amount + r'\s*', line)
                 if not match:
-                    continue
-                description, quantity, price, total = match.groups()
+                    # Algunos comprobantes imprimen la cantidad antes de la columna
+                    # y el OCR la pierde. Si precio y total son consistentes, se infiere.
+                    match = re.search(r'(?:^|\s)(?:UND|UNID|UNIDAD|PZA|PCS)\.?\s+(.+?)\s+' + amount + r'\s+' + amount + r'(?:\s+\D.*)?\s*$', line, re.I)
+                    if not match:
+                        if detalle_abierto and re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]', line):
+                            continuation = re.sub(r'^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+', '', line).strip()
+                            if continuation:
+                                result['detalles'][-1]['descripcion'] += ' ' + continuation
+                        continue
+                    description, price, total = match.groups()
+                    price, total = importe(price), importe(total)
+                    if price is None or total is None or price <= 0:
+                        continue
+                    quantity = total / price
+                    if abs(quantity - round(quantity)) > .001:
+                        continue
+                    quantity = str(round(quantity))
+                    price, total = str(price), str(total)
+                else:
+                    description, quantity, price, total = match.groups()
             description = re.sub(r'^(?:UND|UNID|UNIDAD|UNIDADES|PZA|PCS)\.?\s+', '', description, flags=re.I)
             if not re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]', description):
                 continue
@@ -117,6 +213,7 @@ class ComprobanteExtractor:
             valid = quantity.is_integer() and abs(quantity * price - total) <= .02
             result['detalles'].append(dict(descripcion=description.strip(), cantidad=quantity,
                                            precio_unitario=price, importe=total, requiere_revision=not valid))
+            detalle_abierto = True
             if not valid:
                 result['advertencias'].append('Revisa una línea con cantidad fraccionaria o importes inconsistentes.')
         if not result['detalles']:
@@ -124,6 +221,6 @@ class ComprobanteExtractor:
         for key in ('numero_comprobante', 'fecha_emision', 'subtotal', 'igv', 'total'):
             if result[key] is None:
                 result['advertencias'].append('Completa el dato no reconocido: ' + key.replace('_', ' ') + '.')
-        if number and number[1].upper().startswith('TK'):
+        if result['tipo_comprobante'] == 'TICKET':
             result['advertencias'].append('El documento indica TICKET. Confirma el tipo de comprobante y los impuestos antes de guardar; no se deducen del total.')
         return result
