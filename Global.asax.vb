@@ -4,6 +4,19 @@ Imports System.Web.SessionState
 Public Class Global_asax
     Inherits HttpApplication
 
+    Sub Application_Start(ByVal sender As Object, ByVal e As EventArgs)
+        Dim raiz = System.Web.Hosting.HostingEnvironment.ApplicationPhysicalPath
+        Dim desarrollo = Context.IsDebuggingEnabled
+        System.Threading.ThreadPool.QueueUserWorkItem(
+            Sub(estado)
+                Try
+                    OcrServiceHost.EnsureRunning(raiz, desarrollo)
+                Catch ex As Exception
+                    System.Diagnostics.Trace.TraceError("Inicio OCR: " & ex.Message)
+                End Try
+            End Sub)
+    End Sub
+
     Private Function EsPaginaAspx() As Boolean
 
         Return Request.AppRelativeCurrentExecutionFilePath.EndsWith(

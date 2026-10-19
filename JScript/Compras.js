@@ -191,11 +191,11 @@ function escaparCompra(texto) { return $("<span>").text(texto == null ? "" : tex
 function dibujarDetalleCompra() {
     var filas = compraDetalles.map(function(d, i) {
         var opciones = '<option value="0">Relacionar con inventario</option>';
-        catalogoProductos.forEach(function(p) { opciones += '<option value="' + Number(p.v) + '"' + (Number(p.v) === d.iCodProducto ? ' selected' : '') + '>' + escaparCompra(p.t + ' — stock: ' + p.stock) + '</option>'; });
+        catalogoProductos.filter(function(p) { return Number(p.v)>0 || Number(p.v)===d.iCodProducto; }).forEach(function(p) { opciones += '<option value="' + Number(p.v) + '"' + (Number(p.v) === d.iCodProducto ? ' selected' : '') + '>' + escaparCompra(p.t + ' — stock: ' + p.stock) + '</option>'; });
         return '<tr><td>' + escaparCompra(d.cNombreProducto) + '<select class="input-control" aria-label="Producto de inventario" onchange="editarLineaCompra(' + i + ', \'producto\', this.value)">' + opciones + '</select></td>' +
             '<td><input class="input-control" aria-label="Cantidad" type="number" min="1" step="1" value="' + d.iCantidad + '" onchange="editarLineaCompra(' + i + ', \'cantidad\', this.value)" /></td>' +
             '<td><input class="input-control" aria-label="Precio" type="number" min="0" step="0.01" value="' + d.nPrecioCompra + '" onchange="editarLineaCompra(' + i + ', \'precio\', this.value)" /></td>' +
-            '<td>' + formatoMoneda(d.nSubTotal) + '</td><td><button type="button" class="btn btn-sm btn-danger" onclick="quitarProductoCompra(' + i + ')">Quitar</button></td></tr>';
+            '<td>' + formatoMoneda(d.nSubTotal) + '</td><td><button type="button" class="btn btn-sm btn-secondary" onclick="abrirProductoCompra(' + i + ')">Modificar</button> <button type="button" class="btn btn-sm btn-danger" onclick="quitarProductoCompra(' + i + ')">Quitar</button></td></tr>';
     }).join('');
     $("#bodyDetalleCompra").html(filas);
     recalcTotalesCompra();
@@ -356,6 +356,9 @@ function listarCompras() {
 //==================================================
 
 function guardarCompra() {
+    if (proveedorGuardando || proveedorCargando) return;
+    if (!$('#modalProveedorCompra').prop('hidden')) { alert('Aplica o cancela la edición de la ficha del proveedor antes de guardar la compra.'); return; }
+    if ((!$('#cboProveedor').val() || compraDetalles.some(function(d) { return !d.iCodProducto; })) && comprobanteOCRPendiente) { prepararAltasCompra(); return; }
     if (guardandoCompra || extrayendoCompra) return;
     if (document.getElementById("txtArchivoComprobante").files.length && !comprobanteOCRPendiente) { alert("Primero extrae los datos del archivo seleccionado."); return; }
     if ($("#txtIdCompra").val()) { alert("Esta compra ya está registrada. Limpia el formulario para crear otra."); return; }
@@ -371,13 +374,18 @@ function guardarCompra() {
     var compra = { iCodCompra: 0, iCodProveedor: Number($("#cboProveedor").val()), cTipoComprobante: $("#cboTipoComprobante").val(), cNumeroComprobante: $("#txtNumeroComprobante").val().trim(), nSubTotal: subtotal, nIgv: igv, nTotal: total, cObservacion: $("#txtObservacion").val(), cEstado: "REGISTRADA" };
     guardandoCompra = true;
     bloquearCompra(true);
-    $.ajax({type: "POST", url: "/Views/Operaciones/Compras/Compras.aspx/GuardarCompra", contentType: "application/json; charset=utf-8", dataType: "json", data: JSON.stringify({ compra: compra, detalles: compraDetalles, comprobante: comprobanteOCRPendiente, fechaCompra: $("#txtFechaCompra").val(), preciosIncluyenIgv: incluidos })})
+    var payload = { compra: compra, detalles: compraDetalles, comprobante: comprobanteOCRPendiente, fechaCompra: $("#txtFechaCompra").val(), preciosIncluyenIgv: incluidos };
+    var nuevas = compraDetalles.filter(function(d) { return d.iCodProducto < 0; }).map(function(d) { return Object.assign({}, d.nuevoProducto, {temporal:d.iCodProducto}); });
+    var altaProveedor = compra.iCodProveedor === -1 ? proveedorNuevoCompra : null;
+    var endpoint = 'GuardarCompra';
+    if (nuevas.length || altaProveedor) { endpoint='GuardarCompraConAltas'; payload.proveedorNuevo=altaProveedor; payload.productosNuevos=nuevas; }
+    $.ajax({type: "POST", url: "/Views/Operaciones/Compras/Compras.aspx/"+endpoint, contentType: "application/json; charset=utf-8", dataType: "json", data: JSON.stringify(payload)})
         .done(function(response) {
             if (!response.d.ok) { alert(response.d.mensaje); return; }
             guardandoCompra = false;
             limpiarFormulario();
             $("#ocrEstado").text("Compra " + response.d.idCompra + " registrada. Inventario actualizado.");
-            listarCompras(); listarProductosCombo();
+            listarCompras(); listarProductosCombo(); listarProveedoresCombo();
         }).fail(function() { alert("No se recibió confirmación. Revisa las compras realizadas antes de reintentar; se conserva el formulario."); })
         .always(function() { guardandoCompra = false; bloquearCompra(false); });
 }
@@ -566,6 +574,10 @@ function eliminarCompra(idCompra) {
 
 function limpiarFormulario() {
     if (guardandoCompra || extrayendoCompra) return;
+    $('#modalProveedorCompra, #modalAltasCompra').prop('hidden',true);
+    proveedorNuevoCompra = null;
+    $('#cboProveedor option[value="-1"]').remove();
+    catalogoProductos = catalogoProductos.filter(function(p) { return Number(p.v)>0; });
     comprobanteOCRPendiente = null;
     montosDocumento = false;
     $("#panelRegistroCompra input, #panelRegistroCompra select, #panelRegistroCompra button").prop("disabled", false);
@@ -654,7 +666,7 @@ function fechaCompraInput(valor) {
     return fecha.getFullYear() + '-' + String(fecha.getMonth() + 1).padStart(2, '0') + '-' + String(fecha.getDate()).padStart(2, '0');
 }
 function claveProductoOCR(texto) {
-    return normalizarBusquedaCompra(texto).replace(/[^a-z0-9]/g, '');
+    return normalizarBusquedaCompra(texto).replace(/\bal copilot\b/g, 'ai copilot').replace(/[^a-z0-9]/g, '');
 }
 function productoParaOCR(descripcion) {
     var clave = claveProductoOCR(descripcion);
@@ -665,6 +677,10 @@ function productoParaOCR(descripcion) {
 }
 function aplicarOCRCompra(respuesta, archivo) {
     var d = respuesta.datos;
+    proveedorNuevoCompra = null;
+    proveedorSugeridoCompra = {ruc:d.ruc_emisor || '',razonSocial:d.razon_social || ''};
+    $('#cboProveedor option[value="-1"]').remove();
+    catalogoProductos = catalogoProductos.filter(function(p) { return Number(p.v)>0; });
     comprobanteOCRPendiente = Object.assign({}, archivo, { textoOcr: respuesta.texto_ocr || '', rucEmisor: d.ruc_emisor || '' });
     montosDocumento = true;
     $("#txtNumeroComprobante").val(d.numero_comprobante || '');
@@ -682,13 +698,14 @@ function aplicarOCRCompra(respuesta, archivo) {
     $("#preciosIncluyenIgv").val(d.total != null && Math.abs(suma - d.total) < .02 ? 'si' : 'no');
     dibujarDetalleCompra();
     var avisos = (d.advertencias || []).slice();
-    if (proveedores.length !== 1) avisos.push('Selecciona el proveedor. Si es nuevo, regístralo primero en Proveedores.');
-    if (compraDetalles.some(function(linea) { return !linea.iCodProducto; })) avisos.push('Relaciona los productos pendientes con el inventario. Si son nuevos, créalos primero en Productos.');
+    if (proveedores.length !== 1) avisos.push('Revisa los datos del proveedor nuevo para crearlo junto con la compra.');
+    if (compraDetalles.some(function(linea) { return !linea.iCodProducto; })) avisos.push('Relaciona los productos pendientes o prepara sus fichas nuevas para esta compra.');
     $("#advertenciasOCR").text(avisos.join(' '));
     $("#textoOCR").text(respuesta.texto_ocr || '');
     $("#revisionOCR").prop('hidden', false);
     $("#confirmarOCR").prop('checked', false);
     $("#ocrEstado").text('Datos leídos. Revisa las líneas e importes y pulsa Guardar.');
+    if (proveedores.length !== 1 || compraDetalles.some(function(x) { return !x.iCodProducto; })) prepararAltasCompra();
 }
 function extraerOCRCompra() {
     if (extrayendoCompra || guardandoCompra || $("#txtIdCompra").val()) return;
@@ -708,6 +725,7 @@ function extraerOCRCompra() {
                     if (!response.d || !response.d.success) { terminar(response.d && response.d.mensaje || 'No se pudo leer el comprobante.'); return; }
                     aplicarOCRCompra(response.d, archivo);
                     terminar();
+                    if (!$('#cboProveedor').val() || compraDetalles.some(function(x) {return !x.iCodProducto;})) prepararAltasCompra();
                 }).fail(function() { terminar('No se pudo extraer el comprobante. Verifica tu sesión y el servicio OCR.'); });
         }).fail(function() { terminar('No se pudo cargar el catálogo de productos y proveedores. Reintenta.'); });
     };
@@ -732,3 +750,130 @@ $(function() {
         if (this.files && this.files.length) extraerOCRCompra();
     });
 });
+
+// Una sola ventana reutiliza el formulario y conserva el borrador al cerrar.
+var proveedorModalId = 0, proveedorCargando = false, proveedorGuardando = false;
+function abrirRevisionCompra() {
+    var modal=document.getElementById('modalRevisionCompra');
+    if (!modal.open) {
+        document.getElementById('contenidoRevisionCompra').appendChild(document.getElementById('formularioCompletoCompra'));
+        modal.showModal();
+    }
+}
+function cerrarRevisionCompra() {
+    if (guardandoCompra || extrayendoCompra || proveedorGuardando) return;
+    document.getElementById('modalRevisionCompra').close();
+}
+function mostrarSeccionCompra(id) {
+    abrirRevisionCompra();
+    var seccion=document.getElementById(id);
+    seccion.hidden=false;
+    seccion.scrollIntoView({block:'start'});
+}
+function cerrarModalCompra(id) {
+    if (id === 'modalProveedorCompra' && proveedorGuardando) return;
+    document.getElementById(id).hidden=true;
+}
+function abrirProductoCompra(index) {
+    if (guardandoCompra || extrayendoCompra || $('#txtIdCompra').val() || !compraDetalles[index]) return;
+    abrirRevisionCompra();
+    var fila=document.querySelectorAll('#bodyDetalleCompra tr')[index];
+    fila.scrollIntoView({block:'center'});
+    fila.querySelector('select').focus();
+}
+function abrirProveedorCompra() {
+    if (guardandoCompra || extrayendoCompra || proveedorCargando || proveedorGuardando || $('#txtIdCompra').val()) return;
+    var id = Number($('#cboProveedor').val());
+    if (id === -1) { prepararAltasCompra(); return; }
+    if (!id) { alert('Selecciona el proveedor que quieres modificar.'); return; }
+    proveedorCargando = true;
+    $.ajax({type:'POST',url:'/Views/Operaciones/Compras/Compras.aspx/ObtenerProveedorCompra',data:JSON.stringify({idProveedor:id}),contentType:'application/json; charset=utf-8',dataType:'json'})
+      .done(function(r) {
+        var p = r.d; proveedorModalId = id;
+        $('#rucProveedorModal').val(p.ruc); $('#razonProveedorModal').val(p.razonSocial);
+        $('#representanteProveedorModal').val(p.representante); $('#telefonoProveedorModal').val(p.telefono);
+        $('#correoProveedorModal').val(p.correo); $('#direccionProveedorModal').val(p.direccion);
+        $('#errorProveedorModal').text(''); mostrarSeccionCompra('modalProveedorCompra');
+      }).fail(function() { alert('No se pudo cargar el proveedor.'); }).always(function() { proveedorCargando=false; });
+}
+function guardarProveedorDesdeCompra() {
+    if (proveedorGuardando) return;
+    var proveedor = {id:proveedorModalId,ruc:$('#rucProveedorModal').val().trim(),razonSocial:$('#razonProveedorModal').val().trim(),representante:$('#representanteProveedorModal').val().trim(),telefono:$('#telefonoProveedorModal').val().trim(),correo:$('#correoProveedorModal').val().trim(),direccion:$('#direccionProveedorModal').val().trim()};
+    if (!/^\d{11}$/.test(proveedor.ruc) || !proveedor.razonSocial || (proveedor.telefono && !/^\d{9}$/.test(proveedor.telefono))) {
+        $('#errorProveedorModal').text('Completa RUC de 11 dígitos, razón social y teléfono de 9 dígitos si corresponde.'); return;
+    }
+    proveedorGuardando=true; $('#guardarProveedorModal').prop('disabled',true);
+    $.ajax({type:'POST',url:'/Views/Operaciones/Compras/Compras.aspx/ActualizarProveedorCompra',data:JSON.stringify({proveedor:proveedor}),contentType:'application/json; charset=utf-8',dataType:'json'})
+      .done(function(r) {
+        if (!r.d.ok) { $('#errorProveedorModal').text(r.d.mensaje); return; }
+        var p = catalogoProveedores.find(function(p) { return Number(p.v)===proveedor.id; });
+        if (p) { p.t=proveedor.razonSocial; p.codigo=proveedor.ruc; }
+        $('#cboProveedor option[value="'+proveedor.id+'"]').text(proveedor.razonSocial);
+        $('#confirmarOCR').prop('checked',false);
+        $('#modalProveedorCompra').prop('hidden',true);
+      }).fail(function() { $('#errorProveedorModal').text('No se pudo guardar el proveedor. Reintenta.'); })
+      .always(function() { proveedorGuardando=false; $('#guardarProveedorModal').prop('disabled',false); });
+}
+$(document).ready(function() {
+    var modal=document.getElementById('modalRevisionCompra');
+    modal.addEventListener('cancel',function(e) { if(guardandoCompra || extrayendoCompra || proveedorGuardando) e.preventDefault(); });
+    modal.addEventListener('close',function() {
+        document.getElementById('ubicacionFormularioCompra').after(document.getElementById('formularioCompletoCompra'));
+    });
+});
+
+var proveedorNuevoCompra=null, proveedorSugeridoCompra={}, categoriasCompra=[], preparandoAltas=false;
+function prepararAltasCompra() {
+    if (guardandoCompra || extrayendoCompra || $('#txtIdCompra').val() || preparandoAltas) return;
+    preparandoAltas=true;
+    $.ajax({type:'POST',url:'/Views/Operaciones/Compras/Compras.aspx/CategoriasParaCompra',data:'{}',contentType:'application/json; charset=utf-8',dataType:'json'})
+      .done(function(r) {
+        categoriasCompra=r.d;
+        var nuevoProveedor=Number($('#cboProveedor').val())<=0;
+        $('#proveedorAltaCampos').prop('hidden',!nuevoProveedor);
+        var prov=proveedorNuevoCompra || proveedorSugeridoCompra;
+        $('#altaRuc').val(prov.ruc || ''); $('#altaRazon').val(prov.razonSocial || '');
+        var html='';
+        compraDetalles.forEach(function(d,i) {
+            if (d.iCodProducto>0) return;
+            var nuevo=d.nuevoProducto || {};
+            html+='<fieldset class="alta-producto" data-indice="'+i+'"><legend>Producto '+(i+1)+'</legend><label>Nombre<input class="input-control alta-nombre" maxlength="100" value="'+escaparCompra(nuevo.nombre || d.cNombreProducto).replace(/"/g,'&quot;')+'" /></label><label>Categoría<select class="input-control alta-categoria"><option value="">Seleccionar categoría</option>';
+            categoriasCompra.forEach(function(c) {html+='<option value="'+Number(c.v)+'"'+(Number(c.v)===Number(nuevo.categoria)?' selected':'')+'>'+escaparCompra(c.t)+'</option>';});
+            html+='</select></label><label>Precio de venta (S/)<input class="input-control alta-venta" type="number" min="0" step="0.01" value="'+(nuevo.precioVenta == null?'':Number(nuevo.precioVenta))+'" /></label><p>Precio de compra: '+formatoMoneda(d.nPrecioCompra)+'. Código interno automático, unidad UNIDAD y stock inicial cero.</p></fieldset>';
+        });
+        $('#productosAltaCampos').html(html || '<p>No hay productos nuevos pendientes.</p>');
+        $('#errorAltasCompra').text('');
+        mostrarSeccionCompra('modalAltasCompra');
+      }).fail(function() {alert('No se pudieron cargar las categorías. Reintenta.');})
+      .always(function() {preparandoAltas=false;});
+}
+function confirmarAltasCompra() {
+    var proveedor=null, productos=[], error='';
+    if (!$('#proveedorAltaCampos').prop('hidden')) {
+        proveedor={ruc:$('#altaRuc').val().trim(),razonSocial:$('#altaRazon').val().trim()};
+        if (!/^\d{11}$/.test(proveedor.ruc) || !proveedor.razonSocial || proveedor.razonSocial.length>150) error='Completa RUC de 11 dígitos y razón social.';
+    }
+    $('#productosAltaCampos .alta-producto').each(function() {
+        var row=$(this), nombre=row.find('.alta-nombre').val().trim(), categoria=Number(row.find('.alta-categoria').val()), textoVenta=row.find('.alta-venta').val(), venta=Number(textoVenta);
+        if (!nombre || nombre.length>100 || !categoria || textoVenta==='' || !Number.isFinite(venta) || venta<0 || Math.abs(venta*100-Math.round(venta*100))>.000001) error='Completa el nombre, categoría y precio de venta de cada producto nuevo.';
+        productos.push({indice:Number(row.attr('data-indice')),nombre:nombre,categoria:categoria,precioVenta:venta});
+    });
+    if (error) {$('#errorAltasCompra').text(error);return;}
+    if (proveedor) {
+        var existente=catalogoProveedores.filter(function(p) {return p.codigo===proveedor.ruc;});
+        if (existente.length===1) { $('#cboProveedor').val(existente[0].v); proveedorNuevoCompra=null; }
+        else { proveedorNuevoCompra=proveedor; $('#cboProveedor option[value="-1"]').remove(); $('#cboProveedor').append($('<option>').val('-1').text('Nuevo: '+proveedor.razonSocial)).val('-1'); }
+    }
+    productos.forEach(function(p) {
+        var d=compraDetalles[p.indice], existente=productoParaOCR(p.nombre);
+        if (existente>0) {d.iCodProducto=existente; d.nuevoProducto=null;}
+        else {
+            var id=d.iCodProducto<0 ? d.iCodProducto : Math.min.apply(null,[0].concat(catalogoProductos.map(function(x) {return Number(x.v);}))) - 1; d.iCodProducto=id; d.nuevoProducto={temporal:id,nombre:p.nombre,categoria:p.categoria,precioVenta:p.precioVenta};
+            catalogoProductos=catalogoProductos.filter(function(x) {return Number(x.v)!==id;});
+            catalogoProductos.push({v:id,t:p.nombre,codigo:'Pendiente',stock:0});
+        }
+        d.cNombreProducto=p.nombre;
+    });
+    $('#confirmarOCR').prop('checked',false); dibujarDetalleCompra(); cerrarModalCompra('modalAltasCompra');
+    $('#ocrEstado').text('Nuevos registros preparados. Revisa la compra y pulsa Guardar para crearlos.');
+}

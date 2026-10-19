@@ -12,6 +12,46 @@ from fastapi.testclient import TestClient
 from PIL import Image, ImageDraw, ImageFont
 
 class ExtractorTests(unittest.TestCase):
+    def test_ticket_sin_inventar_igv_ni_fecha_autorizacion(self):
+        text = ('TICKET TK02 - 00025290\nRUC 20600855604\nFECHA: ilegible\n'
+                '18 CARGADOR GAUCHO 5.50 99.00\nUND 5V-2A (UNDX1)\n'
+                'TOTAL PEN 99.00\nResolucion de fecha 01/02/2026')
+        result = ComprobanteExtractor().extract(text)
+        self.assertEqual(result['numero_comprobante'],'TK02-00025290')
+        self.assertEqual(result['total'],99)
+        self.assertEqual(result['detalles'][0]['cantidad'],18)
+        self.assertIn('5V-2A',result['detalles'][0]['descripcion'])
+        self.assertIsNone(result['igv'])
+        self.assertIsNone(result['subtotal'])
+        self.assertIsNone(result['fecha_emision'])
+        self.assertIsNone(result['tipo_comprobante'])
+
+    def test_lecturas_alternativas_no_duplican_productos(self):
+        result = ComprobanteExtractor().extract('18 CARGADOR 5.50 99.00\n'
+                   '[LECTURA_ALTERNATIVA]\nTOTAL PEN 99.00\nRUC 20600855604')
+        self.assertEqual(len(result['detalles']),1)
+        self.assertEqual(result['total'],99)
+        self.assertEqual(result['ruc_emisor'],'20600855604')
+
+    def test_factura_columnas_codigo_y_totales(self):
+        text = ('FACTURA FO11-0022817\nRUC: 20252011910\n30/09/2026\n'
+                '0016269 3.00 UND TECLADO MK120 41.35 124.04\n'
+                '0030442 2.00 UND TECLADO MK235 60.20 120.41\n'
+                '0030567 1.00 UND TECLADO MK250 78.54 78.54\n'
+                '0028993 1.00 UND TECLADO GENIUS 68.85 68.85\n'
+                'SON: SOLES Total Gravado S/: 332.07|\nTotal No Gravado S/: 0.00\n'
+                'Total Exonerado S/: 0.00\n1.G.V. S/: 59.78\nTOTAL S/: 391.85')
+        result = ComprobanteExtractor().extract(text)
+        self.assertEqual([d['cantidad'] for d in result['detalles']], [3, 2, 1, 1])
+        self.assertEqual(result['numero_comprobante'], 'F011-0022817')
+        self.assertEqual((result['subtotal'],result['igv'],result['total']), (332.07,59.78,391.85))
+
+    def test_detalle_reconstruido_no_duplica_lectura_original(self):
+        result = ComprobanteExtractor().extract('99999 1.00 UND TECLADO 10.00 10.00\n'
+             '[DETALLE_RECONSTRUIDO]\n1.00 TECLADO 10.00 10.00\n[/DETALLE_RECONSTRUIDO]')
+        self.assertEqual(len(result['detalles']), 1)
+        self.assertEqual(result['detalles'][0]['cantidad'], 1)
+
     def test_separadores(self):
         for value in ['1,250.50', '1.250,50', '1250,50', '1250.50']:
             self.assertEqual(importe(value), 1250.5)
@@ -44,6 +84,23 @@ class ExtractorTests(unittest.TestCase):
         self.assertTrue(result['detalles'][0]['requiere_revision'])
 
 class ServiceTests(unittest.TestCase):
+    def test_columnas_curvadas_y_columna_incompleta(self):
+        import numpy as np
+        words = [('CANT.',100,50,40,20), ('U.M.',160,50,40,20),
+                 ('P.UNIT.',600,45,70,20), ('IMPORTE',750,45,80,20),
+                 ('3.00',110,100,40,20), ('2.00',110,140,40,20),
+                 ('TECLADO',210,105,100,20), ('MK120',320,95,80,20),
+                 ('TECLADO',210,145,100,20), ('MK235',320,135,80,20),
+                 ('41.35',620,90,60,20), ('60.20',620,130,60,20),
+                 ('124.04',770,85,70,20), ('120.41',770,125,70,20)]
+        def data(rows):
+            return {k:[w[i] for w in rows] for i,k in enumerate(['text','left','top','width','height'])}
+        with patch('ocr.pytesseract.image_to_data', return_value=data(words)):
+            result = OCRService().table_rows(np.zeros((1000,1000),dtype=np.uint8))
+            self.assertEqual(result, ['3.00 TECLADO MK120 41.35 124.04', '2.00 TECLADO MK235 60.20 120.41'])
+        with patch('ocr.pytesseract.image_to_data', return_value=data(words[:-1])):
+            self.assertEqual(OCRService().table_rows(np.zeros((1000,1000),dtype=np.uint8)), [])
+
     def setUp(self):
         self.client = TestClient(app)
 

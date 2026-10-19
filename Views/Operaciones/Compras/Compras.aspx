@@ -10,6 +10,29 @@
     runat="server">
 
     <script src="../../../JScript/Compras.js"></script>
+    <style>
+      .compra-dialog { margin:auto; border:0; padding:0; border-radius:10px; width:min(520px,calc(100vw - 32px)); max-height:90vh; box-shadow:0 16px 55px #0005; color:#263247; }
+      .compra-dialog::backdrop { background:#17233399; }
+      .compra-dialog header { background:#28538b; color:white; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
+      .compra-dialog h2 { margin:0; font-size:18px; }
+      .compra-dialog header button { border:0; background:none; color:white; font-size:24px; cursor:pointer; }
+      .compra-dialog .modal-cuerpo { padding:20px; display:grid; gap:12px; }
+      .compra-dialog footer { padding:14px 20px; background:#f3f5f8; display:flex; justify-content:flex-end; gap:8px; }
+      .compra-dialog .modal-error { color:#b42318; margin:0; }
+      .compra-dialog .form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .compra-completa { width:min(1120px,calc(100vw - 24px)); }
+      .compra-completa > header { position:sticky; top:0; z-index:2; }
+      .compra-completa .card { margin:0; box-shadow:none; min-width:0; }
+      .aviso-revision { padding:12px 20px; margin:0; background:#eef4fc; }
+      .compra-subseccion { border:1px solid #cbd5e1; border-radius:8px; margin:16px 0; }
+      .compra-subseccion[hidden] { display:none; }
+      .compra-subseccion header { padding:12px; background:#eef4fc; color:#263247; }
+      .compra-subseccion header button { color:#263247; }
+      .compra-subseccion .modal-cuerpo { padding:16px; }
+      .compra-subseccion h2 { font-size:16px; }
+      .compra-completa input, .compra-completa select { min-width:0; max-width:100%; }
+      @media(max-width:480px) { .compra-dialog .form-grid { grid-template-columns:1fr; } }
+    </style>
 
 </asp:Content>
 
@@ -31,7 +54,9 @@
         <button type="button" class="btn btn-secondary" data-vista-compras="registros" aria-controls="panelComprasRegistradas" aria-pressed="false">Ver compras realizadas</button>
     </nav>
     <section id="panelRegistroCompra" aria-label="Registrar compra">
-    <div class="card">
+    <button type="button" class="btn btn-secondary" id="btnRevisarCompra" onclick="abrirRevisionCompra()">Revisar / modificar compra</button>
+    <div id="ubicacionFormularioCompra"></div>
+    <div class="card" id="formularioCompletoCompra">
 
         <div class="card-title">
             Nueva compra
@@ -49,9 +74,37 @@
         <p>Sube una foto o un PDF (máximo 10 MB y 5 páginas). Revisa los productos y guarda la compra para actualizar el inventario.</p>
         <div id="revisionOCR" hidden>
             <p id="advertenciasOCR" role="status"></p>
+            <button type="button" class="btn btn-secondary" onclick="prepararAltasCompra()">Revisar proveedor y productos nuevos</button>
             <details><summary>Ver texto leído del comprobante</summary><pre id="textoOCR" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
             <label><input type="checkbox" id="confirmarOCR" /> Revisé el proveedor, los productos y los importes del documento.</label>
         </div>
+    <section hidden id="modalProveedorCompra" class="compra-subseccion" aria-labelledby="tituloProveedorCompra">
+      <header><h2 id="tituloProveedorCompra">Modificar proveedor</h2><button type="button" aria-label="Cerrar" onclick="cerrarModalCompra('modalProveedorCompra')">×</button></header>
+      <div class="modal-cuerpo">
+        <p>Actualiza los datos del proveedor en el catálogo. No cambia el proveedor asociado a compras ya guardadas.</p>
+        <label>RUC<input id="rucProveedorModal" class="input-control" maxlength="11" inputmode="numeric" /></label>
+        <label>Razón social<input id="razonProveedorModal" class="input-control" maxlength="150" /></label>
+        <label>Representante<input id="representanteProveedorModal" class="input-control" maxlength="100" /></label>
+        <label>Teléfono<input id="telefonoProveedorModal" class="input-control" maxlength="9" inputmode="numeric" /></label>
+        <label>Correo<input id="correoProveedorModal" class="input-control" type="email" maxlength="100" /></label>
+        <label>Dirección<input id="direccionProveedorModal" class="input-control" maxlength="150" /></label>
+        <p id="errorProveedorModal" class="modal-error" role="alert"></p>
+      </div>
+      <footer><button id="guardarProveedorModal" type="button" class="btn btn-primary" onclick="guardarProveedorDesdeCompra()">Guardar cambios</button><button type="button" class="btn btn-secondary" onclick="cerrarModalCompra('modalProveedorCompra')">Cancelar</button></footer>
+    </section>
+    <section hidden id="modalAltasCompra" class="compra-subseccion" aria-labelledby="tituloAltasCompra">
+      <header><h2 id="tituloAltasCompra">Preparar nuevos registros</h2><button type="button" aria-label="Cerrar" onclick="cerrarModalCompra('modalAltasCompra')">×</button></header>
+      <div class="modal-cuerpo">
+        <p>Revisa los datos reconocidos. Se crearán junto con la compra cuando pulses Guardar; todavía no se modifica el inventario.</p>
+        <div id="proveedorAltaCampos">
+          <label>RUC del proveedor<input id="altaRuc" class="input-control" maxlength="11" inputmode="numeric" /></label>
+          <label>Razón social del proveedor<input id="altaRazon" class="input-control" maxlength="150" placeholder="Completa el nombre si no se reconoció" /></label>
+        </div>
+        <div id="productosAltaCampos"></div>
+        <p id="errorAltasCompra" class="modal-error" role="alert"></p>
+      </div>
+      <footer><button type="button" class="btn btn-primary" onclick="confirmarAltasCompra()">Usar estos datos</button><button type="button" class="btn btn-secondary" onclick="cerrarModalCompra('modalAltasCompra')">Cancelar</button></footer>
+    </section>
         <input type="hidden" id="txtIdCompra" />
         <input type="hidden" id="txtSubTotal" />
         <input type="hidden" id="txtIgv" />
@@ -65,6 +118,7 @@
 
                 <select id="cboProveedor"
                         class="input-control"></select>
+                <button type="button" class="btn btn-secondary" id="btnEditarProveedorCompra" onclick="abrirProveedorCompra()">Modificar proveedor</button>
 
             </div>
 
@@ -274,6 +328,12 @@
 
     </div>
 
+    <dialog id="modalRevisionCompra" class="compra-dialog compra-completa" aria-labelledby="tituloRevisionCompra">
+      <header><h2 id="tituloRevisionCompra">Revisar y modificar compra</h2><button type="button" aria-label="Cerrar revisión" onclick="cerrarRevisionCompra()">×</button></header>
+      <p class="aviso-revision">Revisa todos los campos de la compra. Cerrar conserva el borrador; Guardar registra la compra.</p>
+      <div id="contenidoRevisionCompra"></div>
+      <footer><button type="button" class="btn btn-secondary" onclick="cerrarRevisionCompra()">Volver al formulario</button></footer>
+    </dialog>
     </section>
     <section id="panelComprasRegistradas" aria-label="Compras realizadas" hidden>
         <div class="card">

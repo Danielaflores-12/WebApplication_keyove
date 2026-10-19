@@ -53,6 +53,14 @@ class CompraIntegration {
             SessionStateUtility.AddHttpSessionStateToContext(context,session);
             context.Session["iCodUsuario"] = 1;
             context.Session["Rol"] = "Administrador";
+            var supplier = Page.ObtenerProveedorCompra(1);
+            supplier.razonSocial="PROVEEDOR EDITADO"; supplier.telefono="999123456";
+            Assert(Page.ActualizarProveedorCompra(supplier).ok && Page.ObtenerProveedorCompra(1).telefono=="999123456","Editar proveedor desde Compras conserva su identidad");
+            supplier.ruc="123";
+            Assert(!Page.ActualizarProveedorCompra(supplier).ok && Page.ObtenerProveedorCompra(1).ruc=="20123456789","RUC inválido no modifica proveedor");
+            Sql("INSERT Proveedores(cRuc,cRazonSocial) VALUES('20987654321','SEGUNDO')");
+            supplier.ruc="20987654321";
+            Assert(!Page.ActualizarProveedorCompra(supplier).ok && Page.ObtenerProveedorCompra(1).ruc=="20123456789","RUC duplicado se rechaza sin cambios");
             var content = new byte[3 * 1024 * 1024]; content[0]=137; content[1]=80; content[2]=78; content[3]=71;
             var file = new Page.ArchivoCompra {nombreArchivo="prueba.png",contenidoBase64=Convert.ToBase64String(content),textoOcr="texto de prueba"};
             var result = Page.GuardarCompra(Purchase("F001-000123"),Lines(),file,"2026-10-13",false);
@@ -93,10 +101,27 @@ class CompraIntegration {
             try { Sql("DECLARE @d dbo.TipoDetalleCompra; INSERT @d VALUES(1,0,10); EXEC dbo.sp_RegistrarCompra 1,1,'FACTURA','INVALID','20261013',20,3.6,23.6,0,@d;"); }
             catch(SqlException ex) { invalidSql=ex.Number==50001; }
             Assert(invalidSql && Value("SELECT COUNT(*) FROM Compras WHERE cNumeroComprobante='INVALID'")==0,"SQL rechaza cantidades inválidas sin depender del formulario");
+            var newSupplier = new Page.ProveedorEdicionCompra {ruc="20600855604",razonSocial="PROVEEDOR ALTA"};
+            Func<string, Page.ResultadoCompra> saveNew = number => {
+                var purchase=Purchase(number); purchase.iCodProveedor=-1;
+                return Page.GuardarCompraConAltas(purchase,Lines(-1),file,"2026-10-18",false,newSupplier,
+                    new List<Page.ProductoNuevoCompra> {new Page.ProductoNuevoCompra {temporal=-1,nombre="CARGADOR NUEVO",categoria=1,precioVenta=15m}});
+            };
+            Sql("CREATE TRIGGER FalloAlta ON Comprobantes_OCR AFTER INSERT AS BEGIN THROW 51001, 'Archivo rechazado', 1; END");
+            Assert(!saveNew("ALTA-FALLO").ok && Value("SELECT COUNT(*) FROM Proveedores WHERE cRuc='20600855604'")==0 && Value("SELECT COUNT(*) FROM Productos WHERE cNombre='CARGADOR NUEVO'")==0,"Fallo de archivo revierte proveedor, producto y compra nuevos");
+            Sql("DROP TRIGGER FalloAlta");
+            var newResult=saveNew("ALTA-OK");
+            Assert(newResult.ok,"Compra crea proveedor y producto en una transacción: "+newResult.mensaje);
+            Assert(Value("SELECT iStockActual FROM Productos WHERE cNombre='CARGADOR NUEVO'")==2,"Producto nuevo recibe stock una sola vez");
+            Assert(saveNew("ALTA-OTRA").ok && Value("SELECT COUNT(*) FROM Proveedores WHERE cRuc='20600855604'")==1 && Value("SELECT COUNT(*) FROM Productos WHERE cNombre='CARGADOR NUEVO'")==1,"Reutiliza proveedor por RUC y producto por nombre sin duplicarlos");
+            Assert(!saveNew("ALTA-OTRA").ok && Value("SELECT iStockActual FROM Productos WHERE cNombre='CARGADOR NUEVO'")==4,"Comprobante duplicado no duplica altas ni stock");
             context.Session["Rol"] = "Vendedor";
             bool denied=false;
             try { Page.GuardarCompra(Purchase("F001-000127"),Lines(),null,"2026-10-13",false); } catch(HttpException ex) { denied=ex.GetHttpCode()==403; }
             Assert(denied,"Vendedor no puede registrar compras");
+            denied=false;
+            try { Page.ActualizarProveedorCompra(supplier); } catch(HttpException ex) { denied=ex.GetHttpCode()==403; }
+            Assert(denied,"Vendedor no puede modificar proveedor desde Compras");
             Console.WriteLine("PRUEBAS SQL COMPLETADAS");
         } finally {
             HttpContext.Current = null;

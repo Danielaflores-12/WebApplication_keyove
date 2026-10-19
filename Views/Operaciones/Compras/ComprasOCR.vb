@@ -26,6 +26,59 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
             Public mensaje As String
         End Class
 
+        Public Class ProveedorEdicionCompra
+            Public id As Integer
+            Public ruc As String
+            Public razonSocial As String
+            Public representante As String
+            Public telefono As String
+            Public correo As String
+            Public direccion As String
+        End Class
+
+        <WebMethod(EnableSession:=True)>
+        Public Shared Function ObtenerProveedorCompra(idProveedor As Integer) As ProveedorEdicionCompra
+            ExigirAdministradora()
+            Using db As New ConexionBD()
+                Dim tabla = db.ExecuteDataTable("SELECT * FROM Proveedores WHERE iCodProveedor=@id AND bEstado=1", New List(Of SqlParameter) From {New SqlParameter("@id", idProveedor)})
+                If tabla.Rows.Count <> 1 Then Throw New ArgumentException("El proveedor no está activo.")
+                Dim r = tabla.Rows(0)
+                Return New ProveedorEdicionCompra With {.id = idProveedor, .ruc = Convert.ToString(r("cRuc")), .razonSocial = Convert.ToString(r("cRazonSocial")), .representante = Convert.ToString(r("cRepresentante")), .telefono = Convert.ToString(r("cTelefono")), .correo = Convert.ToString(r("cCorreo")), .direccion = Convert.ToString(r("cDireccion"))}
+            End Using
+        End Function
+
+        <WebMethod(EnableSession:=True)>
+        Public Shared Function ActualizarProveedorCompra(proveedor As ProveedorEdicionCompra) As ResultadoCompra
+            ExigirAdministradora()
+            Try
+                If proveedor Is Nothing OrElse proveedor.id <= 0 Then Throw New ArgumentException("Selecciona un proveedor.")
+                proveedor.ruc = If(proveedor.ruc, "").Trim()
+                proveedor.razonSocial = If(proveedor.razonSocial, "").Trim()
+                proveedor.telefono = If(proveedor.telefono, "").Trim()
+                proveedor.correo = If(proveedor.correo, "").Trim()
+                proveedor.representante = If(proveedor.representante, "").Trim()
+                proveedor.direccion = If(proveedor.direccion, "").Trim()
+                If Not System.Text.RegularExpressions.Regex.IsMatch(proveedor.ruc, "^[0-9]{11}$") Then Throw New ArgumentException("El RUC debe tener 11 dígitos.")
+                If proveedor.razonSocial.Length = 0 OrElse proveedor.razonSocial.Length > 150 OrElse proveedor.representante.Length > 100 OrElse proveedor.correo.Length > 100 OrElse proveedor.direccion.Length > 150 Then Throw New ArgumentException("Revisa la razón social y la longitud de los campos.")
+                If proveedor.telefono <> "" AndAlso Not System.Text.RegularExpressions.Regex.IsMatch(proveedor.telefono, "^[0-9]{9}$") Then Throw New ArgumentException("El teléfono debe tener 9 dígitos.")
+                If proveedor.correo <> "" Then
+                    Dim direccionCorreo As New System.Net.Mail.MailAddress(proveedor.correo)
+                    If direccionCorreo.Address <> proveedor.correo Then Throw New ArgumentException("Revisa el correo.")
+                End If
+                Using db As New ConexionBD()
+                    Dim actualizado = Convert.ToInt32(db.ExecuteScalar(
+                        "UPDATE Proveedores SET cRuc=@ruc,cRazonSocial=@razon,cRepresentante=@representante,cTelefono=NULLIF(@telefono,''),cCorreo=NULLIF(@correo,''),cDireccion=@direccion WHERE iCodProveedor=@id AND bEstado=1; SELECT @@ROWCOUNT;",
+                        New List(Of SqlParameter) From {New SqlParameter("@id", proveedor.id), New SqlParameter("@ruc", proveedor.ruc), New SqlParameter("@razon", proveedor.razonSocial), New SqlParameter("@representante", proveedor.representante), New SqlParameter("@telefono", proveedor.telefono), New SqlParameter("@correo", proveedor.correo), New SqlParameter("@direccion", proveedor.direccion)}))
+                    If actualizado <> 1 Then Throw New ArgumentException("El proveedor ya no está activo. Actualiza la página.")
+                End Using
+                Return New ResultadoCompra With {.ok = True, .mensaje = "Proveedor actualizado."}
+            Catch ex As SqlException
+                Return New ResultadoCompra With {.mensaje = If(ex.Number = 2601 OrElse ex.Number = 2627, "Ese RUC ya pertenece a otro proveedor.", "No se pudo actualizar el proveedor.")}
+            Catch ex As Exception
+                Return New ResultadoCompra With {.mensaje = ex.Message}
+            End Try
+        End Function
+
         Private Shared Sub ExigirAdministradora()
             Dim context = System.Web.HttpContext.Current
             If context.Session Is Nothing OrElse context.Session("iCodUsuario") Is Nothing Then
@@ -58,6 +111,11 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
         Public Shared Function ExtraerComprobante(archivo As ArchivoCompra) As Object
             ExigirAdministradora()
             LeerArchivo(archivo)
+            Try
+                OcrServiceHost.EnsureRunning(System.Web.Hosting.HostingEnvironment.ApplicationPhysicalPath, System.Web.HttpContext.Current.IsDebuggingEnabled)
+            Catch ex As Exception
+                Return New With {.success = False, .mensaje = ex.Message}
+            End Try
             Dim serializer As New JavaScriptSerializer With {.MaxJsonLength = 16777216}
             Dim address = System.Configuration.ConfigurationManager.AppSettings("OcrServiceUrl")
             Dim request = DirectCast(WebRequest.Create(address), HttpWebRequest)
@@ -91,6 +149,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
 
         <WebMethod(EnableSession:=True)>
         Public Shared Function GuardarCompra(compra As ModeloCompra, detalles As List(Of ModeloDetalleCompra), comprobante As ArchivoCompra, fechaCompra As String, preciosIncluyenIgv As Boolean) As ResultadoCompra
+            Return GuardarCompraInterna(compra, detalles, comprobante, fechaCompra, preciosIncluyenIgv, Nothing)
+        End Function
+
+        Private Shared Function GuardarCompraInterna(compra As ModeloCompra, detalles As List(Of ModeloDetalleCompra), comprobante As ArchivoCompra, fechaCompra As String, preciosIncluyenIgv As Boolean, transaccion As ConexionBD) As ResultadoCompra
             ExigirAdministradora()
             Try
                 If compra Is Nothing OrElse detalles Is Nothing OrElse detalles.Count = 0 Then Throw New ArgumentException("Agrega los productos de la compra.")
@@ -141,11 +203,14 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                     New SqlParameter("@cTextoOcr", SqlDbType.NVarChar, -1) With {.Value = If(comprobante Is Nothing, DBNull.Value, If(CType(comprobante.textoOcr, Object), DBNull.Value))},
                     New SqlParameter("@cRucEmisor", SqlDbType.NVarChar, 20) With {.Value = If(comprobante Is Nothing, DBNull.Value, If(CType(comprobante.rucEmisor, Object), DBNull.Value))},
                     New SqlParameter("@imgComprobante", SqlDbType.VarBinary, -1) With {.Value = If(CType(content, Object), DBNull.Value)}}
-                Using db As New ConexionBD()
-                    ' SQL Server confirma o revierte toda la compra, incluido el archivo OCR.
-                    compra.iCodCompra = Convert.ToInt32(db.ExecuteScalar(
-                        "EXEC dbo.sp_RegistrarCompra @iCodProveedor,@iCodUsuario,@cTipoComprobante,@cNumeroComprobante,@dFechaCompra,@nSubTotal,@nIgv,@nTotal,@bPreciosIncluyenIgv,@Detalles,@cObservacion,@cNombreArchivo,@cTipoMime,@cTextoOcr,@cRucEmisor,@imgComprobante", parametros))
-                End Using
+                Dim sql = "EXEC dbo.sp_RegistrarCompra @iCodProveedor,@iCodUsuario,@cTipoComprobante,@cNumeroComprobante,@dFechaCompra,@nSubTotal,@nIgv,@nTotal,@bPreciosIncluyenIgv,@Detalles,@cObservacion,@cNombreArchivo,@cTipoMime,@cTextoOcr,@cRucEmisor,@imgComprobante"
+                If transaccion Is Nothing Then
+                    Using db As New ConexionBD()
+                        compra.iCodCompra = Convert.ToInt32(db.ExecuteScalar(sql, parametros))
+                    End Using
+                Else
+                    compra.iCodCompra = Convert.ToInt32(transaccion.ExecuteScalarTransact(sql, parametros))
+                End If
                 Return New ResultadoCompra With {.ok = True, .idCompra = compra.iCodCompra, .mensaje = "Compra, comprobante e inventario registrados."}
             Catch ex As SqlException
                 Return New ResultadoCompra With {.mensaje = If(ex.Number = 2601 OrElse ex.Number = 2627, "Ese comprobante ya está registrado para el proveedor. No se duplicó el inventario.", "No se pudo guardar la compra. No se aplicaron cambios. " & ex.Message)}

@@ -2,6 +2,16 @@
 import base64
 import binascii
 import os
+import sys
+from pathlib import Path
+
+# El proceso iniciado desde F5 no abre una consola; conserva su diagnóstico.
+if __name__ == '__main__':
+    runtime = Path(__file__).resolve().parent / '.runtime'
+    runtime.mkdir(exist_ok=True)
+    startup_log = (runtime / 'auto-start.log').open('a', encoding='utf-8', buffering=1)
+    sys.stdout = startup_log
+    sys.stderr = startup_log
 import tempfile
 from threading import Lock
 from fastapi import FastAPI, HTTPException, Request
@@ -33,7 +43,7 @@ class Archivo(BaseModel):
 
 @app.get('/health')
 def health():
-    return {'status': 'ok'}
+    return {'status': 'ok', 'service': 'keyove-compras-ocr', 'pid': os.getpid()}
 
 @app.post('/ocr/extraer')
 def extraer_comprobante(file: Archivo):
