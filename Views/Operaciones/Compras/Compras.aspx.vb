@@ -30,6 +30,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
             Public t As String
             Public codigo As String
             Public stock As Integer
+            Public marca As String
+            Public modelo As String
+            Public descripcion As String
+            Public categoria As Integer
 
         End Class
 
@@ -112,6 +116,10 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                         Convert.ToString(fila("cNombre"))
                     opcion.codigo = Convert.ToString(fila("cCodigo"))
                     opcion.stock = Convert.ToInt32(fila("iStockActual"))
+                    opcion.marca = Convert.ToString(fila("cMarca"))
+                    opcion.modelo = Convert.ToString(fila("cModelo"))
+                    opcion.descripcion = Convert.ToString(fila("cDescripcion"))
+                    opcion.categoria = Convert.ToInt32(fila("iCodCategoria"))
 
                     lista.Add(opcion)
 

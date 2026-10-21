@@ -65,44 +65,96 @@ class OCRService:
             rows.append(f"{q['text']} {label} {prices[i]['text']} {amounts[i]['text']}")
         return rows
 
+    def _read(self, gray, psm):
+        return pytesseract.image_to_string(
+            gray, config=f'--oem 3 --psm {psm}', lang='spa', timeout=25)
+
+    def _orientation(self, gray):
+        """OSD corrige giros de 90 grados; no depende del EXIF de la foto."""
+        sample = gray
+        if max(gray.shape) > 1800:
+            scale = 1800 / max(gray.shape)
+            sample = cv2.resize(gray, None, fx=scale, fy=scale)
+        try:
+            info = pytesseract.image_to_osd(
+                sample, output_type=pytesseract.Output.DICT, timeout=8)
+            angle = int(info.get('rotate', 0)) % 360
+            if float(info.get('orientation_conf', 0)) >= 2 and angle:
+                return np.ascontiguousarray(np.rot90(gray, -(angle // 90))), True
+        except (RuntimeError, pytesseract.TesseractError):
+            pass
+        return gray, False
+
+    def _prepare(self, gray):
+        if gray.shape[1] < 1800 and gray.size * 4 <= Image.MAX_IMAGE_PIXELS:
+            return cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        return gray
+
     def read_image(self, image):
         if image.width * image.height > Image.MAX_IMAGE_PIXELS:
             raise ValueError('La imagen supera los 30 megapíxeles.')
-        image = ImageOps.exif_transpose(image).convert('RGB')
-        gray = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2GRAY)
-        original = gray
-        if gray.shape[1] < 1800 and gray.size * 4 <= Image.MAX_IMAGE_PIXELS:
-            gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-        text = pytesseract.image_to_string(gray, config='--oem 3 --psm 6', lang='spa', timeout=25)
-        if re.search(r'CANT|P\.?\s*UNIT', text, re.I):
-            rows = self.table_rows(gray)
-            if rows:
-                text += '\n[DETALLE_RECONSTRUIDO]\n' + '\n'.join(rows) + '\n[/DETALLE_RECONSTRUIDO]\n'
-        # Si el fondo domina la lectura, aislar la región clara del papel.
         from extractor import ComprobanteExtractor
-        result = ComprobanteExtractor().extract(text)
-        # Las facturas con tablas suelen leerse mejor con PSM 4. Sólo se usa como
-        # segunda lectura cuando la lectura principal dejó datos esenciales vacíos.
-        if (not result['detalles'] or
-                any(result[key] is None for key in ('numero_comprobante', 'ruc_emisor', 'total'))):
-            invoice_text = pytesseract.image_to_string(gray, config='--oem 3 --psm 4', lang='spa', timeout=25)
-            if invoice_text.strip():
-                text += '\n[LECTURA_ALTERNATIVA]\n' + invoice_text
-                result = ComprobanteExtractor().extract(text)
-        if not result['detalles']:
-            mask = cv2.threshold(cv2.GaussianBlur(original, (31,31), 0), 170, 255, cv2.THRESH_BINARY)[1]
+        parser = ComprobanteExtractor()
+        image = ImageOps.exif_transpose(image).convert('RGB')
+        original = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2GRAY)
+        original, oriented = self._orientation(original)
+        variants = []
+
+        def read(candidate, psm=6, reconstruct=False):
+            try:
+                text = self._read(self._prepare(candidate), psm)
+            except (RuntimeError, pytesseract.TesseractError):
+                # Una alternativa fallida no elimina las lecturas anteriores.
+                return ''
+            if reconstruct and re.search(r'CANT|P\.?\s*UNIT', text, re.I):
+                try:
+                    rows = self.table_rows(self._prepare(candidate))
+                except (RuntimeError, pytesseract.TesseractError):
+                    rows = []
+                if rows:
+                    # Conservar también la lectura original si la tabla se reconstruyó incompleta.
+                    if text.strip() and text not in variants:
+                        variants.append(text)
+                    text += '\n[DETALLE_RECONSTRUIDO]\n' + '\n'.join(rows) + '\n[/DETALLE_RECONSTRUIDO]\n'
+            if text.strip() and text not in variants:
+                variants.append(text)
+            return text
+
+        initial = read(original, reconstruct=True)
+        # Si OSD no pudo decidir y la foto es horizontal, contrastar ambos giros.
+        if not oriented and original.shape[1] > original.shape[0]:
+            options = [(original, initial)]
+            for turn in (1, 3):
+                rotated = np.ascontiguousarray(np.rot90(original, turn))
+                options.append((rotated, read(rotated)))
+            original, _ = max(options, key=lambda pair: (
+                parser._score(parser.extract(pair[1])),
+                len(re.findall(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]{4,}', pair[1]))))
+            # Las orientaciones descartadas no deben generar conflictos de campos.
+            variants.clear()
+            read(original, reconstruct=True)
+        result = parser.extract('\n[LECTURA_ALTERNATIVA]\n'.join(variants))
+        incomplete = (not result['detalles'] or any(
+            result[key] is None for key in ('numero_comprobante', 'ruc_emisor', 'total')))
+        inconsistent = any(d['requiere_revision'] for d in result['detalles'])
+        if result['detalles'] and result['total'] is not None:
+            inconsistent |= abs(sum(d['importe'] for d in result['detalles']) - result['total']) > .02
+        if incomplete or inconsistent:
+            read(original, psm=4)
+            # Comparar iluminación normalizada aun si ya se reconoció un producto.
+            background = cv2.GaussianBlur(original, (0, 0), 25)
+            normalized = cv2.divide(original, background, scale=255)
+            read(normalized)
+            # Recorte conservador: sólo si una región clara ocupa gran parte de la foto.
+            mask = cv2.threshold(cv2.GaussianBlur(original, (31, 31), 0), 170, 255, cv2.THRESH_BINARY)[1]
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             if contours:
-                x,y,w,h = cv2.boundingRect(max(contours, key=cv2.contourArea))
-                if w*h > original.size*.25 and w < original.shape[1]*.9:
-                    crop = original[y:y+h,x:x+w]
-                    normalized = cv2.divide(crop, cv2.GaussianBlur(crop,(0,0),25),scale=255)
-                    for candidate in (crop, normalized):
-                        if candidate.shape[1] < 1800 and candidate.size*4 <= Image.MAX_IMAGE_PIXELS:
-                            candidate = cv2.resize(candidate,None,fx=2,fy=2)
-                        alternative = pytesseract.image_to_string(candidate,config='--oem 3 --psm 6',lang='spa',timeout=25)
-                        text += '\n[LECTURA_ALTERNATIVA]\n' + alternative
-        return text
+                x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
+                if w * h > original.size * .25 and w < original.shape[1] * .9:
+                    read(normalized[y:y+h, x:x+w])
+        if not variants:
+            raise RuntimeError('No se pudo obtener texto. Revisa la imagen y Tesseract con español.')
+        return '\n[LECTURA_ALTERNATIVA]\n'.join(variants)
 
     def extract_text(self, path):
         if path.lower().endswith('.pdf'):

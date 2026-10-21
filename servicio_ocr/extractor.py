@@ -1,10 +1,38 @@
 """Extracción conservadora: los datos no reconocidos quedan pendientes."""
 import re
+
+def separar_producto(texto):
+    """No convierte candidatos alfanuméricos en modelos confirmados."""
+    limpio = re.sub(r"\b(?:S\s*/\s*N|SERIE|SERIAL)\s*[:#].*$", "", texto, flags=re.I).strip()
+    limpio = re.sub(r"\b(?:UND|UNID|UNI|UNIDAD|PZA|PCS)\b(?:\s*X\s*\d+)?", "", limpio, flags=re.I)
+    limpio = re.sub(r"\s+", " ", limpio).strip()
+    marca = ""
+    for patron, valor in ((r"\bTP\s*-?\s*LINK\b", "TP-Link"), (r"\bLOGITECH\b", "Logitech"), (r"\bLENOVO\b", "Lenovo"), (r"\bEPSON\b", "Epson"), (r"\bSAMSUNG\b", "Samsung")):
+        if re.search(patron, limpio, re.I):
+            marca = valor
+            limpio = re.sub(patron, valor, limpio, flags=re.I)
+            break
+    candidatos = re.findall(r"\b(?=[A-Z0-9-]{3,}\b)(?=[A-Z0-9-]*[A-Z])(?=[A-Z0-9-]*\d)[A-Z0-9-]+\b", limpio, re.I)
+    candidatos = [c for c in candidatos if not re.fullmatch(r"\d+(?:GB|TB|MB|MHZ|GHZ|V|W|MM|CM)", c, re.I)]
+    fragmento = re.match(r"^([A-Z0-9]{1,3}\s+\d+[A-Z][A-Z0-9-]*)\s+", limpio, re.I)
+    if fragmento:
+        candidatos = [fragmento[1]] + [c for c in candidatos if c not in fragmento[1].split()]
+    nombre = limpio
+    if marca:
+        nombre = nombre.replace(marca, "")
+    for c in candidatos:
+        nombre = re.sub(r"\b" + re.escape(c) + r"\b", "", nombre)
+    nombre = re.sub(r"\s+", " ", nombre).strip(" -")
+    avisos = ["Modelo pendiente; confirma el candidato en el comprobante: " + ", ".join(candidatos)] if candidatos else ["Modelo no reconocido; completar si corresponde."]
+    if not marca:
+        avisos.append("Marca no reconocida; completar si corresponde.")
+    return dict(nombre=nombre, marca=marca, modelo="", descripcion_producto=limpio, texto_original=texto, modelo_candidato=" / ".join(candidatos), advertencias_producto=avisos)
+
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 
-def importe(texto):
+def importe(texto, cantidad=False):
     value = re.sub(r"[^\d,.+-]", "", texto)
     if not value:
         return None
@@ -14,7 +42,11 @@ def importe(texto):
     elif ',' in value or '.' in value:
         sep = ',' if ',' in value else '.'
         parts = value.split(sep)
-        value = ''.join(parts) if len(parts[-1]) == 3 else ''.join(parts[:-1]) + '.' + parts[-1]
+        # En cantidades, 1.000 suele representar una unidad.
+        if cantidad and len(parts) == 2:
+            value = parts[0] + '.' + parts[1]
+        else:
+            value = ''.join(parts) if len(parts[-1]) == 3 else ''.join(parts[:-1]) + '.' + parts[-1]
     try:
         number = Decimal(value)
         return float(number) if number.is_finite() and number >= 0 else None
@@ -79,17 +111,30 @@ class ComprobanteExtractor:
         if len(variants) == 1:
             return self._extract_single(text)
         results = [self._extract_single(v) for v in variants]
-        best = max(results, key=lambda r: (sum(not d['requiere_revision'] for d in r['detalles']),
-                                           sum(r[k] is not None for k in ('ruc_emisor','numero_comprobante','total'))))
+        best = max(results, key=self._score)
         for key in ('numero_comprobante','fecha_emision','ruc_emisor','tipo_comprobante','subtotal','igv','total'):
-            values = {r[key] for r in results if r[key] is not None}
+            values = {r[key] for r in results if r[key] is not None
+                      and not (key == 'tipo_comprobante' and r[key] == 'OTRO')}
             if len(values) == 1:
                 best[key] = values.pop()
                 best['advertencias'] = [a for a in best['advertencias'] if a != 'Completa el dato no reconocido: ' + key.replace('_',' ') + '.']
             elif len(values) > 1:
                 best[key] = None
                 best['advertencias'].append('Las lecturas difieren: revisa ' + key.replace('_',' ') + '.')
+        best['advertencias'] = list(dict.fromkeys(best['advertencias']))
         return best
+
+    @staticmethod
+    def _score(result):
+        details = result['detalles']
+        total = result['total']
+        matches = bool(details and total is not None and
+                       abs(sum(d['importe'] for d in details) - total) <= .02)
+        # Una lectura con filas pendientes de revisión sigue siendo más útil
+        # que un encabezado sin productos. No elimina sus marcas de revisión.
+        return (matches, bool(details), sum(not d['requiere_revision'] for d in details),
+                len(details),
+                sum(result[k] is not None for k in ('ruc_emisor', 'numero_comprobante', 'total')))
 
     def _extract_single(self, text):
         result = dict(numero_comprobante=None, fecha_emision=None, ruc_emisor=None,
@@ -158,6 +203,11 @@ class ComprobanteExtractor:
             # Acepta las variaciones frecuentes del OCR: $/105.08 y 5/124.00
             # corresponden visualmente a S/105.08 y S/124.00.
             pattern = r'\b' + label + r'\s*(?:\(?18\s*%\)?)?\s*[:=]?\s*(?:[S5$]\s*[/|íi\]]\.?\s*:?|PEN|US\$|\$)?\s*([\d][\d.,]*)(?:\s+[^\n]*)?$'
+            # No atravesar saltos de línea ni tomar números del RUC o del pie.
+            pattern = pattern.replace(r'\s', r'[ \t]')
+            pattern = pattern.replace(r'(?:[ \t]+[^\n]*)?$', r'(?:[ \t]+[^\n]{0,12}|[|])?[ \t]*$')
+            if key == 'total':
+                pattern = r'(?<!SUB )(?<!SUB)' + pattern
             values = [importe(m) for m in re.findall(pattern, text, re.I | re.M)]
             values = list(dict.fromkeys(v for v in values if v is not None))
             if len(values) == 1:
@@ -170,14 +220,38 @@ class ComprobanteExtractor:
         detail_text = '\n'.join(reconstructed) if reconstructed else text
         detalle_abierto = False
         for line in detail_text.splitlines():
-            if result['detalles'] and re.match(r'^\s*(?:UND|UNID|UNIDAD|PCS)\s+\S', line, re.I):
-                result['detalles'][-1]['descripcion'] += ' ' + re.sub(r'^\s*(?:UND|UNID|UNIDAD|PCS)\s+', '', line, flags=re.I).strip()
+            inferred = False
+            repaired = False
+            # Sólo recomponer centavos separados cuando la operación de la fila coincide.
+            split_price = re.fullmatch(
+                r'\s*(\d+(?:[.,]\d+)?)\s+((?:UND|UNID|UNI|UNIDAD|PZA|PCS)\b.+?)\s+(\d+)\s+(\d{2})\s+(\d[\d.,]*)\s*', line, re.I)
+            if split_price:
+                q, label, whole, cents, row_total = split_price.groups()
+                qn, tn = importe(q, cantidad=True), importe(row_total)
+                pn = importe(whole + '.' + cents)
+                if None not in (qn, tn, pn) and qn > 0 and abs(qn * pn - tn) <= .02:
+                    line = f'{q} {label} {whole}.{cents} {row_total}'
+                    repaired = True
+            # El número de serie y el pie no forman parte de la descripción.
+            if re.search(r'\b(?:SON|OPERADOR|VENDEDOR|GRACIAS|VUELVA|WWW)\b', line, re.I):
+                detalle_abierto = False
+                continue
+            serial = re.search(r'\bS\s*/\s*N\s*:', line, re.I)
+            if serial:
+                if detalle_abierto:
+                    prefix = line[:serial.start()].strip()
+                    if prefix:
+                        result['detalles'][-1]['descripcion'] += ' ' + prefix
+                detalle_abierto = False
+                continue
+            if result['detalles'] and re.match(r'^\s*(?:UND|UNID|UNI|UNIDAD|PCS)\s+\S', line, re.I):
+                result['detalles'][-1]['descripcion'] += ' ' + re.sub(r'^\s*(?:UND|UNID|UNI|UNIDAD|PCS)\s+', '', line, flags=re.I).strip()
                 continue
             if re.search(r'\b(?:TOTAL|SUBTOTAL|IGV|RUC|FECHA|GRAVADAS|DESCUENTO|EXONERAD[AO])\b', line, re.I):
                 detalle_abierto = False
                 continue
             # Código de proveedor, cantidad, unidad, descripción, precio, importe.
-            line = re.sub(r'^\s*[A-Z0-9-]+\s+(?=\d+(?:[.,]\d+)?\s+(?:UND|UNID|PZA|PCS)\b)', '', line, flags=re.I)
+            line = re.sub(r'^\s*[A-Z0-9-]+\s+(?=\d+(?:[.,]\d+)?\s+(?:UND|UNID|UNI|PZA|PCS)\b)', '', line, flags=re.I)
             match = re.fullmatch(r'\s*' + amount + r'\s+(.+?)\s+' + amount + r'\s+' + amount + r'\s*', line)
             if match:
                 quantity, description, price, total = match.groups()
@@ -186,7 +260,7 @@ class ComprobanteExtractor:
                 if not match:
                     # Algunos comprobantes imprimen la cantidad antes de la columna
                     # y el OCR la pierde. Si precio y total son consistentes, se infiere.
-                    match = re.search(r'(?:^|\s)(?:UND|UNID|UNIDAD|PZA|PCS)\.?\s+(.+?)\s+' + amount + r'\s+' + amount + r'(?:\s+\D.*)?\s*$', line, re.I)
+                    match = re.search(r'(?:^|\s)(?:UND|UNID|UNI|UNIDAD|PZA|PCS)\.?\s+(.+?)\s+' + amount + r'\s+' + amount + r'(?:\s+\D.*)?\s*$', line, re.I)
                     if not match:
                         if detalle_abierto and re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]', line):
                             continuation = re.sub(r'^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+', '', line).strip()
@@ -201,21 +275,31 @@ class ComprobanteExtractor:
                     if abs(quantity - round(quantity)) > .001:
                         continue
                     quantity = str(round(quantity))
+                    inferred = True
                     price, total = str(price), str(total)
                 else:
                     description, quantity, price, total = match.groups()
-            description = re.sub(r'^(?:UND|UNID|UNIDAD|UNIDADES|PZA|PCS)\.?\s+', '', description, flags=re.I)
+            description = re.sub(r'^(?:UND|UNID|UNI|UNIDAD|UNIDADES|PZA|PCS)\.?\s+', '', description, flags=re.I)
             if not re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]', description):
                 continue
-            quantity, price, total = importe(quantity), importe(price), importe(total)
+            quantity, price, total = importe(quantity, cantidad=True), importe(price), importe(total)
             if None in (quantity, price, total) or quantity <= 0:
                 continue
             valid = quantity.is_integer() and abs(quantity * price - total) <= .02
             result['detalles'].append(dict(descripcion=description.strip(), cantidad=quantity,
-                                           precio_unitario=price, importe=total, requiere_revision=not valid))
+                                           precio_unitario=price, importe=total, requiere_revision=not valid or inferred or repaired))
             detalle_abierto = True
+            if repaired:
+                result['advertencias'].append('Precio con centavos separados recompuesto: confírmalo en el comprobante.')
+            if inferred:
+                result['advertencias'].append('Cantidad deducida del precio y el importe: confírmala en el comprobante.')
             if not valid:
                 result['advertencias'].append('Revisa una línea con cantidad fraccionaria o importes inconsistentes.')
+        for detalle in result['detalles']:
+            detalle.update(separar_producto(detalle['descripcion']))
+        if result['detalles'] and result['total'] is not None:
+            if abs(sum(d['importe'] for d in result['detalles']) - result['total']) > .02:
+                result['advertencias'].append('La suma de productos difiere del total; revisa productos omitidos, impuestos o descuentos.')
         if not result['detalles']:
             result['advertencias'].append('No se reconocieron productos. Agrégalos o usa una imagen más clara.')
         for key in ('numero_comprobante', 'fecha_emision', 'subtotal', 'igv', 'total'):

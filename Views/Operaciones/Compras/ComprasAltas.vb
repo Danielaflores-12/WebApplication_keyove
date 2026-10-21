@@ -1,4 +1,4 @@
-Imports System.Data.SqlClient
+﻿Imports System.Data.SqlClient
 Imports System.IO
 Imports System.Text.RegularExpressions
 Imports System.Web.Services
@@ -69,6 +69,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                             "IF NOT EXISTS(SELECT 1 FROM Categorias WITH(HOLDLOCK) WHERE iCodCategoria=@categoria AND bEstado=1) THROW 50001,'La categoría no está activa.',1; " &
                             "DECLARE @id int; IF (SELECT COUNT(*) FROM Productos WITH(UPDLOCK,HOLDLOCK) WHERE UPPER(LTRIM(RTRIM(cNombre)))=UPPER(@nombre))>1 THROW 50001,'Hay varios productos con ese nombre. Selecciona uno del inventario.',1; " &
                             "SELECT @id=iCodProducto FROM Productos WITH(UPDLOCK,HOLDLOCK) WHERE UPPER(LTRIM(RTRIM(cNombre)))=UPPER(@nombre); " &
+                            "IF @id IS NOT NULL AND EXISTS(SELECT 1 FROM Productos WHERE iCodProducto=@id AND (ISNULL(cMarca,'')<>@marca OR ISNULL(cModelo,'')<>@modelo)) THROW 50001,'El nombre coincide con otra ficha de marca o modelo diferente. Revisa el nombre o selecciona un producto existente.',1; " &
                             "IF @id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM Productos WHERE iCodProducto=@id AND bEstado=1) THROW 50001,'El producto está inactivo.',1; " &
                             "IF @id IS NULL BEGIN IF EXISTS(SELECT 1 FROM Productos WITH(HOLDLOCK) WHERE cCodigo=@codigo) THROW 50001,'El código del producto ya existe. Corrígelo antes de guardar.',1; INSERT Productos(iCodCategoria,cCodigo,cNombre,cDescripcion,cMarca,cModelo,nPrecioCompra,nPrecioVenta,iStockActual) VALUES(@categoria,@codigo,@nombre,NULLIF(@descripcion,''),NULLIF(@marca,''),NULLIF(@modelo,''),@compra,@venta,0); SET @id=SCOPE_IDENTITY(); END; SELECT @id;",
                             New List(Of SqlParameter) From {New SqlParameter("@nombre", p.nombre.Trim()), New SqlParameter("@categoria", p.categoria), New SqlParameter("@codigo", codigo), New SqlParameter("@descripcion", If(p.descripcion, "").Trim()), New SqlParameter("@marca", If(p.marca, "").Trim()), New SqlParameter("@modelo", If(p.modelo, "").Trim()), New SqlParameter("@compra", precioCompra), New SqlParameter("@venta", p.precioVenta.Value)}))

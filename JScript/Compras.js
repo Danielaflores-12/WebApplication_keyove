@@ -89,7 +89,7 @@ function listarProductosCombo() {
     return $.ajax({type: "POST", url: "/Views/Operaciones/Compras/Compras.aspx/ListarProductosCombo", data: "{}", contentType: "application/json; charset=utf-8", dataType: "json"}).done(function (response) {
         catalogoProductos = response.d;
         var combo = $("#cboProducto").empty().append($("<option>").val("").text("-- Seleccionar --"));
-        catalogoProductos.forEach(function(p) { combo.append($("<option>").val(p.v).text(p.t + " — stock: " + p.stock)); });
+        catalogoProductos.forEach(function(p) { combo.append($("<option>").val(p.v).text(p.t + " â€” stock: " + p.stock)); });
     });
 }
 
@@ -191,7 +191,7 @@ function escaparCompra(texto) { return $("<span>").text(texto == null ? "" : tex
 function dibujarDetalleCompra() {
     var filas = compraDetalles.map(function(d, i) {
         var opciones = '<option value="0">Relacionar con inventario</option>';
-        catalogoProductos.filter(function(p) { return Number(p.v)>0 || Number(p.v)===d.iCodProducto; }).forEach(function(p) { opciones += '<option value="' + Number(p.v) + '"' + (Number(p.v) === d.iCodProducto ? ' selected' : '') + '>' + escaparCompra(p.t + ' — stock: ' + p.stock) + '</option>'; });
+        catalogoProductos.filter(function(p) { return Number(p.v)>0 || Number(p.v)===d.iCodProducto; }).forEach(function(p) { opciones += '<option value="' + Number(p.v) + '"' + (Number(p.v) === d.iCodProducto ? ' selected' : '') + '>' + escaparCompra(p.t + ' â€” stock: ' + p.stock) + '</option>'; });
         return '<tr><td>' + escaparCompra(d.cNombreProducto) + '<select class="input-control" aria-label="Producto de inventario" onchange="editarLineaCompra(' + i + ', \'producto\', this.value)">' + opciones + '</select></td>' +
             '<td><input class="input-control" aria-label="Cantidad" type="number" min="1" step="1" value="' + d.iCantidad + '" onchange="editarLineaCompra(' + i + ', \'cantidad\', this.value)" /></td>' +
             '<td><input class="input-control" aria-label="Precio" type="number" min="0" step="0.01" value="' + d.nPrecioCompra + '" onchange="editarLineaCompra(' + i + ', \'precio\', this.value)" /></td>' +
@@ -370,21 +370,21 @@ function listarCompras() {
 
 function guardarCompra() {
     if (proveedorGuardando || proveedorCargando) return;
-    if ($('#modalProveedorCompra')[0].open) { alert('Aplica o cancela la edición de la ficha del proveedor antes de guardar la compra.'); return; }
+    if ($('#modalProveedorCompra')[0].open) { alert('Aplica o cancela la ediciÃ³n de la ficha del proveedor antes de guardar la compra.'); return; }
     if ((!$('#cboProveedor').val() || compraDetalles.some(function(d) { return !d.iCodProducto; })) && comprobanteOCRPendiente) { prepararAltasCompra(); return; }
     if (guardandoCompra || extrayendoCompra) return;
     if (document.getElementById("txtArchivoComprobante").files.length && !comprobanteOCRPendiente) { alert("Primero extrae los datos del archivo seleccionado."); return; }
-    if ($("#txtIdCompra").val()) { alert("Esta compra ya está registrada. Limpia el formulario para crear otra."); return; }
+    if ($("#txtIdCompra").val()) { alert("Esta compra ya estÃ¡ registrada. Limpia el formulario para crear otra."); return; }
     if (!compraDetalles.length || compraDetalles.some(function(d) { return !d.iCodProducto || !Number.isInteger(d.iCantidad) || d.iCantidad <= 0 || !Number.isFinite(d.nPrecioCompra) || d.nPrecioCompra < 0; })) { alert("Relaciona todos los productos y revisa cantidades y precios."); return; }
-    if (new Set(compraDetalles.map(function(d) { return d.iCodProducto; })).size !== compraDetalles.length) { alert("Dos líneas están asociadas al mismo producto. Si son modelos distintos, elige o crea el producto correcto para cada línea; si son idénticos, agrupa sus cantidades."); return; }
-    if (!$("#cboProveedor").val() || !$("#txtNumeroComprobante").val().trim() || !$("#txtFechaCompra").val()) { alert("Completa proveedor, número y fecha del comprobante."); return; }
+    if (new Set(compraDetalles.map(function(d) { return d.iCodProducto; })).size !== compraDetalles.length) { alert("Dos lÃ­neas estÃ¡n asociadas al mismo producto. Si son modelos distintos, elige o crea el producto correcto para cada lÃ­nea; si son idÃ©nticos, agrupa sus cantidades."); return; }
+    if (!$("#cboProveedor").val() || !$("#txtNumeroComprobante").val().trim() || !$("#txtFechaCompra").val()) { alert("Completa proveedor, nÃºmero y fecha del comprobante."); return; }
     ajustarMontosSinIgv();
     var subtotal = parseFloat($("#txtSubTotal").val()), igv = parseFloat($("#txtIgv").val()), total = parseFloat($("#txtTotal").val());
-    if (![subtotal, igv, total].every(Number.isFinite) || subtotal < 0 || igv < 0 || total <= 0 || Math.abs(subtotal + igv - total) > .005) { alert("Revisa los montos: subtotal más IGV debe ser igual al total."); return; }
+    if (![subtotal, igv, total].every(Number.isFinite) || subtotal < 0 || igv < 0 || total <= 0 || Math.abs(subtotal + igv - total) > .005) { alert("Revisa los montos: subtotal mÃ¡s IGV debe ser igual al total."); return; }
     var incluidos = $("#preciosIncluyenIgv").val() === "si";
     var suma = compraDetalles.reduce(function(t,d) { return t + d.nSubTotal; }, 0);
-    if (Math.abs(suma - (incluidos ? total : subtotal)) > .02) { alert("La suma de productos no coincide con el comprobante. Revisa las líneas y si los precios incluyen IGV."); return; }
-    if (comprobanteOCRPendiente && !$("#confirmarOCR").prop("checked")) { alert("Revisa los datos leídos y marca la confirmación antes de guardar."); return; }
+    if (Math.abs(suma - (incluidos ? total : subtotal)) > .02) { alert("La suma de productos no coincide con el comprobante. Revisa las lÃ­neas y si los precios incluyen IGV."); return; }
+    if (comprobanteOCRPendiente && !$("#confirmarOCR").prop("checked")) { alert("Revisa los datos leÃ­dos y marca la confirmaciÃ³n antes de guardar."); return; }
     var compra = { iCodCompra: 0, iCodProveedor: Number($("#cboProveedor").val()), cTipoComprobante: $("#cboTipoComprobante").val(), cNumeroComprobante: $("#txtNumeroComprobante").val().trim(), nSubTotal: subtotal, nIgv: igv, nTotal: total, cObservacion: $("#txtObservacion").val(), cEstado: "REGISTRADA" };
     guardandoCompra = true;
     bloquearCompra(true);
@@ -400,7 +400,7 @@ function guardarCompra() {
             limpiarFormulario();
             $("#ocrEstado").text("Compra " + response.d.idCompra + " registrada. Inventario actualizado.");
             listarCompras(); listarProductosCombo(); listarProveedoresCombo();
-        }).fail(function() { alert("No se recibió confirmación. Revisa las compras realizadas antes de reintentar; se conserva el formulario."); })
+        }).fail(function() { alert("No se recibiÃ³ confirmaciÃ³n. Revisa las compras realizadas antes de reintentar; se conserva el formulario."); })
         .always(function() { guardandoCompra = false; bloquearCompra(false); });
 }
 function bloquearCompra(bloquear) {
@@ -433,7 +433,7 @@ function seleccionarCompra(idCompra) {
             $("#txtTotalCompra").val(compra.nTotal);
             $("#panelRegistroCompra input, #panelRegistroCompra select, #panelRegistroCompra button").prop("disabled", true);
             $("#txtObservacion, #btnModificarCompra, #btnLimpiarCompra").prop("disabled", false);
-            $("#ocrEstado").text("Compra registrada: puedes actualizar su observación o consultar sus productos en Detalle de compra.");
+            $("#ocrEstado").text("Compra registrada: puedes actualizar su observaciÃ³n o consultar sus productos en Detalle de compra.");
             $("#cboProveedor").val(compra.iCodProveedor);
             $("#cboUsuario").val(compra.iCodUsuario);
             $("#cboTipoComprobante").val(compra.cTipoComprobante).prop("disabled", true);
@@ -535,7 +535,7 @@ function modificarCompra() {
 function eliminarCompra(idCompra) {
 
     var confirmar = confirm(
-        "¿Deseas anular esta compra?"
+        "Â¿Deseas anular esta compra?"
     );
 
     if (!confirmar) {
@@ -642,8 +642,8 @@ function filtrarComprasRegistradas() {
         $(this).toggle(coincide);
         if (coincide) visibles++;
     });
-    $("#estadoBusquedaCompras").text(filas.length === 0 ? "Todavía no hay compras registradas." :
-        visibles === 0 ? "No se encontraron compras para esta búsqueda." : visibles + " de " + filas.length + " compras");
+    $("#estadoBusquedaCompras").text(filas.length === 0 ? "TodavÃ­a no hay compras registradas." :
+        visibles === 0 ? "No se encontraron compras para esta bÃºsqueda." : visibles + " de " + filas.length + " compras");
 }
 function vistaComprasDesdeUrl() {
     return new URLSearchParams(window.location.search).get("vista") === "registros" ? "registros" : "registro";
@@ -684,24 +684,34 @@ function fechaCompraInput(valor) {
 function claveProductoOCR(texto) {
     return normalizarBusquedaCompra(texto).replace(/\bal copilot\b/g, 'ai copilot').replace(/[^a-z0-9]/g, '');
 }
-function separarProductoOCR(texto) {
-    var original = String(texto || '').replace(/\s+/g, ' ').trim();
-    var limpio = original.replace(/\s+(?:OS|ES|PA|DS|LA)\s*$/i, '').trim();
-    var partes = limpio.split(' '), marca = '', modelo = '', inicio = 0;
-    if (partes[0] && /^[A-ZÁÉÍÓÚÑ]{2,}$/.test(partes[0])) { marca = partes[0]; inicio = 1; }
-    if (partes[inicio] && /^(?=.*\d)[A-Z0-9-]{3,}$/i.test(partes[inicio])) { modelo = partes[inicio]; inicio++; }
-    var detalle = partes.slice(inicio).join(' ').replace(/\bEspecificaciones\b.*$/i, '').trim();
-    var corte = detalle.search(/\b(?:HI-RES|LDAC|ESPECIFICACIONES)\b/i);
-    var nombre = (corte > 0 ? detalle.slice(0, corte) : detalle).trim() || limpio;
-    return { codigo:modelo, nombre:nombre.slice(0, 100), descripcion:limpio.slice(0, 500), marca:marca.slice(0, 100), modelo:modelo.slice(0, 100) };
+function contieneDatoOCR(texto, dato) {
+    var tokens = normalizarBusquedaCompra(dato || '').match(/[a-z0-9]+/g);
+    if (!tokens) return false;
+    var patron = tokens.join('[\\s-]*');
+    return new RegExp('(?:^|[^a-z0-9])' + patron + '(?=$|[^a-z0-9])', 'i').test(normalizarBusquedaCompra(texto));
+}
+function separarProductoOCR(texto, linea) {
+    linea = linea || {};
+    var original = linea.texto_original || String(texto || '');
+    var limpio = linea.descripcion_producto || original.replace(/\b(?:S\s*\/\s*N|SERIE|SERIAL)\s*[:#].*$/i, '').replace(/\b(?:UND|UNID|UNI|UNIDAD|PZA|PCS)\b(?:\s*X\s*\d+)?/gi, '').replace(/\s+/g, ' ').trim();
+    var marca = linea.marca || '', modelo = '', categoria = '', avisos = (linea.advertencias_producto || []).slice();
+    var marcas = Array.from(new Set(catalogoProductos.map(function(p) {return p.marca;}).filter(Boolean))).filter(function(m) {return contieneDatoOCR(limpio,m);});
+    if (marcas.length === 1) marca = marcas[0];
+    if (marcas.length > 1) {marca='';avisos.push('Varias marcas posibles; selecciona manualmente.');}
+    var coincidencias = catalogoProductos.filter(function(p) {return p.modelo && contieneDatoOCR(limpio,p.modelo) && (!marca || claveProductoOCR(p.marca) === claveProductoOCR(marca));});
+    var modelos = Array.from(new Set(coincidencias.map(function(p) {return p.modelo;})));
+    if (modelos.length === 1) modelo=modelos[0];
+    if (coincidencias.length === 1) {marca=coincidencias[0].marca || marca; categoria=coincidencias[0].categoria;}
+    var nombre=linea.nombre || limpio;
+    [marca,modelo,linea.modelo_candidato].filter(Boolean).forEach(function(v) {if (contieneDatoOCR(nombre,v)) nombre=nombre.replace(new RegExp(v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),'');});
+    nombre=nombre.replace(/\s+/g,' ').trim();
+    if (!marca) avisos.push('Marca pendiente.');
+    if (!modelo) avisos.push('Modelo pendiente. Candidato OCR: '+(linea.modelo_candidato || 'sin confirmar'));
+    return {codigo:'',nombre:nombre,descripcion:limpio,marca:marca,modelo:modelo,categoria:categoria,textoOriginal:original,advertencias:avisos};
 }
 function productoParaOCR(descripcion) {
-    var clave = claveProductoOCR(descripcion);
-    var separado = separarProductoOCR(descripcion);
-    var codigo = claveProductoOCR(separado.codigo || String(descripcion).trim().split(/\s+/)[0]);
-    var coincidencias = catalogoProductos.filter(function(p) { return claveProductoOCR(p.t) === clave || (p.codigo && (claveProductoOCR(p.codigo) === clave || claveProductoOCR(p.codigo) === codigo)); });
-    // Las coincidencias parciales pueden confundir marcas, tamaños y modelos.
-    return coincidencias.length === 1 ? Number(coincidencias[0].v) : 0;
+    var coincidencias=catalogoProductos.filter(function(p) { return Number(p.v)>0 && claveProductoOCR(p.t)===claveProductoOCR(descripcion); });
+    return coincidencias.length===1 ? Number(coincidencias[0].v) : 0;
 }
 function aplicarOCRCompra(respuesta, archivo) {
     var d = respuesta.datos;
@@ -723,7 +733,8 @@ function aplicarOCRCompra(respuesta, archivo) {
     var productosAsignados = {};
     var lineasRequierenModelo = false;
     compraDetalles = (d.detalles || []).map(function(linea) {
-        var producto = separarProductoOCR(linea.descripcion);
+        var producto = separarProductoOCR(linea.descripcion, linea);
+        if (linea.requiere_revision) producto.advertencias.push("Confirma cantidad y precios de esta fila.");
         var idProducto = productoParaOCR(linea.descripcion);
         // Una coincidencia repetida puede ocultar modelos diferentes en la factura.
         // Se deja pendiente para que el usuario elija o cree el modelo correcto.
@@ -732,13 +743,14 @@ function aplicarOCRCompra(respuesta, archivo) {
             lineasRequierenModelo = true;
         }
         if (idProducto) productosAsignados[idProducto] = true;
-        return { iCodProducto: idProducto, cNombreProducto: producto.nombre, productoOcr: producto, iCantidad: linea.cantidad, nPrecioCompra: linea.precio_unitario, nSubTotal: Math.round(linea.cantidad * linea.precio_unitario * 100) / 100 };
+        return { iCodProducto: idProducto, cNombreProducto: producto.nombre, productoOcr: producto, iCantidad: linea.cantidad, nPrecioCompra: linea.precio_unitario, importeOcr: linea.importe, requiereRevision: linea.requiere_revision, nSubTotal: linea.importe };
     });
     var suma = compraDetalles.reduce(function(t, linea) { return t + linea.nSubTotal; }, 0);
     $("#preciosIncluyenIgv").val(d.total != null && Math.abs(suma - d.total) < .02 ? 'si' : 'no');
     dibujarDetalleCompra();
     var avisos = (d.advertencias || []).slice();
-    if (lineasRequierenModelo) avisos.push('Hay líneas con la misma coincidencia de producto. Revisa el modelo de cada una antes de guardar.');
+    compraDetalles.forEach(function(x,i) { (x.productoOcr.advertencias || []).forEach(function(a) {avisos.push('Producto '+(i+1)+': '+a);}); });
+    if (lineasRequierenModelo) avisos.push('Hay lÃ­neas con la misma coincidencia de producto. Revisa el modelo de cada una antes de guardar.');
     if (proveedores.length !== 1) avisos.push('Revisa los datos del proveedor nuevo para crearlo junto con la compra.');
     if (compraDetalles.some(function(linea) { return !linea.iCodProducto; })) avisos.push('Relaciona los productos pendientes o prepara sus fichas nuevas para esta compra.');
     $("#advertenciasOCR").text(avisos.join(' '));
@@ -746,7 +758,7 @@ function aplicarOCRCompra(respuesta, archivo) {
     $("#revisionOCR").prop('hidden', false);
     $("#confirmarOCR").prop('checked', false);
     $("#confirmarOCRContenedor").prop('hidden', false);
-    $("#ocrEstado").text('Datos leídos. Revisa las líneas e importes y pulsa Guardar.');
+    $("#ocrEstado").text('Datos leÃ­dos. Revisa las lÃ­neas e importes y pulsa Guardar.');
     if (proveedores.length !== 1 || compraDetalles.some(function(x) { return !x.iCodProducto; })) prepararAltasCompra();
 }
 function extraerOCRCompra() {
@@ -768,8 +780,8 @@ function extraerOCRCompra() {
                     aplicarOCRCompra(response.d, archivo);
                     terminar();
                     if (!$('#cboProveedor').val() || compraDetalles.some(function(x) {return !x.iCodProducto;})) prepararAltasCompra();
-                }).fail(function() { terminar('No se pudo extraer el comprobante. Verifica tu sesión y el servicio OCR.'); });
-        }).fail(function() { terminar('No se pudo cargar el catálogo de productos y proveedores. Reintenta.'); });
+                }).fail(function() { terminar('No se pudo extraer el comprobante. Verifica tu sesiÃ³n y el servicio OCR.'); });
+        }).fail(function() { terminar('No se pudo cargar el catÃ¡logo de productos y proveedores. Reintenta.'); });
     };
     lector.readAsDataURL(file);
     function terminar(mensaje) {
@@ -830,7 +842,7 @@ function guardarProveedorDesdeCompra() {
     if (proveedorGuardando) return;
     var proveedor = {id:proveedorModalId,ruc:$('#rucProveedorModal').val().trim(),razonSocial:$('#razonProveedorModal').val().trim(),representante:$('#representanteProveedorModal').val().trim(),telefono:$('#telefonoProveedorModal').val().trim(),correo:$('#correoProveedorModal').val().trim(),direccion:$('#direccionProveedorModal').val().trim()};
     if (!/^\d{11}$/.test(proveedor.ruc) || !proveedor.razonSocial || (proveedor.telefono && !/^\d{9}$/.test(proveedor.telefono))) {
-        $('#errorProveedorModal').text('Completa RUC de 11 dígitos, razón social y teléfono de 9 dígitos si corresponde.'); return;
+        $('#errorProveedorModal').text('Completa RUC de 11 dÃ­gitos, razÃ³n social y telÃ©fono de 9 dÃ­gitos si corresponde.'); return;
     }
     proveedorGuardando=true; $('#guardarProveedorModal').prop('disabled',true);
     $.ajax({type:'POST',url:'/Views/Operaciones/Compras/Compras.aspx/ActualizarProveedorCompra',data:JSON.stringify({proveedor:proveedor}),contentType:'application/json; charset=utf-8',dataType:'json'})
@@ -857,29 +869,44 @@ function prepararAltasCompra() {
         $('#altaRuc').val(prov.ruc || ''); $('#altaRazon').val(prov.razonSocial || '');
         var html='';
         compraDetalles.forEach(function(d,i) {
-            if (d.iCodProducto>0) return;
             var nuevo=d.nuevoProducto || d.productoOcr || {};
-            html+='<fieldset class="alta-producto" data-indice="'+i+'"><legend>Producto '+(i+1)+'</legend><label>Producto existente (opcional)<select class="input-control alta-existente"><option value="">Crear producto con los datos leídos</option>';
-            catalogoProductos.filter(function(p) { return Number(p.v)>0; }).forEach(function(p) { html+='<option value="'+Number(p.v)+'">'+escaparCompra(p.t)+' — '+escaparCompra(p.codigo || 'sin código')+'</option>'; });
-            html+='</select></label><label>Código<input class="input-control alta-codigo" maxlength="50" value="'+escaparCompra(nuevo.codigo || '').replace(/"/g,'&quot;')+'" /></label><label>Nombre<input class="input-control alta-nombre" maxlength="100" value="'+escaparCompra(nuevo.nombre || d.cNombreProducto).replace(/"/g,'&quot;')+'" /></label><label>Marca<input class="input-control alta-marca" maxlength="100" value="'+escaparCompra(nuevo.marca || '').replace(/"/g,'&quot;')+'" /></label><label>Modelo<input class="input-control alta-modelo" maxlength="100" value="'+escaparCompra(nuevo.modelo || '').replace(/"/g,'&quot;')+'" /></label><label>Descripción<textarea class="input-control alta-descripcion" maxlength="500">'+escaparCompra(nuevo.descripcion || '')+'</textarea></label><label>Categoría<select class="input-control alta-categoria"><option value="">Seleccionar categoría</option>';
+            if (!nuevo.categoria && /\b(switch|router|access point)\b/i.test(nuevo.descripcion || '')) {
+                var redes=categoriasCompra.filter(function(c) {return /^(redes|redes y conectividad|conectividad)$/i.test(c.t.trim());});
+                if (redes.length===1) nuevo.categoria=redes[0].v;
+            }
+            html+='<fieldset class="alta-producto" data-indice="'+i+'"><legend>Producto '+(i+1)+'</legend>';
+            html+='<div class="alta-resumen"><strong>'+escaparCompra(d.cNombreProducto || nuevo.nombre || 'Producto por revisar')+'</strong><span>Cantidad: '+Number(d.iCantidad)+' &nbsp; · &nbsp; Importe OCR: '+(Number.isFinite(Number(d.importeOcr)) ? Number(d.importeOcr).toFixed(2) : 'Pendiente')+'</span></div>';
+            html+='<div class="alta-vincular"><label>Buscar producto existente<input type="search" class="input-control alta-busqueda" placeholder="Nombre, código, marca o modelo" autocomplete="off" /></label><label>Seleccionar producto registrado<select class="input-control alta-existente"><option value="">Selecciona un producto</option><option value="nuevo">Crear producto nuevo</option></select></label><small class="alta-resultados" role="status" aria-live="polite"></small><p class="alta-ficha-existente" hidden></p></div>';
+            html+='<div class="alta-datos-nuevos" hidden><label class="alta-ancho">Nombre<input class="input-control alta-nombre" maxlength="100" value="'+escaparCompra(nuevo.nombre || d.cNombreProducto).replace(/"/g,'&quot;')+'" /></label><label>Marca<input class="input-control alta-marca" maxlength="100" value="'+escaparCompra(nuevo.marca || '').replace(/"/g,'&quot;')+'" /></label><label>Modelo<input class="input-control alta-modelo" maxlength="100" value="'+escaparCompra(nuevo.modelo || '').replace(/"/g,'&quot;')+'" /></label><label class="alta-ancho">Descripción<textarea class="input-control alta-descripcion" maxlength="500" rows="3">'+escaparCompra(nuevo.descripcion || '')+'</textarea></label><label>Categoría<select class="input-control alta-categoria"><option value="">Seleccionar categoría</option>';
             categoriasCompra.forEach(function(c) {html+='<option value="'+Number(c.v)+'"'+(Number(c.v)===Number(nuevo.categoria)?' selected':'')+'>'+escaparCompra(c.t)+'</option>';});
-            html+='</select></label><label>Precio de venta (S/)<input class="input-control alta-venta" type="number" min="0" step="0.01" value="'+(nuevo.precioVenta == null?'':Number(nuevo.precioVenta))+'" /></label><label>Precio de compra (S/)<input class="input-control alta-compra" type="number" min="0" step="0.01" value="'+Number(d.nPrecioCompra).toFixed(2)+'" /></label><p>Corrige los datos leídos de la factura antes de usar estos datos.</p></fieldset>';
+            html+='</select></label><label>Código interno<input class="input-control alta-codigo" maxlength="50" placeholder="Automático al guardar" value="'+escaparCompra(nuevo.codigo || '').replace(/"/g,'&quot;')+'" /></label><label>Precio de venta (S/)<input class="input-control alta-venta" type="number" min="0" step="0.01" value="'+(nuevo.precioVenta == null?'':Number(nuevo.precioVenta))+'" /></label></div>';
+            html+='<div class="alta-precio"><label>Precio unitario de compra (S/)<input class="input-control alta-compra" type="number" min="0" step="0.01" value="'+Number(d.nPrecioCompra).toFixed(2)+'" /></label><small>Confirma el precio de esta compra antes de continuar.</small></div>';
+            var avisos=((d.productoOcr || {}).advertencias || []).join(' ');
+            if (avisos) html+='<p class="alta-advertencia">'+escaparCompra(avisos)+'</p>';
+            html+='<details class="alta-texto-ocr"><summary>Consultar texto original del OCR</summary><p>'+escaparCompra((d.productoOcr || {}).textoOriginal || 'Sin texto OCR disponible.')+'</p></details></fieldset>';
+
         });
         $('#productosAltaCampos').html(html || '<p>No hay productos nuevos pendientes.</p>');
+        $('#productosAltaCampos .alta-producto').each(function() {
+            var fila=$(this), detalle=compraDetalles[Number(fila.attr('data-indice'))];
+            filtrarExistentesAltaCompra(fila);
+            fila.find('.alta-existente').val(detalle.iCodProducto>0 ? String(detalle.iCodProducto) : (detalle.nuevoProducto ? 'nuevo' : '')).trigger('change');
+        });
         $('#errorAltasCompra').text('');
         mostrarSeccionCompra('modalAltasCompra');
-      }).fail(function() {alert('No se pudieron cargar las categorías. Reintenta.');})
+      }).fail(function() {alert('No se pudieron cargar las categorÃ­as. Reintenta.');})
       .always(function() {preparandoAltas=false;});
 }
 function confirmarAltasCompra() {
     var proveedor=null, productos=[], error='';
     if (!$('#proveedorAltaCampos').prop('hidden')) {
         proveedor={ruc:$('#altaRuc').val().trim(),razonSocial:$('#altaRazon').val().trim()};
-        if (!/^\d{11}$/.test(proveedor.ruc) || !proveedor.razonSocial || proveedor.razonSocial.length>150) error='Completa RUC de 11 dígitos y razón social.';
+        if (!/^\d{11}$/.test(proveedor.ruc) || !proveedor.razonSocial || proveedor.razonSocial.length>150) error='Completa RUC de 11 dÃ­gitos y razÃ³n social.';
     }
     $('#productosAltaCampos .alta-producto').each(function() {
-        var row=$(this), nombre=row.find('.alta-nombre').val().trim(), codigo=row.find('.alta-codigo').val().trim(), descripcion=row.find('.alta-descripcion').val().trim(), marca=row.find('.alta-marca').val().trim(), modelo=row.find('.alta-modelo').val().trim(), categoria=Number(row.find('.alta-categoria').val()), textoVenta=row.find('.alta-venta').val(), venta=Number(textoVenta), textoCompra=row.find('.alta-compra').val(), compra=Number(textoCompra), existente=Number(row.find('.alta-existente').val());
-        if ((!existente && (!nombre || nombre.length>100 || codigo.length>50 || descripcion.length>500 || marca.length>100 || modelo.length>100 || !categoria || textoVenta==='' || !Number.isFinite(venta) || venta<0 || Math.abs(venta*100-Math.round(venta*100))>.000001)) || textoCompra==='' || !Number.isFinite(compra) || compra<0 || Math.abs(compra*100-Math.round(compra*100))>.000001) error='Elige un producto existente o completa los datos, categoría, precio de venta y precio de compra del producto nuevo.';
+        var row=$(this), nombre=row.find('.alta-nombre').val().trim(), codigo=row.find('.alta-codigo').val().trim(), descripcion=row.find('.alta-descripcion').val().trim(), marca=row.find('.alta-marca').val().trim(), modelo=row.find('.alta-modelo').val().trim(), categoria=Number(row.find('.alta-categoria').val()), textoVenta=row.find('.alta-venta').val(), venta=Number(textoVenta), textoCompra=row.find('.alta-compra').val(), compra=Number(textoCompra), existente=Number(row.find('.alta-existente').val()) || 0;
+        if (!row.find('.alta-existente').val()) { error='Busca y selecciona un producto registrado o elige Crear producto nuevo.'; return; }
+        if ((!existente && (!nombre || nombre.length>100 || codigo.length>50 || descripcion.length>500 || marca.length>100 || modelo.length>100 || !categoria || textoVenta==='' || !Number.isFinite(venta) || venta<0 || Math.abs(venta*100-Math.round(venta*100))>.000001)) || textoCompra==='' || !Number.isFinite(compra) || compra<0 || Math.abs(compra*100-Math.round(compra*100))>.000001) error='Elige un producto existente o completa los datos, categorÃ­a, precio de venta y precio de compra del producto nuevo.';
         productos.push({indice:Number(row.attr('data-indice')),existente:existente,codigo:codigo,nombre:nombre,descripcion:descripcion,marca:marca,modelo:modelo,categoria:categoria,precioVenta:venta,precioCompra:compra});
     });
     if (error) {$('#errorAltasCompra').text(error);return;}
@@ -889,7 +916,7 @@ function confirmarAltasCompra() {
         else { proveedorNuevoCompra=proveedor; $('#cboProveedor option[value="-1"]').remove(); $('#cboProveedor').append($('<option>').val('-1').text('Nuevo: '+proveedor.razonSocial)).val('-1'); }
     }
     productos.forEach(function(p) {
-        var d=compraDetalles[p.indice], existente=p.existente || productoParaOCR(p.nombre);
+        var d=compraDetalles[p.indice], existente=p.existente;
         d.nPrecioCompra=p.precioCompra;
         d.nSubTotal=Math.round(d.iCantidad*d.nPrecioCompra*100)/100;
         if (existente>0) {d.iCodProducto=existente; d.nuevoProducto=null;}
@@ -898,8 +925,32 @@ function confirmarAltasCompra() {
             catalogoProductos=catalogoProductos.filter(function(x) {return Number(x.v)!==id;});
             catalogoProductos.push({v:id,t:p.nombre,codigo:'Pendiente',stock:0});
         }
-        d.cNombreProducto=p.nombre;
+        d.cNombreProducto=existente>0 ? (catalogoProductos.find(function(x) {return Number(x.v)===existente;}) || {}).t : p.nombre;
     });
     $('#confirmarOCR').prop('checked',false); dibujarDetalleCompra(); cerrarModalCompra('modalAltasCompra');
     $('#ocrEstado').text('Nuevos registros preparados. Revisa la compra y pulsa Guardar para crearlos.');
 }
+
+function filtrarExistentesAltaCompra(fila) {
+    var selector=fila.find('.alta-existente'), seleccionado=selector.val();
+    var palabras=normalizarBusquedaCompra(fila.find('.alta-busqueda').val() || '').split(/\s+/).filter(Boolean);
+    var productos=catalogoProductos.filter(function(p) {
+        var texto=normalizarBusquedaCompra([p.t,p.codigo,p.marca,p.modelo].join(' '));
+        return Number(p.v)>0 && palabras.every(function(palabra) {return texto.indexOf(palabra)!==-1;});
+    });
+    selector.empty().append($('<option>').val('').text('Selecciona un producto')).append($('<option>').val('nuevo').text('Crear producto nuevo'));
+    var visibles=productos.slice();
+    var actual=catalogoProductos.find(function(p) {return Number(p.v)>0 && String(p.v)===String(seleccionado);});
+    if (actual && !visibles.some(function(p) {return String(p.v)===String(actual.v);})) visibles.unshift(actual);
+    visibles.forEach(function(p) { selector.append($('<option>').val(p.v).text([p.t,p.codigo,p.marca,p.modelo].filter(Boolean).join(' — '))); });
+    selector.val(seleccionado || '');
+    fila.find('.alta-resultados').text(productos.length ? productos.length+' producto(s) encontrado(s). Selecciona una ficha para reutilizarla.' : 'Sin coincidencias. Prueba otra búsqueda o elige Crear producto nuevo.');
+}
+$(document).on('input', '#productosAltaCampos .alta-busqueda', function() {
+    filtrarExistentesAltaCompra($(this).closest('.alta-producto'));
+}).on('change', '#productosAltaCampos .alta-existente', function() {
+    var fila=$(this).closest('.alta-producto'), id=Number($(this).val()), crear=$(this).val()==='nuevo';
+    var producto=catalogoProductos.find(function(p) {return Number(p.v)===id && id>0;});
+    fila.find('.alta-datos-nuevos').prop('hidden',!crear).find('input,select,textarea').prop('disabled',!crear);
+    fila.find('.alta-ficha-existente').prop('hidden',!producto).text(producto ? 'Se usará la ficha de '+producto.t+'. Sus datos de catálogo se conservarán.' : '');
+});

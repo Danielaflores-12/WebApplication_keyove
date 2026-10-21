@@ -32,6 +32,46 @@
       .compra-subseccion h2 { font-size:16px; }
       .compra-completa input, .compra-completa select, .compra-completa textarea { min-width:0; max-width:100%; }
       @media(max-width:480px) { .compra-dialog .form-grid { grid-template-columns:1fr; } }
+
+      #modalAltasCompra { width:min(880px,calc(100vw - 24px)); overflow:auto; background:#f5f7fb; }
+      #modalAltasCompra > header { position:sticky; top:0; z-index:2; padding:20px 24px; }
+      #modalAltasCompra > footer { position:sticky; bottom:0; z-index:2; border-top:1px solid #dbe3ef; background:#fff; }
+      #modalAltasCompra .modal-cuerpo { padding:24px; gap:20px; }
+      #modalAltasCompra .alta-intro { margin:0; color:#526078; line-height:1.6; }
+      #proveedorAltaCampos { padding:18px; background:#fff; border:1px solid #dbe3ef; border-radius:12px; display:grid; grid-template-columns:1fr 2fr; gap:16px; }
+      #proveedorAltaCampos[hidden] { display:none; }
+      #productosAltaCampos { display:grid; gap:22px; min-width:0; }
+      #modalAltasCompra label { display:flex; flex-direction:column; gap:7px; font-weight:600; font-size:13px; min-width:0; }
+      #modalAltasCompra .input-control { box-sizing:border-box; width:100%; min-width:0; margin:0; background:#fff; color:#263247; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; font:inherit; font-weight:400; }
+      #modalAltasCompra .input-control:focus { outline:2px solid #3776bc; outline-offset:2px; }
+      #modalAltasCompra textarea { resize:vertical; }
+      #modalAltasCompra .alta-producto { min-width:0; margin:0; border:1px solid #dbe3ef; border-radius:12px; padding:20px; background:white; }
+      #modalAltasCompra legend { width:auto; padding:0 8px; font-size:14px; font-weight:700; color:#28538b; }
+      .alta-resumen { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; overflow-wrap:anywhere; }
+      .alta-resumen strong { font-size:16px; }
+      .alta-resumen span, .alta-precio small { font-size:13px; color:#526078; }
+      .alta-vincular { display:grid; gap:12px; padding:16px; border-radius:10px; background:#eef4fc; margin-bottom:20px; }
+      .alta-resultados { color:#526078; line-height:1.5; }
+      .alta-ficha-existente { margin:0; color:#17633d; line-height:1.5; }
+      .alta-datos-nuevos { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+      .alta-datos-nuevos[hidden] { display:none; }
+      .alta-ancho { grid-column:1 / -1; }
+      .alta-precio { display:flex; align-items:center; gap:16px; border-top:1px solid #e4eaf2; margin-top:20px; padding-top:18px; }
+      .alta-precio label { flex:1; }
+      .alta-precio small { flex:1; line-height:1.5; }
+      .alta-advertencia { padding:12px 14px; background:#fff8e8; border-left:3px solid #d59a27; color:#775014; font-size:13px; line-height:1.6; border-radius:6px; overflow-wrap:anywhere; }
+      .alta-texto-ocr { margin-top:16px; font-size:13px; overflow-wrap:anywhere; }
+      .alta-texto-ocr summary { color:#28538b; cursor:pointer; padding:6px 0; }
+      .alta-texto-ocr p { white-space:pre-wrap; padding:12px; background:#f5f7fb; border-radius:6px; }
+      @media(max-width:600px) {
+        #modalAltasCompra .modal-cuerpo { padding:14px; }
+        #modalAltasCompra > header { padding:16px; }
+        #modalAltasCompra .alta-producto { padding:14px; }
+        #proveedorAltaCampos, .alta-datos-nuevos { grid-template-columns:1fr; }
+        .alta-precio { flex-direction:column; align-items:stretch; }
+        #modalAltasCompra > footer { flex-wrap:wrap; }
+        #modalAltasCompra > footer button { flex:1; }
+      }
     </style>
 
 </asp:Content>
@@ -92,7 +132,7 @@
     <dialog id="modalAltasCompra" class="compra-dialog" aria-labelledby="tituloAltasCompra">
       <header><h2 id="tituloAltasCompra">Preparar nuevos registros</h2><button type="button" aria-label="Cerrar" onclick="cerrarModalCompra('modalAltasCompra')">×</button></header>
       <div class="modal-cuerpo">
-        <p>Revisa los datos reconocidos. Se crearán junto con la compra cuando pulses Guardar; todavía no se modifica el inventario.</p>
+        <p class="alta-intro">Revisa los datos reconocidos. Se crearán junto con la compra cuando pulses Guardar; todavía no se modifica el inventario.</p>
         <div id="proveedorAltaCampos">
           <label>RUC del proveedor<input id="altaRuc" class="input-control" maxlength="11" inputmode="numeric" /></label>
           <label>Razón social del proveedor<input id="altaRazon" class="input-control" maxlength="150" placeholder="Completa el nombre si no se reconoció" /></label>

@@ -1,0 +1,11 @@
+const fs=require('node:fs'), vm=require('node:vm'), assert=require('node:assert/strict');
+const source=fs.readFileSync('JScript/Compras.js','utf8');
+const context={catalogoProductos:[{v:1,t:'Switch ocho puertos',marca:'TP-Link',modelo:'LS1008G',categoria:2}] ,normalizarBusquedaCompra:s=>String(s||'').toLowerCase()};
+vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('function claveProductoOCR'),source.indexOf('function aplicarOCRCompra')),context);
+let p=context.separarProductoOCR('1S 1008G SWITCH TP- LINK LITE WAVE 8 PUERTOS UNI X 1',{modelo_candidato:'1S 1008G'});
+assert.equal(p.marca,'TP-Link');assert.equal(p.modelo,'');assert.equal(p.codigo,'');assert.ok(!p.nombre.includes('UNI'));assert.ok(!p.nombre.includes('1008G'));
+p=context.separarProductoOCR('SWITCH TP-LINK LS1008G 8 PUERTOS');assert.equal(p.modelo,'LS1008G');assert.equal(p.categoria,2);
+assert.equal(context.productoParaOCR('LS1008G'),0);
+p=context.separarProductoOCR('CABLE USB');assert.equal(p.marca,'');assert.equal(p.modelo,'');
+console.log('4 escenarios de separación/catálogo correctos');

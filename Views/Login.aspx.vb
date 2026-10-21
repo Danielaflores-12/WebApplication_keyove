@@ -71,18 +71,18 @@ Partial Public Class Login
                             Dim destino As String =
                                             "~/Views/Dashboard/Dashboard.aspx"
 
-                            'If String.Equals(rol, "Vendedor",
-                            '    StringComparison.OrdinalIgnoreCase) Then
-                            '    destino = "~/Views/Operaciones/Ventas/Ventas.aspx"
-                            'End If
+                            If String.Equals(rol, "Vendedor",
+                                StringComparison.OrdinalIgnoreCase) Then
+                                destino = "~/Views/Operaciones/Ventas/Ventas.aspx"
+                            End If
 
                             Response.Redirect(destino, False)
-                            Context.ApplicationInstance.CompleteRequest()
-                            Return
+                                Context.ApplicationInstance.CompleteRequest()
+                                Return
 
 
-                        Else
-                            lblMensaje.Text =
+                            Else
+                                lblMensaje.Text =
                                 "Usuario o contraseña incorrectos."
                         End If
 

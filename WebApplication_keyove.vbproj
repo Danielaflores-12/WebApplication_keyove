@@ -112,8 +112,8 @@
     <Content Include="Scripts\01_crear_comprobantes_ocr.sql" />
     <Content Include="Scripts\02_compras_comprobante_activo.sql" />
     <Content Include="Scripts\03_registrar_compra_transaccion.sql" />
+    <Content Include="Scripts\04_ampliar_ruc_y_tipos_documento.sql" />
     <Content Include="Scripts\DatosPrueba\insertar_30_en_base_existente.sql" />
-    <Content Include="Scripts\DatosPrueba\actualizar_demo_perifericos.sql" />
     <Content Include="servicio_ocr\app.py" />
     <Content Include="servicio_ocr\extractor.py" />
     <Content Include="servicio_ocr\ocr.py" />
@@ -151,7 +151,9 @@
     <Compile Include="Helpers\ValidacionHelper.vb" />
     <Compile Include="Helpers\ComprobanteHelper.vb" />
     <Compile Include="Helpers\OcrServiceHost.vb" />
-    <Compile Include="Views\Operaciones\Compras\ComprasAltas.vb" />
+    <Compile Include="Views\Operaciones\Compras\ComprasAltas.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Views\Login.aspx.designer.vb">
       <DependentUpon>Login.aspx</DependentUpon>
     </Compile>
@@ -310,11 +312,9 @@
     </None>
     <None Include="packages.config" />
     <Content Include="Views\Master\Site.Master" />
-    <Content Include="servicio_ocr\README.md" />
     <Content Include="servicio_ocr\setup.ps1" />
     <Content Include="servicio_ocr\start.bat" />
     <Content Include="servicio_ocr\start.ps1" />
-    <Content Include="Scripts\DatosPrueba\README.md" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
