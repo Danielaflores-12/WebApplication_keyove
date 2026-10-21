@@ -462,3 +462,659 @@ CREATE TABLE Movimientos_Inventario (
         )
 );
 GO
+
+
+
+
+
+
+
+
+
+
+//PROCEDIMIENTOS ALMACENADOS --VENTAS--
+
+--REGISTRO--
+
+use DB_keyove_inventario
+go
+
+CREATE TYPE TipoDetalleVenta AS TABLE
+(
+    iCodProducto INT,
+    iCantidad INT,
+    nPrecioVenta DECIMAL(18,2),
+    nDescuento DECIMAL(18,2)
+);
+GO
+
+USE DB_keyove_inventario;
+GO
+
+CREATE PROCEDURE sp_RegistrarVenta
+    @iCodUsuario INT,
+    @cTipoComprobante NVARCHAR(30),
+    @cDocumentoCliente NVARCHAR(11) = NULL,
+    @cNumeroCelular VARCHAR(9) = NULL,
+    @cNumeroComprobante NVARCHAR(50),
+    @cMetodoPago NVARCHAR(50),
+    @cObservacion NVARCHAR(300) = NULL,
+    @Detalles TipoDetalleVenta READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+
+        BEGIN TRANSACTION;
+
+        -- Validar usuario
+        IF NOT EXISTS (
+            SELECT 1
+            FROM Usuarios
+            WHERE iCodUsuario = @iCodUsuario
+              AND bEstado = 1
+        )
+        BEGIN
+            RAISERROR('El usuario no existe o esta inactivo.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        -- Validar que existan detalles
+        IF NOT EXISTS (
+            SELECT 1
+            FROM @Detalles
+        )
+        BEGIN
+            RAISERROR('La venta debe contener al menos un producto.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        -- Validar datos de los detalles
+        IF EXISTS (
+            SELECT 1
+            FROM @Detalles
+            WHERE iCantidad <= 0
+               OR nPrecioVenta < 0
+               OR nDescuento < 0
+               OR nDescuento > (iCantidad * nPrecioVenta)
+        )
+        BEGIN
+            RAISERROR('Uno de los detalles de la venta contiene datos invalidos.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        -- Validar productos repetidos
+        IF EXISTS (
+            SELECT iCodProducto
+            FROM @Detalles
+            GROUP BY iCodProducto
+            HAVING COUNT(*) > 1
+        )
+        BEGIN
+            RAISERROR('No se puede repetir un producto dentro de la misma venta.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        -- Validar productos existentes y activos
+        IF EXISTS (
+            SELECT d.iCodProducto
+            FROM @Detalles d
+            LEFT JOIN Productos p
+                ON p.iCodProducto = d.iCodProducto
+            WHERE p.iCodProducto IS NULL
+               OR p.bEstado = 0
+        )
+        BEGIN
+            RAISERROR('Uno de los productos no existe o esta inactivo.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        -- Validar stock
+        IF EXISTS (
+            SELECT 1
+            FROM @Detalles d
+            INNER JOIN Productos p
+                ON p.iCodProducto = d.iCodProducto
+            WHERE p.iStockActual < d.iCantidad
+        )
+        BEGIN
+            RAISERROR('Stock insuficiente para uno de los productos.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        DECLARE @nSubTotal DECIMAL(18,2);
+        DECLARE @nIgv DECIMAL(18,2);
+        DECLARE @nTotal DECIMAL(18,2);
+        DECLARE @iCodVenta INT;
+
+        -- Calcular subtotal
+        SELECT @nSubTotal =
+            ISNULL(
+                SUM(
+                    (iCantidad * nPrecioVenta) - nDescuento
+                ),
+                0
+            )
+        FROM @Detalles;
+
+        -- IGV 18%
+        SET @nIgv = ROUND(@nSubTotal * 0.18, 2);
+
+        -- Total
+        SET @nTotal = @nSubTotal + @nIgv;
+
+        -- Registrar cabecera de venta
+        INSERT INTO Ventas
+        (
+            iCodUsuario,
+            cTipoComprobante,
+            cDocumentoCliente,
+            cNumeroCelular,
+            cNumeroComprobante,
+            nSubTotal,
+            nIgv,
+            nTotal,
+            cMetodoPago,
+            cObservacion
+        )
+        VALUES
+        (
+            @iCodUsuario,
+            @cTipoComprobante,
+            @cDocumentoCliente,
+            @cNumeroCelular,
+            @cNumeroComprobante,
+            @nSubTotal,
+            @nIgv,
+            @nTotal,
+            @cMetodoPago,
+            @cObservacion
+        );
+
+        SET @iCodVenta = SCOPE_IDENTITY();
+
+        -- Registrar detalle de venta
+        INSERT INTO Detalle_Venta
+        (
+            iCodVenta,
+            iCodProducto,
+            iCantidad,
+            nPrecioVenta,
+            nDescuento
+        )
+        SELECT
+            @iCodVenta,
+            iCodProducto,
+            iCantidad,
+            nPrecioVenta,
+            nDescuento
+        FROM @Detalles;
+
+        -- Registrar movimiento de inventario
+        INSERT INTO Movimientos_Inventario
+        (
+            iCodProducto,
+            iCodUsuario,
+            iCodVenta,
+            cTipoMovimiento,
+            iCantidad,
+            iStockAnterior,
+            iStockNuevo,
+            cMotivo
+        )
+        SELECT
+            d.iCodProducto,
+            @iCodUsuario,
+            @iCodVenta,
+            'SALIDA',
+            d.iCantidad,
+            p.iStockActual,
+            p.iStockActual - d.iCantidad,
+            'Salida por venta'
+        FROM @Detalles d
+        INNER JOIN Productos p
+            ON p.iCodProducto = d.iCodProducto;
+
+        -- Descontar stock
+        UPDATE p
+        SET p.iStockActual = p.iStockActual - d.iCantidad
+        FROM Productos p
+        INNER JOIN @Detalles d
+            ON d.iCodProducto = p.iCodProducto;
+
+        COMMIT TRANSACTION;
+
+        -- Mostrar resultado
+        SELECT
+            @iCodVenta AS iCodVenta,
+            @nSubTotal AS nSubTotal,
+            @nIgv AS nIgv,
+            @nTotal AS nTotal;
+
+    END TRY
+
+    BEGIN CATCH
+
+        IF XACT_STATE() <> 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        RAISERROR('No se pudo registrar la venta. La transaccion fue revertida.', 16, 1);
+        RETURN;
+
+    END CATCH
+END;
+GO
+
+
+SELECT
+    iCodProducto,
+    cNombre,
+    iStockActual
+FROM Productos
+WHERE iCodProducto = 1;
+
+SELECT
+    iCodVenta,
+    iCodProducto,
+    iCantidad,
+    nPrecioVenta,
+    nDescuento,
+    nSubTotal
+FROM Detalle_Venta
+WHERE iCodVenta = 1;
+
+SELECT
+    iCodMovimiento,
+    iCodProducto,
+    iCodUsuario,
+    iCodVenta,
+    cTipoMovimiento,
+    iCantidad,
+    iStockAnterior,
+    iStockNuevo,
+    cMotivo
+FROM Movimientos_Inventario
+WHERE iCodVenta = 1;
+GO
+
+
+
+
+------MODIFICAR-----
+
+
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_ModificarVenta
+    @iCodVenta INT,
+    @iCodUsuario INT,
+    @cTipoComprobante NVARCHAR(30),
+    @cNumeroComprobante NVARCHAR(50),
+    @cMetodoPago NVARCHAR(50),
+    @Detalles dbo.TipoDetalleVenta READONLY,
+    @cDocumentoCliente NVARCHAR(11) = NULL,
+    @cNumeroCelular VARCHAR(9) = NULL,
+    @cObservacion NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        ------------------------------------------------
+        -- 1. Verificar que la venta exista y esté
+        --    registrada (no anulada).
+        ------------------------------------------------
+        DECLARE @EstadoActual NVARCHAR(20);
+
+        SELECT @EstadoActual = cEstado
+        FROM dbo.Ventas WITH (UPDLOCK, HOLDLOCK)
+        WHERE iCodVenta = @iCodVenta;
+
+        IF @EstadoActual IS NULL
+        BEGIN
+            RAISERROR('La venta indicada no existe.', 16, 1);
+        END;
+
+        IF @EstadoActual <> N'REGISTRADA'
+        BEGIN
+            RAISERROR(
+                'Solo se pueden modificar ventas registradas y no anuladas.',
+                16, 1
+            );
+        END;
+
+        ------------------------------------------------
+        -- 2. Verificar que el usuario esté activo.
+        ------------------------------------------------
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Usuarios
+            WHERE iCodUsuario = @iCodUsuario
+              AND bEstado = 1
+        )
+        BEGIN
+            RAISERROR('El usuario no existe o está inactivo.', 16, 1);
+        END;
+
+        ------------------------------------------------
+        -- 3. Validar los datos generales.
+        ------------------------------------------------
+        IF NULLIF(LTRIM(RTRIM(@cTipoComprobante)), N'') IS NULL
+           OR NULLIF(LTRIM(RTRIM(@cNumeroComprobante)), N'') IS NULL
+           OR NULLIF(LTRIM(RTRIM(@cMetodoPago)), N'') IS NULL
+        BEGIN
+            RAISERROR(
+                'El comprobante, su número y el método de pago son obligatorios.',
+                16, 1
+            );
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM dbo.Ventas
+            WHERE cTipoComprobante = @cTipoComprobante
+              AND cNumeroComprobante = @cNumeroComprobante
+              AND iCodVenta <> @iCodVenta
+        )
+        BEGIN
+            RAISERROR(
+                'Ya existe otra venta con ese tipo y número de comprobante.',
+                16, 1
+            );
+        END;
+
+        ------------------------------------------------
+        -- 4. Validar los detalles recibidos.
+        ------------------------------------------------
+        IF NOT EXISTS (SELECT 1 FROM @Detalles)
+        BEGIN
+            RAISERROR(
+                'La venta debe contener al menos un producto.',
+                16, 1
+            );
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM @Detalles
+            WHERE iCodProducto IS NULL
+               OR iCantidad IS NULL
+               OR iCantidad <= 0
+               OR nPrecioVenta IS NULL
+               OR nPrecioVenta < 0
+               OR nDescuento IS NULL
+               OR nDescuento < 0
+               OR nDescuento > (iCantidad * nPrecioVenta)
+        )
+        BEGIN
+            RAISERROR(
+                'Hay cantidades, precios o descuentos inválidos.',
+                16, 1
+            );
+        END;
+
+        IF EXISTS (
+            SELECT iCodProducto
+            FROM @Detalles
+            GROUP BY iCodProducto
+            HAVING COUNT(*) > 1
+        )
+        BEGIN
+            RAISERROR(
+                'No se puede repetir un producto en la misma venta.',
+                16, 1
+            );
+        END;
+
+        ------------------------------------------------
+        -- 5. Guardar temporalmente las cantidades
+        --    que tenía originalmente la venta.
+        ------------------------------------------------
+        DECLARE @Anteriores TABLE (
+            iCodProducto INT PRIMARY KEY,
+            iCantidad INT NOT NULL
+        );
+
+        INSERT INTO @Anteriores (iCodProducto, iCantidad)
+        SELECT iCodProducto, SUM(iCantidad)
+        FROM dbo.Detalle_Venta WITH (UPDLOCK, HOLDLOCK)
+        WHERE iCodVenta = @iCodVenta
+        GROUP BY iCodProducto;
+
+        ------------------------------------------------
+        -- 6. Bloquear los productos afectados mientras
+        --    se comprueba y actualiza el inventario.
+        ------------------------------------------------
+        DECLARE @ProductosBloqueados TABLE (
+            iCodProducto INT PRIMARY KEY
+        );
+
+        INSERT INTO @ProductosBloqueados (iCodProducto)
+        SELECT p.iCodProducto
+        FROM dbo.Productos AS p WITH (UPDLOCK, HOLDLOCK)
+        WHERE p.iCodProducto IN (
+            SELECT iCodProducto FROM @Anteriores
+            UNION
+            SELECT iCodProducto FROM @Detalles
+        );
+
+        ------------------------------------------------
+        -- 7. Verificar que los nuevos productos existan
+        --    y estén activos.
+        ------------------------------------------------
+        IF EXISTS (
+            SELECT 1
+            FROM @Detalles AS d
+            LEFT JOIN dbo.Productos AS p
+                ON p.iCodProducto = d.iCodProducto
+            WHERE p.iCodProducto IS NULL
+               OR p.bEstado = 0
+        )
+        BEGIN
+            RAISERROR(
+                'Uno de los productos no existe o está inactivo.',
+                16, 1
+            );
+        END;
+
+        ------------------------------------------------
+        -- 8. Comprobar el stock disponible.
+        --    Se toma en cuenta la cantidad original de
+        --    cada producto en esta misma venta.
+        ------------------------------------------------
+        IF EXISTS (
+            SELECT 1
+            FROM @Detalles AS d
+            INNER JOIN dbo.Productos AS p
+                ON p.iCodProducto = d.iCodProducto
+            LEFT JOIN @Anteriores AS a
+                ON a.iCodProducto = d.iCodProducto
+            WHERE p.iStockActual + ISNULL(a.iCantidad, 0)
+                  < d.iCantidad
+        )
+        BEGIN
+            RAISERROR(
+                'Stock insuficiente para modificar la venta.',
+                16, 1
+            );
+        END;
+
+        ------------------------------------------------
+        -- 9. Calcular las diferencias de cantidades y
+        --    el stock que quedará después del cambio.
+        ------------------------------------------------
+        DECLARE @Cambios TABLE (
+            iCodProducto INT PRIMARY KEY,
+            CantAnterior INT NOT NULL,
+            CantNueva INT NOT NULL,
+            StockActual INT NOT NULL,
+            StockNuevo INT NOT NULL
+        );
+
+        INSERT INTO @Cambios (
+            iCodProducto,
+            CantAnterior,
+            CantNueva,
+            StockActual,
+            StockNuevo
+        )
+        SELECT
+            COALESCE(a.iCodProducto, d.iCodProducto),
+            ISNULL(a.iCantidad, 0),
+            ISNULL(d.iCantidad, 0),
+            p.iStockActual,
+            p.iStockActual
+                + ISNULL(a.iCantidad, 0)
+                - ISNULL(d.iCantidad, 0)
+        FROM @Anteriores AS a
+        FULL OUTER JOIN @Detalles AS d
+            ON d.iCodProducto = a.iCodProducto
+        INNER JOIN dbo.Productos AS p
+            ON p.iCodProducto =
+                COALESCE(a.iCodProducto, d.iCodProducto)
+        WHERE ISNULL(a.iCantidad, 0) <> ISNULL(d.iCantidad, 0);
+
+        ------------------------------------------------
+        -- 10. Registrar movimientos de inventario.
+        --     Aumento de cantidad vendida: SALIDA.
+        --     Reducción o retiro del producto:
+        --     AJUSTE_ENTRADA.
+        ------------------------------------------------
+        INSERT INTO dbo.Movimientos_Inventario (
+            iCodProducto,
+            iCodUsuario,
+            iCodCompra,
+            iCodVenta,
+            cTipoMovimiento,
+            iCantidad,
+            iStockAnterior,
+            iStockNuevo,
+            cMotivo
+        )
+        SELECT
+            c.iCodProducto,
+            @iCodUsuario,
+            NULL,
+            CASE
+                WHEN c.CantNueva > c.CantAnterior
+                    THEN @iCodVenta
+                ELSE NULL
+            END,
+            CASE
+                WHEN c.CantNueva > c.CantAnterior
+                    THEN N'SALIDA'
+                ELSE N'AJUSTE_ENTRADA'
+            END,
+            ABS(c.CantNueva - c.CantAnterior),
+            c.StockActual,
+            c.StockNuevo,
+            N'Ajuste por modificación de venta #'
+                + CONVERT(NVARCHAR(20), @iCodVenta)
+        FROM @Cambios AS c;
+
+        ------------------------------------------------
+        -- 11. Actualizar el stock de los productos.
+        ------------------------------------------------
+        UPDATE p
+        SET p.iStockActual = c.StockNuevo
+        FROM dbo.Productos AS p
+        INNER JOIN @Cambios AS c
+            ON c.iCodProducto = p.iCodProducto;
+
+        ------------------------------------------------
+        -- 12. Recalcular los importes de la venta.
+        ------------------------------------------------
+        DECLARE @nSubTotal DECIMAL(18,2);
+        DECLARE @nIgv DECIMAL(18,2);
+        DECLARE @nTotal DECIMAL(18,2);
+
+        SELECT @nSubTotal =
+            ISNULL(
+                SUM(
+                    (iCantidad * nPrecioVenta) - nDescuento
+                ),
+                0
+            )
+        FROM @Detalles;
+
+        SET @nIgv = ROUND(@nSubTotal * 0.18, 2);
+        SET @nTotal = @nSubTotal + @nIgv;
+
+        ------------------------------------------------
+        -- 13. Actualizar los datos generales de la venta.
+        --     El estado se conserva; la anulación se
+        --     gestionará por separado.
+        ------------------------------------------------
+        UPDATE dbo.Ventas
+        SET
+            iCodUsuario = @iCodUsuario,
+            cTipoComprobante = @cTipoComprobante,
+            cDocumentoCliente = @cDocumentoCliente,
+            cNumeroCelular = @cNumeroCelular,
+            cNumeroComprobante = @cNumeroComprobante,
+            nSubTotal = @nSubTotal,
+            nIgv = @nIgv,
+            nTotal = @nTotal,
+            cMetodoPago = @cMetodoPago,
+            cObservacion = @cObservacion
+        WHERE iCodVenta = @iCodVenta;
+
+        ------------------------------------------------
+        -- 14. Reemplazar los detalles actuales por los
+        --     nuevos. El historial de movimientos queda.
+        ------------------------------------------------
+        DELETE FROM dbo.Detalle_Venta
+        WHERE iCodVenta = @iCodVenta;
+
+        INSERT INTO dbo.Detalle_Venta (
+            iCodVenta,
+            iCodProducto,
+            iCantidad,
+            nPrecioVenta,
+            nDescuento
+        )
+        SELECT
+            @iCodVenta,
+            iCodProducto,
+            iCantidad,
+            nPrecioVenta,
+            nDescuento
+        FROM @Detalles;
+
+        ------------------------------------------------
+        -- 15. Confirmar todos los cambios.
+        ------------------------------------------------
+        COMMIT TRANSACTION;
+
+        SELECT
+            @iCodVenta AS iCodVenta,
+            @nSubTotal AS nSubTotal,
+            @nIgv AS nIgv,
+            @nTotal AS nTotal;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        DECLARE @MensajeError NVARCHAR(2048);
+        SET @MensajeError = ERROR_MESSAGE();
+
+        RAISERROR(N'%s', 16, 1, @MensajeError);
+        RETURN;
+    END CATCH;
+END;
+GO

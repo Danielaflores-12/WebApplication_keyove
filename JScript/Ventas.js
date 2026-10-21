@@ -1,220 +1,338 @@
+<<<<<<< Updated upstream
 ﻿function esAdministradorVentas() {
+=======
+
+"use strict";
+
+// ==================================================
+// CONFIGURACIÓN Y ESTADO
+// ==================================================
+
+var cIGV = 0.18;
+var ventaDetalles = [];
+var ventaSeleccionadaId = 0;
+var solicitudVentaEnCurso = false;
+
+
+// ==================================================
+// PERMISOS
+// ==================================================
+
+function esAdministradorVentas() {
+>>>>>>> Stashed changes
     return String($("body").attr("data-rol") || "")
-        .trim().toLowerCase() === "administrador";
+        .trim()
+        .toLowerCase() === "administrador";
 }
 
 function aplicarVistaVendedor() {
-    if (esAdministradorVentas()) return;
+    var administrador = esAdministradorVentas();
 
-    var usuario = $("#cboUsuario");
-    var opciones = usuario.find("option").filter(function () {
-        return this.value !== "";
+    $("#btnModificarVentaModal").prop("hidden", !administrador);
+
+    if (!administrador) {
+        $("#cboUsuario").prop("disabled", true);
+        $("#cboEstado").val("REGISTRADA").prop("disabled", true);
+        $("#btnModificarVentaModal").prop("hidden", true);
+    } else {
+        $("#cboUsuario").prop("disabled", false);
+        $("#cboEstado").prop("disabled", false);
+    }
+}
+
+
+// ==================================================
+// INICIALIZACIÓN
+// ==================================================
+
+$(document).ready(function() {
+
+    // Apertura robusta del modal desde el botón Agregar.
+    // Se evita duplicar la acción si el botón ya usa onclick="abrirModalVenta('nuevo')".
+    $(document).on("click.ventasAbrirModal", "#btnAgregarVenta, #btnAgregarVentaModal, [data-abrir-venta='nuevo']", function(evento) {
+        evento.preventDefault();
+        abrirModalVenta("nuevo");
     });
 
-    if (opciones.length === 1) {
-        usuario.val(opciones.first().val());
+    // Filtros.
+    $("#buscarVentas").on("input", filtrarVentasRegistradas);
+    $("#estadoBusquedaVentas").on("change", filtrarVentasRegistradas);
+
+    // Cálculo de subtotal por producto.
+    $("#txtCantidadVenta, #txtPrecioVenta").on(
+        "input",
+        actualizarSubtotalLineaVenta
+    );
+
+    $("#cboProducto").on("change", actualizarSubtotalLineaVenta);
+
+    // Conectar botones aunque no tengan onclick en el HTML.
+    $("#btnAgregarProductoVenta")
+        .off("click.ventas")
+        .on("click.ventas", function(e) {
+            e.preventDefault();
+            agregarProductoVenta();
+        });
+
+    $("#cboTipoComprobante").on("change", function() {
+        $("#txtNumeroComprobante").val("");
+    });
+
+    // Cargar información inicial.
+    listarProductosCombo();
+
+    var usuariosListos = listarUsuariosCombo();
+
+    listarVentas();
+
+    // Seleccionar venta en la tabla.
+    $("#bodyVentas").on("click", "tr[data-id-venta]", function(evento) {
+        if ($(evento.target).closest("a, button").length) {
+            return;
+        }
+
+        $("#bodyVentas tr").removeClass("venta-seleccionada");
+        $(this).addClass("venta-seleccionada");
+
+        ventaSeleccionadaId =
+            Number($(this).attr("data-id-venta")) || 0;
+    });
+
+    // Editar desde la tabla.
+    $("#bodyVentas").on("click", "[data-editar-venta]", function(evento) {
+        evento.preventDefault();
+        evento.stopPropagation();
+
+        abrirModalVenta(
+            "editar",
+            Number($(this).attr("data-editar-venta"))
+        );
+    });
+
+    // Anular desde la tabla.
+    $("#bodyVentas").on("click", "[data-anular-venta]", function(evento) {
+        evento.preventDefault();
+        evento.stopPropagation();
+
+        eliminarVenta(Number($(this).attr("data-anular-venta")));
+    });
+
+    // Enlaces del menú de ventas.
+    $(document).on("click", "[data-vista-ventas]", function(evento) {
+        if (
+            evento.ctrlKey ||
+            evento.metaKey ||
+            evento.shiftKey ||
+            evento.altKey
+        ) {
+            return;
+        }
+
+        evento.preventDefault();
+
+        var vista = $(this).attr("data-vista-ventas");
+
+        if (vista === "registro") {
+            abrirModalVenta("nuevo");
+        } else {
+            cerrarModalVenta();
+            listarVentas();
+        }
+
+        actualizarUrlVentas(vista);
+
+        if (window.matchMedia("(max-width: 768px)").matches) {
+            $("#fondoMenu").trigger("click");
+        }
+    });
+
+    // Cerrar al pulsar fuera del modal.
+    $("#modalVenta").on("click", function(evento) {
+        if (evento.target === this) {
+            cerrarModalVenta();
+        }
+    });
+
+    // Escape cierra el modal.
+    $(document).on("keydown", function(evento) {
+        if (
+            evento.key === "Escape" &&
+            !$("#modalVenta").prop("hidden")
+        ) {
+            cerrarModalVenta();
+        }
+    });
+
+    // Abrir una venta desde una URL con ?id=...
+    var parametros = new URLSearchParams(window.location.search);
+    var idUrl = parametros.get("id");
+
+    if (/^[1-9]\d*$/.test(idUrl || "")) {
+        usuariosListos.done(function() {
+            abrirModalVenta("editar", Number(idUrl));
+        });
     }
 
-    usuario.prop("disabled", true);
-
-    $("#cboEstado")
-        .val("REGISTRADA")
-        .prop("disabled", true);
-
-    $("button, input, a").filter(function () {
-        return /modificarVenta\s*\(/i.test(
-            $(this).attr("onclick") || ""
-        );
-    }).prop("hidden", true);
-}
-$(document).ready(function () {
-
-    $("#buscarVentas").on("input", filtrarVentasRegistradas);
-    listarProductosCombo();
-    var usuariosListos = listarUsuariosCombo();
-    $(document).on("click", "[data-vista-ventas]", function (evento) {
-        if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
-        evento.preventDefault();
-        mostrarVistaVentas($(this).attr("data-vista-ventas"), true);
-        if (window.matchMedia("(max-width: 768px)").matches) $("#fondoMenu").trigger("click");
-    });
-    $("#bodyVentas").on("click", "a[data-editar-venta]", function (evento) {
-        if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
-        evento.preventDefault();
-        var id = Number($(this).attr("data-editar-venta"));
-        mostrarVistaVentas("registro", true);
-        usuariosListos.done(function () { seleccionarVenta(id); });
-    });
-    $(window).on("popstate", function () { mostrarVistaVentas(vistaVentasDesdeUrl(), false); });
-    mostrarVistaVentas(vistaVentasDesdeUrl(), false);
-    usuariosListos.done(function () {
-        var id = new URLSearchParams(window.location.search).get("id");
-        if (/^[1-9]\d*$/.test(id || "")) seleccionarVenta(Number(id));
-    });
-    $("#txtCantidadVenta, #txtPrecioVenta").on("input", function () {
-        actualizarSubtotalLineaVenta();
-    });
-
+    aplicarVistaVendedor();
 });
 
 
-//==================================================
-// CONSTANTES Y ESTADO DE LA VENTA
-//==================================================
-
-var cIGV = 0.18;
-
-var ventaDetalles = [];
-
-
-//==================================================
-// FORMATEAR MONEDA SOLES
-//==================================================
+// ==================================================
+// UTILIDADES
+// ==================================================
 
 function formatoMoneda(valor) {
-
     var numero = Number(valor || 0);
 
-    var partes = numero.toFixed(2).split(".");
+    if (!Number.isFinite(numero)) {
+        numero = 0;
+    }
 
-    partes[0] = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-    return "S/ " + partes.join(".");
-
+    return "S/ " + numero.toLocaleString("es-PE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 }
 
-
-//==================================================
-// FORMATEAR FECHA /Date(ms)/ A TEXTO LEGIBLE
-//==================================================
+function escaparHtml(valor) {
+    return String(valor == null ? "" : valor)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
 
 function formatearFecha(valor) {
+    if (!valor) return "";
 
-    if (!valor) {
+    var coincidencia = /\/Date\((\d+)\)\//.exec(String(valor));
+    var fecha = coincidencia
+        ? new Date(parseInt(coincidencia[1], 10))
+        : new Date(valor);
 
-        return "";
-
+    if (isNaN(fecha.getTime())) {
+        return escaparHtml(valor);
     }
 
-    var coincidencia = /\/Date\((\d+)\)\//.exec(valor);
+    return fecha.toLocaleDateString("es-PE") + " " +
+        fecha.toLocaleTimeString("es-PE", {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+}
 
-    if (coincidencia) {
+function obtenerRespuesta(response) {
+    return response && typeof response.d !== "undefined"
+        ? response.d
+        : null;
+}
 
-        var fecha = new Date(parseInt(coincidencia[1]));
+function mostrarErrorAjax(titulo, error) {
+    console.error(titulo, error);
 
-        return fecha.toLocaleDateString() +
-            " " +
-            fecha.toLocaleTimeString();
+    var mensaje = titulo;
 
+    if (error && error.responseJSON && error.responseJSON.Message) {
+        mensaje += "\n" + error.responseJSON.Message;
     }
 
-    return valor;
-
+    alert(mensaje);
 }
 
 
-//==================================================
-// LISTAR PRODUCTOS PARA COMBOBOX
-//==================================================
+// ==================================================
+// CARGAR PRODUCTOS
+// ==================================================
 
 function listarProductosCombo() {
-
-    $.ajax({
+    return $.ajax({
         type: "POST",
         url: "/Views/Operaciones/Ventas/Ventas.aspx/ListarProductosCombo",
         data: "{}",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
 
-        success: function (response) {
+        success: function(response) {
+            var opciones = obtenerRespuesta(response) || [];
+            var html = "<option value=''>-- Seleccionar producto --</option>";
 
-            var opciones = response.d;
-
-            var html = "<option value=''>-- Seleccionar --</option>";
-
-            for (var i = 0; i < opciones.length; i++) {
-
+            opciones.forEach(function(producto) {
                 html += "<option value='" +
-                    opciones[i].v +
-                    "'>" +
-                    opciones[i].t +
+                    escaparHtml(producto.v) + "'>" +
+                    escaparHtml(producto.t) +
                     "</option>";
-
-            }
+            });
 
             $("#cboProducto").html(html);
-
         },
 
-        error: function (error) {
-
-            console.log("Error al listar productos:");
-            console.log(error);
-
+        error: function(error) {
+            mostrarErrorAjax("No se pudieron cargar los productos.", error);
         }
     });
-
 }
 
 
+<<<<<<< Updated upstream
 //==================================================
 // ACTUALIZAR SUBTOTAL DE LA LÃNEA EN EDICIÃ“N
 //==================================================
+=======
+// ==================================================
+// SUBTOTAL DE LÍNEA
+// ==================================================
+>>>>>>> Stashed changes
 
 function actualizarSubtotalLineaVenta() {
-
-    var cantidad = parseFloat($("#txtCantidadVenta").val()) || 0;
+    var cantidad = parseInt($("#txtCantidadVenta").val(), 10) || 0;
     var precio = parseFloat($("#txtPrecioVenta").val()) || 0;
 
     var subtotal = Math.round(cantidad * precio * 100) / 100;
 
     $("#txtSubtotalLineaVenta").val(formatoMoneda(subtotal));
-
 }
 
 
-//==================================================
-// AGREGAR PRODUCTO AL DETALLE
-//==================================================
+// ==================================================
+// AGREGAR PRODUCTO A LA VENTA
+// ==================================================
 
 function agregarProductoVenta() {
-
-    var idProducto = parseInt($("#cboProducto").val() || 0, 10);
-    var cantidad = parseInt($("#txtCantidadVenta").val() || 0, 10);
-    var precio = parseFloat($("#txtPrecioVenta").val() || 0);
+    var idProducto = parseInt($("#cboProducto").val() || "0", 10);
+    var cantidad = parseInt($("#txtCantidadVenta").val() || "0", 10);
+    var precio = parseFloat($("#txtPrecioVenta").val() || "0");
 
     if (!idProducto) {
-
         alert("Selecciona un producto.");
-
         return;
-
     }
 
-    if (cantidad <= 0) {
-
-        alert("La cantidad debe ser mayor a 0.");
-
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+        alert("La cantidad debe ser un número entero mayor que cero.");
         return;
-
     }
 
-    if (precio <= 0) {
-
-        alert("El precio de venta debe ser mayor a 0.");
-
+    if (!Number.isFinite(precio) || precio <= 0) {
+        alert("El precio de venta debe ser mayor que cero.");
         return;
-
     }
 
-    var nombreProducto =
-        $("#cboProducto option:selected").text();
+    var duplicado = ventaDetalles.some(function(detalle) {
+        return Number(detalle.iCodProducto) === idProducto;
+    });
 
-    var subtotal = Math.round(precio * cantidad * 100) / 100;
+    if (duplicado) {
+        alert("Ese producto ya está agregado a la venta.");
+        return;
+    }
+
+    var nombre = $("#cboProducto option:selected").text();
+    var subtotal = Math.round(cantidad * precio * 100) / 100;
 
     ventaDetalles.push({
         iCodProducto: idProducto,
-        cNombreProducto: nombreProducto,
+        cNombreProducto: nombre,
         iCantidad: cantidad,
         nPrecioVenta: precio,
         nDescuento: 0,
@@ -222,106 +340,119 @@ function agregarProductoVenta() {
     });
 
     $("#cboProducto").val("");
-    $("#txtCantidadVenta").val("");
-    $("#txtPrecioVenta").val("");
-    $("#txtSubtotalLineaVenta").val("");
+    $("#txtCantidadVenta").val("1");
+    $("#txtPrecioVenta").val("0.00");
 
+    actualizarSubtotalLineaVenta();
     dibujarDetalleVenta();
-
 }
 
 
-//==================================================
-// QUITAR PRODUCTO DEL DETALLE
-//==================================================
+// ==================================================
+// QUITAR PRODUCTO
+// ==================================================
 
 function quitarProductoVenta(index) {
+    index = Number(index);
 
-    if (index < 0 || index >= ventaDetalles.length) {
-
+    if (
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index >= ventaDetalles.length
+    ) {
         return;
-
     }
 
     ventaDetalles.splice(index, 1);
-
     dibujarDetalleVenta();
-
 }
 
 
-//==================================================
-// DIBUJAR DETALLE DE VENTA
-//==================================================
+// ==================================================
+// DIBUJAR DETALLE
+// ==================================================
 
 function dibujarDetalleVenta() {
+    var html = "";
 
-    var filas = "";
+    if (ventaDetalles.length === 0) {
+        html = "<tr><td colspan='6' class='ventas-vacio'>" +
+            "Agrega productos para registrar la venta." +
+            "</td></tr>";
+    } else {
+        ventaDetalles.forEach(function(detalle, index) {
+            var cantidad = Number(detalle.iCantidad) || 0;
+            var precio = Number(detalle.nPrecioVenta) || 0;
+            var descuento = Number(detalle.nDescuento) || 0;
 
-    for (var i = 0; i < ventaDetalles.length; i++) {
+            var subtotal = Math.round(
+                (cantidad * precio - descuento) * 100
+            ) / 100;
 
-        filas += "<tr>";
+            detalle.nSubTotal = subtotal;
 
-        filas += "<td>" + ventaDetalles[i].cNombreProducto + "</td>";
-        filas += "<td>" + ventaDetalles[i].iCantidad + "</td>";
-        filas += "<td>" + formatoMoneda(ventaDetalles[i].nPrecioVenta) + "</td>";
-        filas += "<td>" + formatoMoneda(ventaDetalles[i].nSubTotal) + "</td>";
-
-        filas += "<td><div class='table-actions'>";
-
-        filas += "<button type='button' class='btn btn-sm btn-danger' onclick='quitarProductoVenta(" +
-            i +
-            ")'>Quitar</button>";
-
-        filas += "</div></td>";
-
-        filas += "</tr>";
-
+            html += "<tr>";
+            html += "<td>" + escaparHtml(detalle.cNombreProducto) + "</td>";
+            html += "<td>" + cantidad + "</td>";
+            html += "<td>" + formatoMoneda(precio) + "</td>";
+            html += "<td>" + formatoMoneda(descuento) + "</td>";
+            html += "<td>" + formatoMoneda(subtotal) + "</td>";
+            html += "<td><button type='button' class='btn btn-sm btn-danger' " +
+                "onclick='quitarProductoVenta(" + index + ")'>Quitar</button></td>";
+            html += "</tr>";
+        });
     }
 
-    $("#bodyDetalleVenta").html(filas);
-
+    $("#bodyDetalleVenta").html(html);
     recalcTotalesVenta();
-
 }
 
 
-//==================================================
-// RECALCULAR TOTALES: SUBTOTAL, IGV 18% Y TOTAL
-//==================================================
+// ==================================================
+// RECALCULAR TOTALES
+// ==================================================
+
 
 function recalcTotalesVenta() {
+    // El precio del producto YA incluye el IGV.
+    // No sumar el IGV nuevamente al total.
 
-    var subtotal = 0;
+    var totalConIGV = ventaDetalles.reduce(function(acumulado, detalle) {
+        var cantidad = Number(detalle.iCantidad) || 0;
+        var precio = Number(detalle.nPrecioVenta) || 0;
+        var descuento = Number(detalle.nDescuento) || 0;
 
-    for (var i = 0; i < ventaDetalles.length; i++) {
+        var importe = Math.max(0, cantidad * precio - descuento);
 
-        subtotal += ventaDetalles[i].nSubTotal;
+        return acumulado + importe;
+    }, 0);
 
-    }
+    totalConIGV = Math.round((totalConIGV + Number.EPSILON) * 100) / 100;
 
-    subtotal = Math.round(subtotal * 100) / 100;
+    // Separar el IGV que ya está incluido en el importe final.
+    var igvIncluido = Math.round(
+        (totalConIGV * 18 / 118 + Number.EPSILON) * 100
+    ) / 100;
 
-    var igv = Math.round(subtotal * cIGV * 100) / 100;
-    var total = Math.round((subtotal + igv) * 100) / 100;
+    var subtotalSinIGV = Math.round(
+        (totalConIGV - igvIncluido + Number.EPSILON) * 100
+    ) / 100;
 
-    $("#txtSubtotalVentaGral").val(formatoMoneda(subtotal));
-    $("#txtIGVVenta").val(formatoMoneda(igv));
-    $("#txtTotalVenta").val(formatoMoneda(total));
+    $("#txtSubtotalVentaGral").text(formatoMoneda(subtotalSinIGV));
+    $("#txtIGVVenta").text(formatoMoneda(igvIncluido));
+    $("#txtTotalVenta").text(formatoMoneda(totalConIGV));
 
-    $("#txtSubTotal").val(subtotal.toFixed(2));
-    $("#txtIgv").val(igv.toFixed(2));
-    $("#txtTotal").val(total.toFixed(2));
-
+    $("#txtSubTotal").val(subtotalSinIGV.toFixed(2));
+    $("#txtIgv").val(igvIncluido.toFixed(2));
+    $("#txtTotal").val(totalConIGV.toFixed(2));
 }
 
 
-//==================================================
-// LISTAR USUARIOS PARA COMBOBOX
-//==================================================
+// ==================================================
+// CARGAR USUARIOS
+// ==================================================
 
 function listarUsuariosCombo() {
-
     return $.ajax({
         type: "POST",
         url: "/Views/Operaciones/Ventas/Ventas.aspx/ListarUsuariosCombo",
@@ -329,45 +460,40 @@ function listarUsuariosCombo() {
         contentType: "application/json; charset=utf-8",
         dataType: "json",
 
-        success: function (response) {
+        success: function(response) {
+            var opciones = obtenerRespuesta(response) || [];
+            var html = "<option value=''>-- Seleccionar usuario --</option>";
 
-            var opciones = response.d;
-
-            var html = "<option value=''>-- Seleccionar --</option>";
-
-            for (var i = 0; i < opciones.length; i++) {
-
+            opciones.forEach(function(usuario) {
                 html += "<option value='" +
-                    opciones[i].v +
-                    "'>" +
-                    opciones[i].t +
+                    escaparHtml(usuario.v) + "'>" +
+                    escaparHtml(usuario.t) +
                     "</option>";
-
-            }
+            });
 
             $("#cboUsuario").html(html);
-            aplicarVistaVendedor(); // CAMBIO (paso 3)
-
+            aplicarVistaVendedor();
         },
 
-        error: function (error) {
-
-            console.log("Error al listar usuarios:");
-            console.log(error);
-
+        error: function(error) {
+            mostrarErrorAjax("No se pudieron cargar los usuarios.", error);
         }
     });
-
 }
 
 
-//==================================================
+// ==================================================
 // LISTAR VENTAS
-//==================================================
+// ==================================================
 
 function listarVentas() {
-    if (!$("#bodyVentas").length) return;
-    $("#estadoBusquedaVentas").text("Cargando ventas...");
+    var cuerpo = $("#bodyVentas");
+
+    if (!cuerpo.length) return;
+
+    cuerpo.html(
+        "<tr><td colspan='8' class='ventas-vacio'>Cargando ventas...</td></tr>"
+    );
 
     $.ajax({
         type: "POST",
@@ -376,126 +502,346 @@ function listarVentas() {
         contentType: "application/json; charset=utf-8",
         dataType: "json",
 
-        success: function (response) {
+        success: function(response) {
+            var ventas = obtenerRespuesta(response) || "";
+            var html = "";
 
-            var ventas = response.d;
+            if (!Array.isArray(ventas) || ventas.length === 0) {
+                cuerpo.html(
+                    "<tr><td colspan='8' class='ventas-vacio'>" +
+                    "Todavía no hay ventas registradas.</td></tr>"
+                );
 
-            var filas = "";
-
-            for (var i = 0; i < ventas.length; i++) {
-
-                var estado =
-                    ventas[i].cEstado === "ANULADA"
-                        ? "<span class='badge badge-inactive'>" +
-                        ventas[i].cEstado +
-                        "</span>"
-                        : "<span class='badge badge-active'>" +
-                        ventas[i].cEstado +
-                        "</span>";
-
-                filas += "<tr>";
-
-                filas += "<td>" + ventas[i].iCodVenta + "</td>";
-                filas += "<td>" + ventas[i].cNombreUsuario + "</td>";
-                filas += "<td>" + ventas[i].cTipoComprobante + "</td>";
-                filas += "<td>" + ventas[i].cNumeroComprobante + "</td>";
-                filas += "<td>" + (ventas[i].cDocumentoCliente || "") + "</td>";
-                filas += "<td>" + (ventas[i].cNumeroCelular || "") + "</td>";
-                filas += "<td>" + formatearFecha(ventas[i].dFechaVenta) + "</td>";
-                filas += "<td>" + ventas[i].nSubTotal + "</td>";
-                filas += "<td>" + ventas[i].nIgv + "</td>";
-                filas += "<td>" + ventas[i].nTotal + "</td>";
-                filas += "<td>" + ventas[i].cMetodoPago + "</td>";
-                filas += "<td>" + estado + "</td>";
-
-                filas += "<td><div class='table-actions'>";
-
-                filas += "<a class='btn btn-sm btn-primary' target='_blank' rel='noopener' href='Comprobante.aspx?id=" +
-                    encodeURIComponent(ventas[i].iCodVenta) + "'>Ver comprobante</a>";
-
-                // CAMBIO (paso 4): Editar y Anular solo para administrador
-                if (esAdministradorVentas()) {
-
-                    filas += "<a class='btn btn-sm btn-warning' href='Ventas.aspx?id=" +
-                        encodeURIComponent(ventas[i].iCodVenta) +
-                        "' data-editar-venta='" +
-                        ventas[i].iCodVenta +
-                        "'>Editar</a>";
-
-                    filas += "<button type='button' class='btn btn-sm btn-danger' onclick='eliminarVenta(" +
-                        ventas[i].iCodVenta +
-                        ")'>Anular</button>";
-                }
-
-                filas += "</div></td>";
-
-                filas += "</tr>";
-
+                filtrarVentasRegistradas();
+                return;
             }
 
-            $("#bodyVentas").html(filas);
-            filtrarVentasRegistradas();
+            ventas.forEach(function(venta) {
+                var id = Number(venta.iCodVenta) || 0;
+                var estado = String(
+                    venta.cEstado || "REGISTRADA"
+                ).toUpperCase();
 
+                var claseEstado =
+                    estado === "ANULADA" ? "anulada" : "registrada";
+
+                var numero = venta.cNumeroComprobante || "";
+                var tipo = venta.cTipoComprobante || "";
+                var usuario = venta.cNombreUsuario ||
+                    venta.NombreUsuario || "";
+
+                var total = Number(venta.nTotal) || 0;
+
+                html += "<tr data-id-venta='" + id + "'>";
+                html += "<td>" + id + "</td>";
+                html += "<td>" + formatearFecha(venta.dFechaVenta) + "</td>";
+                html += "<td>" + escaparHtml(tipo) + "</td>";
+                html += "<td>" + escaparHtml(numero) + "</td>";
+                html += "<td>" + escaparHtml(usuario) + "</td>";
+                html += "<td>" + formatoMoneda(total) + "</td>";
+
+                html += "<td><span class='venta-estado " + claseEstado + "'>" +
+                    escaparHtml(estado) + "</span></td>";
+
+                html += "<td><div class='venta-acciones-fila'>";
+
+                html += "<a class='btn btn-sm btn-primary' " +
+                    "target='_blank' rel='noopener' href='Comprobante.aspx?id=" +
+                    encodeURIComponent(id) + "'>Ver comprobante</a>";
+
+                if (esAdministradorVentas() && estado === "REGISTRADA") {
+                    html += "<button type='button' class='btn btn-sm btn-warning' " +
+                        "data-editar-venta='" + id + "'>Editar</button>";
+
+                    html += "<button type='button' class='btn btn-sm btn-danger' " +
+                        "data-anular-venta='" + id + "'>Anular</button>";
+                }
+
+                html += "</div></td></tr>";
+            });
+
+            cuerpo.html(html);
+            ventaSeleccionadaId = 0;
+
+            filtrarVentasRegistradas();
         },
 
-        error: function (error) {
+        error: function(error) {
+            cuerpo.html(
+                "<tr><td colspan='8' class='ventas-vacio'>" +
+                "No se pudieron cargar las ventas. Pulsa Actualizar para reintentar." +
+                "</td></tr>"
+            );
 
-            $("#bodyVentas").empty();
-            $("#estadoBusquedaVentas").text("No se pudieron cargar las ventas. Pulsa Actualizar lista para reintentar.");
-            console.log("Error al listar ventas:");
-            console.log(error);
-
+            mostrarErrorAjax("Error al listar las ventas.", error);
         }
     });
-
 }
 
 
-//==================================================
-// GUARDAR VENTA
-//==================================================
+// ==================================================
+// BUSCAR Y FILTRAR VENTAS
+// ==================================================
+
+function normalizarBusquedaVenta(texto) {
+    return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
+function filtrarVentasRegistradas() {
+    var termino = normalizarBusquedaVenta(
+        $("#buscarVentas").val()
+    ).trim();
+
+    var estadoFiltro = String(
+        $("#estadoBusquedaVentas").val() || ""
+    ).trim().toUpperCase();
+
+    var filas = $("#bodyVentas tr[data-id-venta]");
+    var visibles = 0;
+
+    filas.each(function() {
+        var fila = $(this);
+        var texto = normalizarBusquedaVenta(fila.text());
+
+        var estado = String(
+            fila.find(".venta-estado").text() || ""
+        ).trim().toUpperCase();
+
+        var coincideTexto =
+            !termino || texto.indexOf(termino) !== -1;
+
+        var coincideEstado =
+            !estadoFiltro || estado === estadoFiltro;
+
+        var visible = coincideTexto && coincideEstado;
+
+        fila.toggle(visible);
+
+        if (visible) visibles++;
+    });
+
+    // No modificar el texto de las opciones del selector.
+    var contador = $("#contadorVentas");
+
+    if (contador.length) {
+        contador.text(
+            visibles + (visibles === 1
+                ? " venta encontrada"
+                : " ventas encontradas")
+        );
+    }
+}
+
+
+// ==================================================
+// ABRIR MODAL: NUEVA VENTA O EDICIÓN
+// ==================================================
+
+function abrirModalVenta(modo, idVenta) {
+    var editar = String(modo || "nuevo").toLowerCase() === "editar";
+    var $modal = $("#modalVenta");
+
+    if (!$modal.length) {
+        console.error("No se encontró #modalVenta en Ventas.aspx.");
+        alert("No se encontró la ventana de ventas. Verifica que el modal tenga id=\"modalVenta\".");
+        return;
+    }
+
+    if (editar && !esAdministradorVentas()) {
+        alert("Solo el administrador puede modificar ventas.");
+        return;
+    }
+
+    if (editar) {
+        idVenta = Number(idVenta || ventaSeleccionadaId) || 0;
+
+        if (!idVenta) {
+            idVenta = Number(
+                $("#bodyVentas tr.venta-seleccionada").attr("data-id-venta")
+            ) || 0;
+        }
+
+        if (!idVenta) {
+            alert("Selecciona una venta de la tabla para editar.");
+            return;
+        }
+    }
+
+    // Mostrar primero el modal para evitar que se quede oculto por estilos o errores
+    // que ocurran al limpiar o preparar los campos.
+    $modal.prop("hidden", false).removeAttr("hidden");
+    $modal.css({
+        display: "flex",
+        visibility: "visible",
+        opacity: "1",
+        zIndex: "99999"
+    });
+    $("body").css("overflow", "hidden");
+
+    try {
+        limpiarFormulario();
+
+        if (!editar) {
+            $("#tituloModalVenta").text("Registrar venta");
+            $("#btnGuardarVentaModal")
+                .prop("hidden", false)
+                .prop("disabled", false)
+                .show();
+            $("#btnModificarVentaModal").prop("hidden", true).hide();
+
+            $("#cboTipoComprobante").val("BOLETA").prop("disabled", false);
+            $("#cboEstado").val("REGISTRADA").prop("disabled", !esAdministradorVentas());
+            $("#txtCantidadVenta").val("1");
+            $("#txtPrecioVenta").val("0.00");
+
+            actualizarSubtotalLineaVenta();
+            dibujarDetalleVenta();
+            aplicarVistaVendedor();
+
+            // Para Vendedor, seleccionar su usuario si el combo ya tiene opciones.
+            if (!esAdministradorVentas()) {
+                var $usuario = $("#cboUsuario");
+                if ($usuario.find("option").length > 1 && !$usuario.val()) {
+                    $usuario.val($usuario.find("option").eq(1).val());
+                }
+            }
+
+            return;
+        }
+
+        $("#tituloModalVenta").text("Editar venta");
+        $("#btnGuardarVentaModal").prop("hidden", true).hide();
+        $("#btnModificarVentaModal")
+            .prop("hidden", false)
+            .prop("disabled", false)
+            .show();
+        $("#cboTipoComprobante").prop("disabled", true);
+        $("#cboEstado").val("REGISTRADA").prop("disabled", true);
+
+        seleccionarVenta(idVenta);
+    } catch (error) {
+        console.error("Error al preparar el formulario de venta:", error);
+        alert("La ventana se abrió, pero hubo un error al preparar el formulario. Revisa la consola del navegador.");
+    }
+}
+
+// ==================================================
+// CERRAR MODAL
+// ==================================================
+
+function cerrarModalVenta() {
+    $("#modalVenta")
+        .prop("hidden", true)
+        .attr("hidden", "hidden")
+        .css({
+            display: "none",
+            visibility: "",
+            opacity: "",
+            zIndex: ""
+        });
+
+    $("body").css("overflow", "");
+}
+
+// ==================================================
+// ACTUALIZAR URL
+// ==================================================
+
+function actualizarUrlVentas(vista) {
+    try {
+        var url = new URL(window.location.href);
+
+        url.searchParams.delete("id");
+
+        if (vista === "registros") {
+            url.searchParams.set("vista", "registros");
+        } else {
+            url.searchParams.delete("vista");
+        }
+
+        history.pushState(null, "", url.href);
+    } catch (error) {
+        console.warn("No se pudo actualizar la URL de ventas.", error);
+    }
+}
+
+
+// ==================================================
+// ANULAR VENTA SELECCIONADA
+// ==================================================
+
+function anularVentaSeleccionada() {
+    if (!esAdministradorVentas()) {
+        alert("Solo el administrador puede anular ventas.");
+        return;
+    }
+
+    var id = Number(ventaSeleccionadaId) || 0;
+
+    if (!id) {
+        id = Number(
+            $("#bodyVentas tr.venta-seleccionada").attr("data-id-venta")
+        ) || 0;
+    }
+
+    if (!id) {
+        alert("Selecciona una venta de la tabla antes de anularla.");
+        return;
+    }
+
+    eliminarVenta(id);
+}
+
+
+// ==================================================
+// REGISTRAR VENTA
+// ==================================================
 
 function guardarVenta() {
+    if (solicitudVentaEnCurso) return;
 
     if (ventaDetalles.length === 0) {
-
         alert("Agrega al menos un producto a la venta.");
-
         return;
+    }
 
+    var idUsuario = parseInt($("#cboUsuario").val() || "0", 10);
+
+    if (!idUsuario) {
+        alert("Selecciona el usuario responsable de la venta.");
+        return;
     }
 
     var venta = {
-
         iCodVenta: 0,
-
-        iCodUsuario: parseInt($("#cboUsuario").val() || 0),
+        iCodUsuario: idUsuario,
         cTipoComprobante: $("#cboTipoComprobante").val(),
         cDocumentoCliente: $("#txtDocumentoCliente").val(),
         cNumeroCelular: $("#txtNumeroCelular").val(),
         cNumeroComprobante: $("#txtNumeroComprobante").val(),
-        nSubTotal: parseFloat($("#txtSubTotal").val()),
-        nIgv: parseFloat($("#txtIgv").val()),
-        nTotal: parseFloat($("#txtTotal").val()),
+        nSubTotal: parseFloat($("#txtSubTotal").val()) || 0,
+        nIgv: parseFloat($("#txtIgv").val()) || 0,
+        nTotal: parseFloat($("#txtTotal").val()) || 0,
         cMetodoPago: $("#cboMetodoPago").val(),
         cObservacion: $("#txtObservacion").val(),
-        cEstado: $("#cboEstado").val()
-
+        cEstado: "REGISTRADA"
     };
 
-    var detalles = [];
+    var detalles = ventaDetalles.map(function(detalle) {
+        return {
+            iCodProducto: Number(detalle.iCodProducto),
+            iCantidad: Number(detalle.iCantidad),
+            nPrecioVenta: Number(detalle.nPrecioVenta),
+            nDescuento: Number(detalle.nDescuento) || 0,
+            nSubTotal: Number(detalle.nSubTotal) || 0
+        };
+    });
 
-    for (var i = 0; i < ventaDetalles.length; i++) {
-
-        detalles.push({
-            iCodProducto: ventaDetalles[i].iCodProducto,
-            iCantidad: ventaDetalles[i].iCantidad,
-            nPrecioVenta: ventaDetalles[i].nPrecioVenta,
-            nDescuento: ventaDetalles[i].nDescuento,
-            nSubTotal: ventaDetalles[i].nSubTotal
-        });
-
-    }
+    solicitudVentaEnCurso = true;
+    $("#btnGuardarVentaModal").prop("disabled", true);
 
     $.ajax({
         type: "POST",
@@ -507,20 +853,31 @@ function guardarVenta() {
         contentType: "application/json; charset=utf-8",
         dataType: "json",
 
-        success: function (response) {
+        success: function(response) {
+            var resultado = obtenerRespuesta(response);
 
-            if (response.d === "OK") {
-
+            if (resultado === "OK") {
                 alert("Venta registrada correctamente.");
 
+<<<<<<< Updated upstream
 
                 limpiarFormulario();
                 listarVentas();
             } else {
                 alert(response.d);
+=======
+                cerrarModalVenta();
+                limpiarFormulario();
+                listarVentas();
+            } else {
+                alert(
+                    resultado ||
+                    "El servidor no confirmó el registro de la venta."
+                );
+>>>>>>> Stashed changes
             }
-            aplicarVistaVendedor();
         },
+<<<<<<< Updated upstream
         error: function (error) {
             console.log(error);
             alert('Error al registrar la venta.');
@@ -532,132 +889,239 @@ function seleccionarVenta(idVenta) {
     // CAMBIO (paso 5)
     if (!esAdministradorVentas()) {
         alert('Esta opción está disponible solo para el administrador.');
+=======
+
+        error: function(error) {
+            mostrarErrorAjax("No se pudo registrar la venta.", error);
+        },
+
+        complete: function() {
+            solicitudVentaEnCurso = false;
+            $("#btnGuardarVentaModal").prop("disabled", false);
+        }
+    });
+}
+
+
+// ==================================================
+// OBTENER VENTA Y DETALLES
+// ==================================================
+
+function seleccionarVenta(idVenta) {
+    if (!esAdministradorVentas()) {
+        alert("Solo el administrador puede modificar ventas.");
+        return;
+    }
+
+    idVenta = Number(idVenta);
+
+    if (!idVenta || idVenta <= 0) {
+        alert("El código de venta no es válido.");
+>>>>>>> Stashed changes
         return;
     }
     mostrarVistaVentas("registro", true);
     $.ajax({
         type: "POST",
         url: "/Views/Operaciones/Ventas/Ventas.aspx/ObtenerVenta",
+<<<<<<< Updated upstream
         data: JSON.stringify({idVenta: idVenta}),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function (response) {
+=======
+        data: JSON.stringify({ idVenta: idVenta }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
 
-            var venta = response.d;
+        success: function(response) {
+            var venta = obtenerRespuesta(response);
+>>>>>>> Stashed changes
+
+            if (!venta || !venta.iCodVenta) {
+                alert("No se encontró la venta seleccionada.");
+                cerrarModalVenta();
+                return;
+            }
+
+            if (
+                String(venta.cEstado || "").toUpperCase() !== "REGISTRADA"
+            ) {
+                alert("Solo se pueden modificar ventas registradas.");
+                cerrarModalVenta();
+                return;
+            }
 
             $("#txtIdVenta").val(venta.iCodVenta);
             $("#cboUsuario").val(venta.iCodUsuario);
-            $("#cboTipoComprobante").val(venta.cTipoComprobante).prop("disabled", true);
-            $("#txtDocumentoCliente").val(venta.cDocumentoCliente);
-            $("#txtNumeroCelular").val(venta.cNumeroCelular);
-            $("#txtNumeroComprobante").val(venta.cNumeroComprobante);
-            $("#txtSubTotal").val(venta.nSubTotal);
-            $("#txtIgv").val(venta.nIgv);
-            $("#txtTotal").val(venta.nTotal);
-            $("#cboMetodoPago").val(venta.cMetodoPago);
-            $("#txtObservacion").val(venta.cObservacion);
-            $("#cboEstado").val(venta.cEstado);
 
+            $("#cboTipoComprobante")
+                .val(venta.cTipoComprobante)
+                .prop("disabled", true);
+
+            $("#txtDocumentoCliente").val(venta.cDocumentoCliente || "");
+            $("#txtNumeroCelular").val(venta.cNumeroCelular || "");
+            $("#txtNumeroComprobante").val(venta.cNumeroComprobante || "");
+            $("#cboMetodoPago").val(venta.cMetodoPago || "EFECTIVO");
+            $("#txtObservacion").val(venta.cObservacion || "");
+            $("#cboEstado").val("REGISTRADA").prop("disabled", true);
+
+            $.ajax({
+                type: "POST",
+                url: "/Views/Operaciones/Ventas/Ventas.aspx/ObtenerDetallesVenta",
+                data: JSON.stringify({ idVenta: idVenta }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+
+                success: function(respuestaDetalles) {
+                    var detalles = obtenerRespuesta(respuestaDetalles) || [];
+
+                    ventaDetalles = detalles.map(function(detalle) {
+                        var cantidad = Number(detalle.iCantidad) || 0;
+                        var precio = Number(detalle.nPrecioVenta) || 0;
+                        var descuento = Number(detalle.nDescuento) || 0;
+
+                        return {
+                            iCodProducto: Number(detalle.iCodProducto),
+                            cNombreProducto: detalle.cNombreProducto ||
+                                detalle.cNombre ||
+                                ("Producto " + detalle.iCodProducto),
+                            iCantidad: cantidad,
+                            nPrecioVenta: precio,
+                            nDescuento: descuento,
+                            nSubTotal: Math.round(
+                                (cantidad * precio - descuento) * 100
+                            ) / 100
+                        };
+                    });
+
+                    dibujarDetalleVenta();
+                    aplicarVistaVendedor();
+                },
+
+                error: function(error) {
+                    mostrarErrorAjax(
+                        "No se pudieron cargar los productos de la venta.",
+                        error
+                    );
+                }
+            });
         },
 
-        error: function (error) {
-
-            console.log(error);
-
-            alert("Error al obtener la venta.");
-
+        error: function(error) {
+            mostrarErrorAjax("No se pudo obtener la venta.", error);
         }
     });
-
 }
 
 
-//==================================================
+// ==================================================
 // MODIFICAR VENTA
-//==================================================
+// ==================================================
 
 function modificarVenta() {
-
-    // CAMBIO (paso 5)
     if (!esAdministradorVentas()) {
+<<<<<<< Updated upstream
         alert("Esta opciÃ³n estÃ¡ disponible solo para el administrador.");
+=======
+        alert("Solo el administrador puede modificar ventas.");
+>>>>>>> Stashed changes
         return;
     }
 
-    var idVenta = $("#txtIdVenta").val();
+    if (solicitudVentaEnCurso) return;
 
-    if (idVenta === "") {
+    var idVenta = parseInt($("#txtIdVenta").val() || "0", 10);
+    var idUsuario = parseInt($("#cboUsuario").val() || "0", 10);
 
-        alert("Primero selecciona una venta.");
-
+    if (idVenta <= 0) {
+        alert("Selecciona una venta válida.");
         return;
+    }
 
+    if (!idUsuario) {
+        alert("Selecciona el usuario responsable.");
+        return;
+    }
+
+    if (ventaDetalles.length === 0) {
+        alert("La venta debe contener al menos un producto.");
+        return;
     }
 
     var venta = {
-
-        iCodVenta: parseInt(idVenta),
-
-        iCodUsuario: parseInt($("#cboUsuario").val() || 0),
+        iCodVenta: idVenta,
+        iCodUsuario: idUsuario,
         cTipoComprobante: $("#cboTipoComprobante").val(),
         cDocumentoCliente: $("#txtDocumentoCliente").val(),
         cNumeroCelular: $("#txtNumeroCelular").val(),
         cNumeroComprobante: $("#txtNumeroComprobante").val(),
-        nSubTotal: parseFloat($("#txtSubTotal").val()),
-        nIgv: parseFloat($("#txtIgv").val()),
-        nTotal: parseFloat($("#txtTotal").val()),
+        nSubTotal: parseFloat($("#txtSubTotal").val()) || 0,
+        nIgv: parseFloat($("#txtIgv").val()) || 0,
+        nTotal: parseFloat($("#txtTotal").val()) || 0,
         cMetodoPago: $("#cboMetodoPago").val(),
         cObservacion: $("#txtObservacion").val(),
-        cEstado: $("#cboEstado").val()
-
+        cEstado: "REGISTRADA"
     };
+
+    var detalles = ventaDetalles.map(function(detalle) {
+        return {
+            iCodProducto: Number(detalle.iCodProducto),
+            iCantidad: Number(detalle.iCantidad),
+            nPrecioVenta: Number(detalle.nPrecioVenta),
+            nDescuento: Number(detalle.nDescuento) || 0,
+            nSubTotal: Number(detalle.nSubTotal) || 0
+        };
+    });
+
+    solicitudVentaEnCurso = true;
+    $("#btnModificarVentaModal").prop("disabled", true);
 
     $.ajax({
         type: "POST",
         url: "/Views/Operaciones/Ventas/Ventas.aspx/ModificarVenta",
         data: JSON.stringify({
-            venta: venta
+            venta: venta,
+            detalles: detalles
         }),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
 
-        success: function (response) {
+        success: function(response) {
+            var resultado = obtenerRespuesta(response);
 
-            if (response.d === "OK") {
-
+            if (resultado === "OK") {
                 alert("Venta modificada correctamente.");
-
+                cerrarModalVenta();
                 limpiarFormulario();
                 listarVentas();
-
             } else {
-
-                alert(response.d);
-
+                alert(
+                    resultado ||
+                    "El servidor no confirmó la modificación."
+                );
             }
-
         },
 
-        error: function (error) {
+        error: function(error) {
+            mostrarErrorAjax("No se pudo modificar la venta.", error);
+        },
 
-            console.log(error);
-
-            alert("Error al modificar la venta.");
-
+        complete: function() {
+            solicitudVentaEnCurso = false;
+            $("#btnModificarVentaModal").prop("disabled", false);
         }
     });
-
 }
 
 
-//==================================================
+// ==================================================
 // ANULAR VENTA
-//==================================================
+// ==================================================
 
 function eliminarVenta(idVenta) {
-
-    // CAMBIO (paso 5)
     if (!esAdministradorVentas()) {
+<<<<<<< Updated upstream
         alert("Esta opciÃ³n estÃ¡ disponible solo para el administrador.");
         return;
     }
@@ -667,80 +1131,90 @@ function eliminarVenta(idVenta) {
     );
 
     if (!confirmar) {
-
+=======
+        alert("Solo el administrador puede anular ventas.");
         return;
+    }
 
+    idVenta = Number(idVenta);
+>>>>>>> Stashed changes
+
+    if (!idVenta || idVenta <= 0) {
+        alert("El código de venta no es válido.");
+        return;
+    }
+
+    if (!confirm("¿Deseas anular la venta N.º " + idVenta + "?")) {
+        return;
     }
 
     $.ajax({
         type: "POST",
         url: "/Views/Operaciones/Ventas/Ventas.aspx/EliminarVenta",
-        data: JSON.stringify({
-            idVenta: idVenta
-        }),
+        data: JSON.stringify({ idVenta: idVenta }),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
 
-        success: function (response) {
+        success: function(response) {
+            var resultado = obtenerRespuesta(response);
 
-            if (response.d === "OK") {
-
+            if (resultado === "OK") {
                 alert("Venta anulada correctamente.");
 
-                if (String($("#txtIdVenta").val()) === String(idVenta)) limpiarFormulario();
+                if (Number($("#txtIdVenta").val()) === idVenta) {
+                    cerrarModalVenta();
+                    limpiarFormulario();
+                }
+
+                ventaSeleccionadaId = 0;
                 listarVentas();
-
             } else {
-
-                alert(response.d);
-
+                alert(resultado || "El servidor no confirmó la anulación.");
             }
-
         },
 
-        error: function (error) {
-
-            console.log(error);
-
-            alert("Error al anular la venta.");
-
+        error: function(error) {
+            mostrarErrorAjax("No se pudo anular la venta.", error);
         }
     });
-
 }
 
 
-//==================================================
+// ==================================================
 // LIMPIAR FORMULARIO
-//==================================================
+// ==================================================
 
 function limpiarFormulario() {
-
     $("#txtIdVenta").val("");
     $("#cboUsuario").val("");
-    $("#cboTipoComprobante").val("BOLETA").prop("disabled", false);
+
+    $("#cboTipoComprobante")
+        .val("BOLETA")
+        .prop("disabled", false);
+
     $("#txtDocumentoCliente").val("");
     $("#txtNumeroCelular").val("");
     $("#txtNumeroComprobante").val("");
-    $("#txtSubTotal").val("");
-    $("#txtIgv").val("");
-    $("#txtTotal").val("");
+
     $("#cboMetodoPago").val("EFECTIVO");
     $("#txtObservacion").val("");
-    $("#cboEstado").val("REGISTRADA");
+
+    $("#cboEstado")
+        .val("REGISTRADA")
+        .prop("disabled", false);
+
+    $("#cboProducto").val("");
+    $("#txtCantidadVenta").val("1");
+    $("#txtPrecioVenta").val("0.00");
+    $("#txtSubtotalLineaVenta").val(formatoMoneda(0));
 
     ventaDetalles = [];
-    $("#bodyDetalleVenta").html("");
-    $("#cboProducto").val("");
-    $("#txtCantidadVenta").val("");
-    $("#txtPrecioVenta").val("");
-    $("#txtSubtotalLineaVenta").val("");
-    $("#txtSubtotalVentaGral").val("");
-    $("#txtIGVVenta").val("");
-    $("#txtTotalVenta").val("");
+    dibujarDetalleVenta();
 
-    aplicarVistaVendedor(); // CAMBIO (paso 3)
+    $("#btnGuardarVentaModal").prop("hidden", false);
+    $("#btnModificarVentaModal").prop("hidden", true);
 
+<<<<<<< Updated upstream
 }
 
 function normalizarBusquedaVenta(texto) {
@@ -826,4 +1300,7 @@ function leerArchivoBase64(input, callback) {
 
     lector.readAsDataURL(input.files[0]);
 
+=======
+    aplicarVistaVendedor();
+>>>>>>> Stashed changes
 }
