@@ -1,5 +1,7 @@
 ﻿Imports System.Data.SqlClient
 Imports System.IO
+Imports System.Globalization
+Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Web.Services
 Imports WebApplication_keyove.WebApplication_Keyove.Data
@@ -17,10 +19,46 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
             Public nombre As String
             Public descripcion As String
             Public marca As String
+            Public marcaNueva As Boolean
             Public modelo As String
             Public categoria As Integer
             Public precioVenta As Decimal?
         End Class
+
+        Private Shared Function ClaveCatalogoCompra(valor As String) As String
+            Dim clave As New StringBuilder()
+            For Each caracter In If(valor, "").Normalize(NormalizationForm.FormD)
+                If CharUnicodeInfo.GetUnicodeCategory(caracter) <> UnicodeCategory.NonSpacingMark AndAlso Not Char.IsWhiteSpace(caracter) Then clave.Append(Char.ToUpperInvariant(caracter))
+            Next
+            Return clave.ToString().Normalize(NormalizationForm.FormC)
+        End Function
+
+        <WebMethod(EnableSession:=True)>
+        Public Shared Function MarcasParaCompra() As List(Of OpcionCombo)
+            ExigirAdministradora()
+            Using db As New ConexionBD()
+                Return CatalogoMarcasCompra(db, False).Values.Select(Function(m) New OpcionCombo With {.v = m, .t = m}).OrderBy(Function(m) m.t).ToList()
+            End Using
+        End Function
+
+        Private Shared Function CatalogoMarcasCompra(db As ConexionBD, transaccion As Boolean) As Dictionary(Of String, String)
+            Dim consulta = "SELECT DISTINCT cMarca FROM Productos WHERE NULLIF(LTRIM(RTRIM(cMarca)),'') IS NOT NULL ORDER BY cMarca"
+            Dim tabla = If(transaccion, db.ExecuteDataTableTransact(consulta), db.ExecuteDataTable(consulta))
+            Dim marcas As New Dictionary(Of String, String)(StringComparer.Ordinal)
+            For Each r As DataRow In tabla.Rows
+                Dim marca = Regex.Replace(Convert.ToString(r("cMarca")).Trim(), "\s+", " ")
+                If Not marcas.ContainsKey(ClaveCatalogoCompra(marca)) Then marcas.Add(ClaveCatalogoCompra(marca), marca)
+            Next
+            Return marcas
+        End Function
+
+        <WebMethod(EnableSession:=True)>
+        Public Shared Function ComprobanteYaRegistrado(idProveedor As Integer, ruc As String, tipo As String, numero As String) As Boolean
+            ExigirAdministradora()
+            Using db As New ConexionBD()
+                Return Convert.ToInt32(db.ExecuteScalar("SELECT COUNT(*) FROM Compras c JOIN Proveedores p ON p.iCodProveedor=c.iCodProveedor WHERE (p.iCodProveedor=@proveedor OR (@proveedor<=0 AND p.cRuc=@ruc)) AND c.cTipoComprobante=@tipo AND c.cNumeroComprobante=@numero AND c.cEstado='REGISTRADA'", New List(Of SqlParameter) From {New SqlParameter("@proveedor", idProveedor), New SqlParameter("@ruc", If(ruc, "").Trim()), New SqlParameter("@tipo", If(tipo, "").Trim().ToUpperInvariant()), New SqlParameter("@numero", If(numero, "").Trim().ToUpperInvariant())})) > 0
+            End Using
+        End Function
 
         <WebMethod(EnableSession:=True)>
         Public Shared Function CategoriasParaCompra() As List(Of OpcionCombo)
@@ -56,6 +94,19 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                     db.BeginTransaction()
                     ' Serializa resolución de altas para evitar dos productos iguales en guardados simultáneos.
                     db.ExecuteQueryTransact("DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource='KeyoveComprasAltas',@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=15000; IF @r<0 THROW 50001,'Reintenta: hay otra compra creando productos.',1;", Nothing)
+                    Dim marcas = CatalogoMarcasCompra(db, True)
+                    For Each p In productosNuevos
+                        Dim marca = Regex.Replace(If(p.marca, "").Trim(), "\s+", " ")
+                        Dim clave = ClaveCatalogoCompra(marca)
+                        If clave.Length = 0 Then Throw New ArgumentException("Selecciona la marca del producto " & p.nombre & ".")
+                        If marcas.ContainsKey(clave) Then
+                            p.marca = marcas(clave)
+                        Else
+                            If Not p.marcaNueva Then Throw New ArgumentException("Confirma la nueva marca " & marca & " o selecciona una registrada.")
+                            p.marca = marca
+                            marcas.Add(clave, marca)
+                        End If
+                    Next
                     If proveedorNuevo IsNot Nothing Then
                         compra.iCodProveedor = Convert.ToInt32(db.ExecuteScalarTransact(
                             "DECLARE @id int; SELECT @id=iCodProveedor FROM Proveedores WITH(UPDLOCK,HOLDLOCK) WHERE cRuc=@ruc; IF @id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM Proveedores WHERE iCodProveedor=@id AND bEstado=1) THROW 50001,'El proveedor está inactivo.',1; IF @id IS NULL BEGIN INSERT Proveedores(cRuc,cRazonSocial) VALUES(@ruc,@nombre); SET @id=SCOPE_IDENTITY(); END; SELECT @id;",
@@ -65,20 +116,24 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                         Dim precioCompra = detalles.First(Function(d) d IsNot Nothing AndAlso d.iCodProducto = p.temporal).nPrecioCompra
                         Dim codigo = If(p.codigo, "").Trim()
                         If codigo.Length = 0 Then codigo = "OCR-" & Guid.NewGuid().ToString("N")
+                        Dim identidad = "((@modelo<>'' AND REPLACE(ISNULL(cMarca,''),' ','') COLLATE Latin1_General_CI_AI=REPLACE(@marca,' ','') COLLATE Latin1_General_CI_AI AND REPLACE(ISNULL(cModelo,''),' ','') COLLATE Latin1_General_CI_AI=REPLACE(@modelo,' ','') COLLATE Latin1_General_CI_AI) OR (LTRIM(RTRIM(cNombre)) COLLATE Latin1_General_CI_AI=@nombre COLLATE Latin1_General_CI_AI AND REPLACE(ISNULL(cMarca,''),' ','') COLLATE Latin1_General_CI_AI=REPLACE(@marca,' ','') COLLATE Latin1_General_CI_AI AND REPLACE(ISNULL(cModelo,''),' ','') COLLATE Latin1_General_CI_AI=REPLACE(@modelo,' ','') COLLATE Latin1_General_CI_AI))"
                         Dim id = Convert.ToInt32(db.ExecuteScalarTransact(
                             "IF NOT EXISTS(SELECT 1 FROM Categorias WITH(HOLDLOCK) WHERE iCodCategoria=@categoria AND bEstado=1) THROW 50001,'La categoría no está activa.',1; " &
-                            "DECLARE @id int; IF (SELECT COUNT(*) FROM Productos WITH(UPDLOCK,HOLDLOCK) WHERE UPPER(LTRIM(RTRIM(cNombre)))=UPPER(@nombre))>1 THROW 50001,'Hay varios productos con ese nombre. Selecciona uno del inventario.',1; " &
-                            "SELECT @id=iCodProducto FROM Productos WITH(UPDLOCK,HOLDLOCK) WHERE UPPER(LTRIM(RTRIM(cNombre)))=UPPER(@nombre); " &
-                            "IF @id IS NOT NULL AND EXISTS(SELECT 1 FROM Productos WHERE iCodProducto=@id AND (ISNULL(cMarca,'')<>@marca OR ISNULL(cModelo,'')<>@modelo)) THROW 50001,'El nombre coincide con otra ficha de marca o modelo diferente. Revisa el nombre o selecciona un producto existente.',1; " &
+                            "DECLARE @id int; SELECT @id=iCodProducto FROM Productos WITH(UPDLOCK,HOLDLOCK) WHERE @codigoBuscado<>'' AND cCodigo=@codigoBuscado; " &
+                            "IF @id IS NULL BEGIN IF (SELECT COUNT(*) FROM Productos WITH(UPDLOCK,HOLDLOCK) WHERE " & identidad & ")>1 THROW 50001,'Hay varias fichas con la misma identidad. Selecciona un producto del inventario.',1; SELECT @id=iCodProducto FROM Productos WITH(UPDLOCK,HOLDLOCK) WHERE " & identidad & "; END; " &
+                            "IF @id IS NOT NULL AND EXISTS(SELECT 1 FROM Productos WHERE iCodProducto=@id AND (REPLACE(ISNULL(cMarca,''),' ','') COLLATE Latin1_General_CI_AI<>REPLACE(@marca,' ','') COLLATE Latin1_General_CI_AI OR (@modelo<>'' AND REPLACE(ISNULL(cModelo,''),' ','') COLLATE Latin1_General_CI_AI<>REPLACE(@modelo,' ','') COLLATE Latin1_General_CI_AI))) THROW 50001,'El código corresponde a otra marca o modelo. Selecciona la ficha correcta.',1; " &
                             "IF @id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM Productos WHERE iCodProducto=@id AND bEstado=1) THROW 50001,'El producto está inactivo.',1; " &
-                            "IF @id IS NULL BEGIN IF EXISTS(SELECT 1 FROM Productos WITH(HOLDLOCK) WHERE cCodigo=@codigo) THROW 50001,'El código del producto ya existe. Corrígelo antes de guardar.',1; INSERT Productos(iCodCategoria,cCodigo,cNombre,cDescripcion,cMarca,cModelo,nPrecioCompra,nPrecioVenta,iStockActual) VALUES(@categoria,@codigo,@nombre,NULLIF(@descripcion,''),NULLIF(@marca,''),NULLIF(@modelo,''),@compra,@venta,0); SET @id=SCOPE_IDENTITY(); END; SELECT @id;",
-                            New List(Of SqlParameter) From {New SqlParameter("@nombre", p.nombre.Trim()), New SqlParameter("@categoria", p.categoria), New SqlParameter("@codigo", codigo), New SqlParameter("@descripcion", If(p.descripcion, "").Trim()), New SqlParameter("@marca", If(p.marca, "").Trim()), New SqlParameter("@modelo", If(p.modelo, "").Trim()), New SqlParameter("@compra", precioCompra), New SqlParameter("@venta", p.precioVenta.Value)}))
+                            "IF @id IS NULL BEGIN IF EXISTS(SELECT 1 FROM Productos WITH(HOLDLOCK) WHERE cCodigo=@codigo) THROW 50001,'El código del producto ya existe. Corrígelo antes de guardar.',1; INSERT Productos(iCodCategoria,cCodigo,cNombre,cDescripcion,cMarca,cModelo,nPrecioCompra,nPrecioVenta,iStockActual) VALUES(@categoria,@codigo,@nombre,NULLIF(@descripcion,''),@marca,NULLIF(@modelo,''),@compra,@venta,0); SET @id=SCOPE_IDENTITY(); END; SELECT @id;",
+                            New List(Of SqlParameter) From {New SqlParameter("@nombre", p.nombre.Trim()), New SqlParameter("@categoria", p.categoria), New SqlParameter("@codigo", codigo), New SqlParameter("@codigoBuscado", If(p.codigo, "").Trim()), New SqlParameter("@descripcion", If(p.descripcion, "").Trim()), New SqlParameter("@marca", p.marca), New SqlParameter("@modelo", If(p.modelo, "").Trim()), New SqlParameter("@compra", precioCompra), New SqlParameter("@venta", p.precioVenta.Value)}))
                         For Each d In detalles.Where(Function(x) x IsNot Nothing AndAlso x.iCodProducto = p.temporal)
                             d.iCodProducto = id
                         Next
                     Next
                     Dim resultado = GuardarCompraInterna(compra, detalles, comprobante, fechaCompra, preciosIncluyenIgv, db)
                     If Not resultado.ok Then Throw New ArgumentException(resultado.mensaje)
+                    For Each detalle In detalles.Where(Function(d) d.precioVenta.HasValue)
+                        db.ExecuteQueryTransact("UPDATE Productos SET nPrecioVenta=@precio WHERE iCodProducto=@id AND bEstado=1", New List(Of SqlParameter) From {New SqlParameter("@id", detalle.iCodProducto), New SqlParameter("@precio", SqlDbType.Decimal) With {.Precision = 18, .Scale = 2, .Value = detalle.precioVenta.Value}})
+                    Next
                     db.CommitTransaction()
                     Return resultado
                 Catch ex As Exception

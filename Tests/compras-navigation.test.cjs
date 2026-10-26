@@ -11,7 +11,7 @@ const assert = require('node:assert/strict');
     const content = view.match(/<asp:Content\s+ID="Content2"[\s\S]*?>([\s\S]*?)<\/asp:Content>/)[1];
     const html = master.replace(/<%@[^]*?%>/g, '')
         .replace(/<asp:ContentPlaceHolder\s+ID="ContentPlaceHolder1"[^]*?\/>/, content)
-        .replace(/<asp:ContentPlaceHolder\s+ID="head"[^]*?\/>/g, '<script src="/JScript/Compras.js"></script>');
+        .replace(/<asp:ContentPlaceHolder\s+ID="head"[^]*?\/>/g, view.match(/<asp:Content\s+ID="Content1"[\s\S]*?>([\s\S]*?)<\/asp:Content>/)[1].replace('../../../JScript/Compras.js','/JScript/Compras.js'));
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     try {
         const page = await browser.newPage();
@@ -29,7 +29,7 @@ const assert = require('node:assert/strict');
                 return route.fulfill({ contentType: pathname.endsWith('.css') ? 'text/css' : 'text/javascript', body: read(pathname.slice(1)) });
             }
             let data = [];
-            if (pathname.endsWith('Combo')) data = [{ v: '1', t: 'Opción de prueba' }];
+            if (pathname.endsWith('Combo')) data = [{ v: '1', t: 'OpciÃ³n de prueba' }];
             if (pathname.endsWith('/ObtenerCompra')) data = { iCodCompra: 1, iCodProveedor: 1, iCodUsuario: 1, cTipoComprobante: 'BOLETA', cNumeroComprobante: 'BO-2900000', nSubTotal: 10, nIgv: 1.8, nTotal: 11.8, cEstado: 'REGISTRADA', cObservacion: '' };
             if (pathname.endsWith('/ListarCompras')) data = [{ iCodCompra: 1, cNombreUsuario: 'José', cTipoComprobante: 'BOLETA', cNumeroComprobante: 'BO-2900000', cDocumentoCliente: '12345678', cNumeroCelular: '999999999', dFechaCompra: '/Date(1750000000000)/', nSubTotal: 10, nIgv: 1.8, nTotal: 11.8, cMetodoPago: 'EFECTIVO', cEstado: 'REGISTRADA' }];
             return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ d: data }) });
@@ -42,14 +42,14 @@ const assert = require('node:assert/strict');
         assert.equal(await page.evaluate(() => localStorage.getItem('keyoveMenuContraido')), 'true');
         await page.locator('#btnMenuToggle').click();
         assert.equal(await page.locator('#btnMenuToggle').getAttribute('aria-expanded'), 'true');
-        await page.locator('#txtObservacion').fill('87654321');
+        await page.evaluate(()=>$('#txtObservacion').val('87654321'));
         await page.locator('.ventas-vistas [data-vista-compras="registros"]').click();
         await page.locator('#bodyCompras tr').waitFor();
         await page.locator('#buscarCompras').fill('jose BO-2900000');
         assert.equal(await page.locator('#bodyCompras tr:visible').count(), 1);
         await page.locator('#buscarCompras').fill('inexistente');
         assert.equal(await page.locator('#bodyCompras tr:visible').count(), 0);
-        await page.locator('#menuCompras [data-vista-compras="registro"]').click();
+        await page.locator('#menuCompras').click();
         assert.equal(await page.locator('#txtObservacion').inputValue(), '87654321');
         await page.goBack();
         assert.equal(await page.locator('#panelComprasRegistradas').isVisible(), true);
@@ -67,11 +67,13 @@ const assert = require('node:assert/strict');
         await page.waitForLoadState("networkidle");
         await page.locator("#bodyCompras tr:first-child td:last-child").waitFor({state:"visible"});
         var accion = await page.locator('#bodyCompras tr:first-child td:last-child').boundingBox();
-        assert.ok(accion.x >= 0 && accion.x + accion.width <= 320, 'Acciones visibles en móvil');
+        assert.ok(accion.x >= 0 && accion.x + accion.width <= 320, 'Acciones visibles en mÃ³vil');
         await page.locator('#bodyCompras tr:first-child button').first().click();
-        assert.equal(await page.locator('#panelRegistroCompra').isVisible(), true, 'Editar abre el formulario sin navegación');
+        assert.equal(await page.locator('#panelRegistroCompra').isVisible(), true, 'Editar abre el formulario sin navegaciÃ³n');
         assert.equal(documents, 1);
+        await page.locator('.ventas-vistas [data-vista-compras="registros"]').click();
+        for (const width of [1366,390]) {await page.setViewportSize({width,height:900});await page.screenshot({path:path.join(root,'Tests/artifacts/compras-historial-'+width+'.png'),fullPage:true});}
         assert.deepEqual(errors, []);
-        console.log('OK: navegación AJAX, borrador conservado, búsqueda, historial y 5 anchos sin desbordamiento.');
+        console.log('OK: navegaciÃ³n AJAX, borrador conservado, bÃºsqueda, historial y 5 anchos sin desbordamiento.');
     } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

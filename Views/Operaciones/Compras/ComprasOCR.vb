@@ -149,6 +149,9 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
 
         <WebMethod(EnableSession:=True)>
         Public Shared Function GuardarCompra(compra As ModeloCompra, detalles As List(Of ModeloDetalleCompra), comprobante As ArchivoCompra, fechaCompra As String, preciosIncluyenIgv As Boolean) As ResultadoCompra
+            If detalles IsNot Nothing AndAlso detalles.Any(Function(d) d IsNot Nothing AndAlso d.precioVenta.HasValue) Then
+                Return GuardarCompraConAltas(compra, detalles, comprobante, fechaCompra, preciosIncluyenIgv, Nothing, Nothing)
+            End If
             Return GuardarCompraInterna(compra, detalles, comprobante, fechaCompra, preciosIncluyenIgv, Nothing)
         End Function
 
@@ -173,12 +176,15 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                 If Not DateTime.TryParseExact(fechaCompra, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, fecha) Then Throw New ArgumentException("Completa una fecha válida.")
                 compra.dFechaCompra = fecha
                 If compra.nSubTotal < 0 OrElse compra.nIgv < 0 OrElse compra.nTotal <= 0 OrElse compra.nTotal <> compra.nSubTotal + compra.nIgv Then Throw New ArgumentException("Subtotal más IGV debe ser igual al total.")
+                If Decimal.Round(compra.nSubTotal, 2) <> compra.nSubTotal OrElse Decimal.Round(compra.nIgv, 2) <> compra.nIgv OrElse Decimal.Round(compra.nTotal, 2) <> compra.nTotal Then Throw New ArgumentException("Los importes del comprobante deben tener hasta dos decimales.")
+                If If(compra.cObservacion, "").Length > 300 Then Throw New ArgumentException("La observación admite hasta 300 caracteres.")
                 Dim suma As Decimal = 0
                 Dim ids As New HashSet(Of Integer)
                 For Each detalle In detalles
                     If detalle Is Nothing OrElse detalle.iCodProducto <= 0 OrElse detalle.iCantidad <= 0 OrElse detalle.nPrecioCompra < 0 Then Throw New ArgumentException("Revisa los productos, cantidades y precios.")
                     If Not ids.Add(detalle.iCodProducto) Then Throw New ArgumentException("Un producto está repetido. Agrupa sus cantidades en una sola línea.")
                     If Decimal.Round(detalle.nPrecioCompra, 2) <> detalle.nPrecioCompra Then Throw New ArgumentException("Los precios deben tener hasta dos decimales.")
+                    If detalle.precioVenta.HasValue AndAlso (detalle.precioVenta.Value < 0 OrElse Decimal.Round(detalle.precioVenta.Value, 2) <> detalle.precioVenta.Value OrElse detalle.precioVenta.Value > 9999999999999999.99D) Then Throw New ArgumentException("El precio de venta debe ser no negativo y tener hasta dos decimales.")
                     suma += Decimal.Round(detalle.iCantidad * detalle.nPrecioCompra, 2, MidpointRounding.AwayFromZero)
                 Next
                 If Math.Abs(suma - If(preciosIncluyenIgv, compra.nTotal, compra.nSubTotal)) > 0.02D Then Throw New ArgumentException("La suma de los productos no coincide con el comprobante. Revisa las líneas y si los precios incluyen IGV.")

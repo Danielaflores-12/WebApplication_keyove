@@ -34,6 +34,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
             Public modelo As String
             Public descripcion As String
             Public categoria As Integer
+            Public precioVenta As Decimal
 
         End Class
 
@@ -120,6 +121,7 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                     opcion.modelo = Convert.ToString(fila("cModelo"))
                     opcion.descripcion = Convert.ToString(fila("cDescripcion"))
                     opcion.categoria = Convert.ToInt32(fila("iCodCategoria"))
+                    opcion.precioVenta = Convert.ToDecimal(fila("nPrecioVenta"))
 
                     lista.Add(opcion)
 

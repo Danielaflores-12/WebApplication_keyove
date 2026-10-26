@@ -9,3 +9,17 @@ p=context.separarProductoOCR('SWITCH TP-LINK LS1008G 8 PUERTOS');assert.equal(p.
 assert.equal(context.productoParaOCR('LS1008G'),0);
 p=context.separarProductoOCR('CABLE USB');assert.equal(p.marca,'');assert.equal(p.modelo,'');
 console.log('4 escenarios de separación/catálogo correctos');
+context.catalogoProductos.push({v:2,t:'Adaptador inalámbrico',marca:'TP-Link',modelo:'TL-WN725N'});
+assert.equal(context.productoParaOCR('Texto diferente del OCR',{marca:'TP-Link',modelo:'TL-WN725N'}),2);
+assert.equal(context.productoParaOCR('Adaptador inalámbrico',{marca:'Otra marca',modelo:'TL-WN725N'}),0);
+context.catalogoProductos.push({v:3,t:'Otro adaptador',marca:'TP-Link',modelo:'TL-WN725N'});
+assert.equal(context.productoParaOCR('Adaptador inalámbrico',{marca:'TP-Link',modelo:'TL-WN725N'}),0);
+context.catalogoProductos=[{v:10,t:'Mouse de catálogo',codigo:'MOU-001',marca:'Logitech',modelo:'G203',descripcion:'Negro'}];
+assert.equal(context.productoParaOCR('Texto OCR diferente',{codigo:'MOU-001',marca:'Logitech',modelo:'G203'}),10);
+assert.equal(context.productoParaOCR('Texto OCR diferente',{codigo:'MOU-001',marca:'Otra',modelo:'G203'}),0);
+assert.equal(context.sugerenciasProductoOCR({nombre:'Mouse',marca:'Logitech',modelo:'G203',descripcion:'Negro'})[0].producto.v,10);
+assert.equal(context.productoParaOCR('Mouse parecido',{marca:'',modelo:''}),0,'Las sugerencias aproximadas no se vinculan automáticamente');
+context.catalogoProductos=[{v:12,t:'Dispositivo Google',marca:'Google',modelo:''}];
+assert.equal(context.separarProductoOCR('STREAMING BOX ONN GOOGLE',{nombre:'Streaming box',marca:'ONN',descripcion_detallada:'WATCH GOOGLE AZUL'}).marca,'ONN','La plataforma Google no reemplaza la marca ONN reconocida');
+context.catalogoProductos=[{v:13,t:'4K Streaming box',marca:'ONN',categoria:7}];
+assert.equal(context.separarProductoOCR('STREAMING BOX ONN',{nombre:'Streaming box',marca:'ONN'}).categoria,7);

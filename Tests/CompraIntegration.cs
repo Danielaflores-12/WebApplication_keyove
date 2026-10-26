@@ -20,7 +20,7 @@ class CompraIntegration {
     static void Main(string[] args) {
         var root = args[0];
         var name = "KEYOVE_OCR_TEST_" + Guid.NewGuid().ToString("N");
-        var master = "Data Source=localhost\\SQLEXPRESS;Initial Catalog=master;Integrated Security=True;TrustServerCertificate=True;";
+        var master = new SqlConnectionStringBuilder { DataSource=args.Length>1 ? args[1] : "localhost", InitialCatalog="master", IntegratedSecurity=true, TrustServerCertificate=true }.ConnectionString;
         bool created = false;
         try {
             connection = master;
@@ -32,6 +32,7 @@ class CompraIntegration {
             config.Save(ConfigurationSaveMode.Modified);
             ConfigurationManager.RefreshSection("connectionStrings");
             var schema = File.ReadAllText(Path.Combine(root,"Data/use DB_keyove_Inventario.txt"));
+            schema = Regex.Replace(schema,@"(?m)^\s*//[^\r\n]*", "");
             schema = Regex.Replace(schema,@"(?im)^\s*(CREATE DATABASE|USE)\s+DB_keyove_inventario;?\s*$","");
             foreach(var batch in Regex.Split(schema,@"(?im)^\s*GO\s*$")) if(!String.IsNullOrWhiteSpace(batch)) Sql(batch);
             var ocr = File.ReadAllText(Path.Combine(root,"Scripts/01_crear_comprobantes_ocr.sql"));
@@ -105,7 +106,7 @@ class CompraIntegration {
             Func<string, Page.ResultadoCompra> saveNew = number => {
                 var purchase=Purchase(number); purchase.iCodProveedor=-1;
                 return Page.GuardarCompraConAltas(purchase,Lines(-1),file,"2026-10-18",false,newSupplier,
-                    new List<Page.ProductoNuevoCompra> {new Page.ProductoNuevoCompra {temporal=-1,nombre="CARGADOR NUEVO",categoria=1,precioVenta=15m}});
+                    new List<Page.ProductoNuevoCompra> {new Page.ProductoNuevoCompra {temporal=-1,nombre="CARGADOR NUEVO",marca="MARCA PRUEBA",marcaNueva=true,categoria=1,precioVenta=15m}});
             };
             Sql("CREATE TRIGGER FalloAlta ON Comprobantes_OCR AFTER INSERT AS BEGIN THROW 51001, 'Archivo rechazado', 1; END");
             Assert(!saveNew("ALTA-FALLO").ok && Value("SELECT COUNT(*) FROM Proveedores WHERE cRuc='20600855604'")==0 && Value("SELECT COUNT(*) FROM Productos WHERE cNombre='CARGADOR NUEVO'")==0,"Fallo de archivo revierte proveedor, producto y compra nuevos");
@@ -115,6 +116,27 @@ class CompraIntegration {
             Assert(Value("SELECT iStockActual FROM Productos WHERE cNombre='CARGADOR NUEVO'")==2,"Producto nuevo recibe stock una sola vez");
             Assert(saveNew("ALTA-OTRA").ok && Value("SELECT COUNT(*) FROM Proveedores WHERE cRuc='20600855604'")==1 && Value("SELECT COUNT(*) FROM Productos WHERE cNombre='CARGADOR NUEVO'")==1,"Reutiliza proveedor por RUC y producto por nombre sin duplicarlos");
             Assert(!saveNew("ALTA-OTRA").ok && Value("SELECT iStockActual FROM Productos WHERE cNombre='CARGADOR NUEVO'")==4,"Comprobante duplicado no duplica altas ni stock");
+            Func<string,string,string,Page.ResultadoCompra> saveIdentity = (number,productName,brand) => {
+                return Page.GuardarCompraConAltas(Purchase(number),Lines(-1),null,"2026-10-18",false,null,
+                    new List<Page.ProductoNuevoCompra> {new Page.ProductoNuevoCompra {temporal=-1,nombre=productName,marca=brand,marcaNueva=true,modelo="MOD-123",categoria=1,precioVenta=15m}});
+            };
+            Assert(saveIdentity("IDENTIDAD-1","ADAPTADOR","MARCA A").ok,"Crea ficha con marca y modelo");
+            Assert(saveIdentity("IDENTIDAD-2","ADAPTADOR OTRO TEXTO","MARCA A").ok && Value("SELECT COUNT(*) FROM Productos WHERE cMarca='MARCA A' AND cModelo='MOD-123'")==1 && Value("SELECT iStockActual FROM Productos WHERE cMarca='MARCA A' AND cModelo='MOD-123'")==4,"Reutiliza marca y modelo aunque el OCR cambie el nombre y suma stock");
+            Assert(saveIdentity("IDENTIDAD-3","ADAPTADOR","MARCA B").ok && Value("SELECT COUNT(*) FROM Productos WHERE cNombre='ADAPTADOR'")==2,"Mismo nombre con otra marca crea una ficha distinta");
+            Assert(Page.MarcasParaCompra().Exists(m=>m.t=="MARCA A"),"Catálogo de marcas consulta los valores reales de Productos");
+            Assert(Page.ComprobanteYaRegistrado(1,"","FACTURA","IDENTIDAD-1"),"Vista previa detecta el comprobante ya registrado");
+            var normalized = new Page.ProductoNuevoCompra {temporal=-1,nombre="ADAPTADOR NORMALIZADO",marca=" márca   a ",modelo=" mod-123 ",categoria=1,precioVenta=15m};
+            var normalizedResult=Page.GuardarCompraConAltas(Purchase("IDENTIDAD-4"),Lines(-1),null,"2026-10-18",false,null,new List<Page.ProductoNuevoCompra>{normalized});
+            Assert(normalizedResult.ok && Value("SELECT COUNT(*) FROM Productos WHERE cMarca='MARCA A' AND cModelo='MOD-123'")==1 && Value("SELECT iStockActual FROM Productos WHERE cMarca='MARCA A' AND cModelo='MOD-123'")==6,"Normaliza espacios, acentos y mayúsculas sin duplicar marca ni producto");
+            var unapproved = new Page.ProductoNuevoCompra {temporal=-1,nombre="MARCA SIN APROBAR",marca="NO AUTORIZADA",categoria=1,precioVenta=15m};
+            Assert(!Page.GuardarCompraConAltas(Purchase("MARCA-ERROR"),Lines(-1),null,"2026-10-18",false,null,new List<Page.ProductoNuevoCompra>{unapproved}).ok && Value("SELECT COUNT(*) FROM Productos WHERE cMarca='NO AUTORIZADA'")==0,"Una marca nueva requiere confirmación explícita y no deja cambios parciales");
+            var saleLines=Lines();saleLines[0].precioVenta=19.90m;
+            Assert(Page.GuardarCompra(Purchase("PRECIO-VENTA"),saleLines,null,"2026-10-18",false).ok && Value("SELECT nPrecioVenta*100 FROM Productos WHERE iCodProducto=1")==1990,"Compra actualiza el precio de venta del producto existente");
+            int beforeSaleStock=Value("SELECT iStockActual FROM Productos WHERE iCodProducto=1");
+            Sql("CREATE TRIGGER FalloPrecioVenta ON Productos AFTER UPDATE AS BEGIN IF UPDATE(nPrecioVenta) THROW 51001, 'Precio rechazado', 1; END");
+            var failedPrice=Lines();failedPrice[0].precioVenta=25m;
+            Assert(!Page.GuardarCompra(Purchase("PRECIO-FALLO"),failedPrice,null,"2026-10-18",false).ok && Value("SELECT iStockActual FROM Productos WHERE iCodProducto=1")==beforeSaleStock && Value("SELECT nPrecioVenta*100 FROM Productos WHERE iCodProducto=1")==1990 && Value("SELECT COUNT(*) FROM Compras WHERE cNumeroComprobante='PRECIO-FALLO'")==0,"Error al actualizar precio revierte compra, entrada y precio");
+            Sql("DROP TRIGGER FalloPrecioVenta");
             context.Session["Rol"] = "Vendedor";
             bool denied=false;
             try { Page.GuardarCompra(Purchase("F001-000127"),Lines(),null,"2026-10-13",false); } catch(HttpException ex) { denied=ex.GetHttpCode()==403; }

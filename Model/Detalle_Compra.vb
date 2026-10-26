@@ -13,6 +13,7 @@ Namespace WebApplication_Keyove.Model
         Public cNombreProducto As String
         Public iCantidad As Integer
         Public nPrecioCompra As Decimal
+        Public precioVenta As Decimal?
         Public nSubTotal As Decimal
 
         Public qSelect As String

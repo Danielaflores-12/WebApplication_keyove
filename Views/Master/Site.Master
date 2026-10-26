@@ -274,41 +274,11 @@
                     ID="menuComprasAdmin"
                     runat="server">
 
-                    <details
-                        class="menu-grupo"
-                        id="menuCompras">
-
-                        <summary class="menu-link">
-                            Compras
-                        </summary>
-
-
-                        <div class="submenu">
-
-
-                            <a class="menu-link"
-                               data-vista-compras="registro"
-                               data-ruta="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx") %>"
-                               href="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx") %>">
-
-                                Nueva compra
-
-                            </a>
-
-
-                            <a class="menu-link"
-                               data-vista-compras="registros"
-                               data-ruta="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx?vista=registros") %>"
-                               href="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx?vista=registros") %>">
-
-                                Compras realizadas
-
-                            </a>
-
-
-                        </div>
-
-                    </details>
+                    <a class="menu-link"
+                       id="menuCompras"
+                       data-vista-compras="registro"
+                       data-ruta="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx") %>"
+                       href="<%= ResolveUrl("~/Views/Operaciones/Compras/Compras.aspx") %>">Compras</a>
 
                 </asp:PlaceHolder>
 

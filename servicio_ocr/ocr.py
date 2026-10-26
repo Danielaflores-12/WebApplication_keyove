@@ -145,6 +145,12 @@ class OCRService:
             background = cv2.GaussianBlur(original, (0, 0), 25)
             normalized = cv2.divide(original, background, scale=255)
             read(normalized)
+            # La luz desigual de los tickets puede ocultar la mitad inferior.
+            # Se conserva cada lectura para contrastar campos y aritmética.
+            adaptive = cv2.adaptiveThreshold(original, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                             cv2.THRESH_BINARY, 41, 12)
+            read(adaptive)
+            read(adaptive, psm=11)
             # Recorte conservador: sólo si una región clara ocupa gran parte de la foto.
             mask = cv2.threshold(cv2.GaussianBlur(original, (31, 31), 0), 170, 255, cv2.THRESH_BINARY)[1]
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)

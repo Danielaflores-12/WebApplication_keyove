@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 import unittest
 import tempfile
 import base64
@@ -12,6 +12,63 @@ from fastapi.testclient import TestClient
 from PIL import Image, ImageDraw, ImageFont
 
 class ExtractorTests(unittest.TestCase):
+    def test_pedido_sombreado_con_ruc_y_total_contrastados(self):
+        text=('PEDIDO PE02-00017675\nRUC:20600895604\nFECHA:21-05-2026\n'
+              '10 AKSTREAMING BOX 139.00 1,390.00\nUND WATCH ONN GOOGLE\nAZUL (UND X 1)\n'
+              '[LECTURA_ALTERNATIVA]\nE & V IMPORTADORA\nEXPORTADORA E.T.R.L.\n'
+              'RUC:20600855604\nPEDIDO PE02-00017875\nTOTAL S/ 4,390.00\n'
+              '[LECTURA_ALTERNATIVA]\nRUC:20600855604\nPEDIDO PE02-00017875\nTOTAL S/\n\n1,390.00')
+        r=ComprobanteExtractor().extract(text)
+        self.assertEqual((r['ruc_emisor'],r['fecha_emision'],r['total']),('20600855604','2026-05-21',1390))
+        self.assertEqual(r['razon_social'],'E & V IMPORTADORA EXPORTADORA E.I.R.L.')
+        self.assertEqual((r['detalles'][0]['nombre'],r['detalles'][0]['marca']),('Streaming box','ONN'))
+        self.assertEqual((r['detalles'][0]['cantidad'],r['detalles'][0]['precio_unitario']),(10,139))
+        self.assertEqual(r['detalles'][0]['modelo'],'')
+        self.assertEqual(r['numero_comprobante'],'PE02-00017875')
+        self.assertIn('numero_comprobante',r['campos_por_confirmar'])
+        self.assertIsNone(r['igv'])
+        self.assertIsNone(r['subtotal'])
+
+    def test_ticket_con_ruido_y_fecha_legal(self):
+        text = ('TICKET TKO2 - 00025290\nTOTAL PEN 99.00.\n'
+                'Resolucion 367-2025 de fecha 01/02/2026\n'
+                '[LECTURA_ALTERNATIVA]\nTICKET TK02 - 00025290\n'
+                'FECHA 04-09-2026 / 08:19 pm\n'
+                '18 CARGADOR GAUCHO 5.50 99.00 z\nUND 5V-2A (UNDX1)\n')
+        r=ComprobanteExtractor().extract(text)
+        self.assertEqual(r['numero_comprobante'],'TK02-00025290')
+        self.assertEqual(r['fecha_emision'],'2026-09-04')
+        self.assertEqual(r['total'],99)
+        self.assertEqual(len(r['detalles']),1)
+        self.assertEqual((r['detalles'][0]['cantidad'],r['detalles'][0]['precio_unitario'],r['detalles'][0]['importe']),(18,5.5,99))
+        self.assertIsNone(r['subtotal'])
+        self.assertIsNone(r['igv'])
+        self.assertFalse(any('Las lecturas difieren' in a for a in r['advertencias']))
+
+    def test_sello_anulado_no_se_pierde_entre_lecturas(self):
+        r=ComprobanteExtractor().extract('TICKET TK02-1\nANULADO\n[LECTURA_ALTERNATIVA]\n18 CARGADOR 5.50 99.00\nTOTAL 99.00')
+        self.assertTrue(r['posible_anulado'])
+        self.assertTrue(any('ANULADO' in a for a in r['advertencias']))
+
+    def test_factura_tres_decimales_y_lecturas_alternativas(self):
+        header = 'FACTURA F001-00002510\nRUC 20603890214\n13-10-2026\n'
+        rows = ('6 UNIDAD FZ-FPS-001B REGLETA FORZA 11.864 14.000 84.00\n'
+                '3 UNIDAD TL-WN725N ADAPTADOR TP-LINK 19.492 23,000 69.00\n'
+                '10 UNIDAD FZ-FVR902 ESTABILIZADOR FORZA 30.085 35.500 355.00\n')
+        totals = '\nGRAVADA S/. 430.51\nI.G.V. 18.00 % S/. {}\nTOTAL S/. 508.00'
+        result = ComprobanteExtractor().extract(
+            header + rows + totals.format('77.49') + '\n[LECTURA_ALTERNATIVA]\n'
+            + header + rows + totals.format('71.43'))
+        self.assertEqual([d['cantidad'] for d in result['detalles']], [6, 3, 10])
+        self.assertEqual([d['precio_unitario'] for d in result['detalles']], [14, 23, 35.5])
+        self.assertEqual((result['subtotal'], result['igv'], result['total']), (430.51, 77.49, 508))
+        self.assertFalse(any(d['requiere_revision'] for d in result['detalles']))
+        self.assertFalse(any('no reconocido: igv' in a for a in result['advertencias']))
+
+    def test_precio_con_miles_se_conserva_si_cuadra(self):
+        result = ComprobanteExtractor().extract('2 UNIDAD LAPTOP 1,250 2500.00')
+        self.assertEqual(result['detalles'][0]['precio_unitario'], 1250)
+
     def test_ticket_sin_inventar_igv_ni_fecha_autorizacion(self):
         text = ('TICKET TK02 - 00025290\nRUC 20600855604\nFECHA: ilegible\n'
                 '18 CARGADOR GAUCHO 5.50 99.00\nUND 5V-2A (UNDX1)\n'
