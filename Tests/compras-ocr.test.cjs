@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+﻿const { chromium } = require('playwright');
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 (async () => {
     const root = path.resolve(__dirname, '..');
@@ -93,6 +93,21 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
         assert.match(await page.locator('#productosSegundaRevision').textContent(),/Crear producto.*Stock inicial: 4/);
         await page.locator('#confirmarSegundaRevision').check();await register();await wait();assert.equal(saved.length,3);
         assert.equal(saved[2].proveedorNuevo.ruc,'20600855604');assert.equal(saved[2].productosNuevos[0].marca,'Forza');assert.equal(saved[2].productosNuevos[0].precioVenta,20);
+        await page.locator('#btnCompraManual').click();
+        assert.equal(await page.locator('#cargaOCRCompra').isVisible(),false);
+        await page.locator('#cboProveedor').selectOption('3');
+        await page.locator('#txtNumeroComprobante').fill('F001-MANUAL');
+        await page.locator('#cboProducto').selectOption('1');
+        await page.locator('#txtCantidadCompra').fill('2');
+        await page.locator('#txtPrecioCompra').fill('10');
+        await page.getByRole('button',{name:'Agregar producto',exact:true}).click();
+        await page.locator('#btnGuardarCompra').click();
+        await page.waitForFunction(()=>!guardandoCompra);
+        assert.equal(saved.length,4,'Guarda compra manual sin extraer OCR');
+        assert.equal(saved[3].comprobante,null);
+        assert.equal(saved[3].detalles[0].iCantidad,2);
+        await page.locator('#btnCompraOCR').click();
+        assert.equal(await page.locator('#cargaOCRCompra').isVisible(),true);
         assert.deepEqual(errors,[]);
         console.log('OK: segunda revisión, edición, cancelación, duplicados, doble clic, recuperación de errores, precios y altas.');
     } finally {await browser.close();}

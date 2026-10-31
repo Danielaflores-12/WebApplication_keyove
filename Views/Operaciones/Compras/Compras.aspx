@@ -200,7 +200,7 @@
         #btnGuardarCompra { flex-basis:100%; }
       }
 
-      #formularioCompletoCompra:not(.compra-registrada) > .compras-bloque:not(#segundaRevisionCompra) { display:none; }
+      #formularioCompletoCompra:not(.compra-registrada):not(.compra-manual) > .compras-bloque:not(#segundaRevisionCompra) { display:none; }
       #segundaRevisionCompra { scroll-margin-top:100px; }
       #segundaRevisionCompra .compras-seccion-titulo { flex-wrap:wrap; }
       #segundaRevisionCompra .ocr-etiqueta { white-space:nowrap; flex-shrink:0; }
@@ -262,6 +262,7 @@
         #tablaCompras .table-actions { flex-direction:row; flex-wrap:wrap; }
         #tablaCompras .table-actions .btn { flex:1; text-align:center; }
       }
+      #productosManualesCompra[hidden], #cargaOCRCompra[hidden], #ayudaCargaOCRCompra[hidden], #indicacionCompraManual[hidden] { display:none; }
     </style>
 
 </asp:Content>
@@ -290,7 +291,12 @@
         <section class="compras-carga">
 <div class="compras-seccion-titulo"><span class="compras-paso">01</span><div><h2>Importar comprobante</h2><p>Carga una imagen o PDF para preparar la compra con OCR.</p></div><span class="compras-insignia">OCR</span></div>
 
-        <div class="form-group">
+        <div class="form-actions" role="group" aria-label="Forma de registrar la compra">
+            <button type="button" id="btnCompraManual" class="btn btn-secondary" aria-pressed="false" onclick="iniciarCompraManual()">Ingresar compra manualmente</button>
+            <button type="button" id="btnCompraOCR" class="btn btn-primary" aria-pressed="true" onclick="mostrarCargaOCRCompra()">Cargar compra con OCR</button>
+        </div>
+        <p id="indicacionCompraManual" hidden>Completa el proveedor, comprobante y fecha. Agrega los productos con sus cantidades y precios, revisa los importes y pulsa Guardar. No necesitas adjuntar un archivo.</p>
+        <div id="cargaOCRCompra" class="form-group">
             <label for="txtArchivoComprobante">Cargar comprobante (imagen/PDF) para OCR</label>
             <div class="compras-archivo-fila">
                 <input type="file" id="txtArchivoComprobante" class="input-control" accept=".jpg,.jpeg,.png,.bmp,.tif,.tiff,.pdf" />
@@ -299,7 +305,7 @@
             <span id="ocrEstado" role="status" aria-live="polite"></span>
         </div>
 
-        <p class="compras-ayuda">JPG, PNG, BMP, TIFF o PDF · Máximo 10 MB y 5 páginas. Los productos se cargarán desde el OCR.</p>
+        <p id="ayudaCargaOCRCompra" class="compras-ayuda">JPG, PNG, BMP, TIFF o PDF · Máximo 10 MB y 5 páginas. Los productos se cargarán desde el OCR.</p>
         <div id="revisionOCR" hidden>
             <p id="advertenciasOCR" role="status"></p>
             <button type="button" class="btn btn-secondary" onclick="prepararAltasCompra()">Revisar vista previa OCR</button>
@@ -441,6 +447,16 @@
             <div class="form-group"><label for="txtFechaCompra">Fecha del comprobante</label><input type="date" id="txtFechaCompra" class="input-control" /></div>
             <div class="form-group"><label for="preciosIncluyenIgv">Precios de los productos</label><select id="preciosIncluyenIgv" class="input-control" onchange="recalcTotalesCompra()"><option value="no">Sin IGV</option><option value="si">Incluyen IGV</option></select></div>
         </div>
+        </section>
+        <section id="productosManualesCompra" class="compras-bloque" hidden>
+          <h2>Agregar productos manualmente</h2>
+          <div class="form-grid">
+            <label>Producto<select id="cboProducto" class="input-control"></select></label>
+            <label>Cantidad<input id="txtCantidadCompra" class="input-control" type="number" min="1" step="1" /></label>
+            <label>Precio de compra<input id="txtPrecioCompra" class="input-control" type="number" min="0" step="0.01" /></label>
+            <label>Subtotal de línea<input id="txtSubtotalLinea" class="input-control" readonly /></label>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="agregarProductoCompra()">Agregar producto</button>
         </section>
         <section id="resumenProductosOCR" class="compras-bloque compras-productos" hidden><div class="compras-seccion-titulo"><span class="compras-paso">OCR</span><div><h2>Productos del comprobante</h2><p>Productos cargados desde el OCR. Puedes revisarlos en la vista previa.</p></div></div>
         <div class="table-container">
