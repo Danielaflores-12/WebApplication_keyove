@@ -85,5 +85,50 @@ Namespace Views.Dashboard
         '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         '''</remarks>
         Protected WithEvents gvMasVendidos As Global.System.Web.UI.WebControls.GridView
+
+        '''<summary>
+        '''Control lblAgotados.
+        '''</summary>
+        '''<remarks>
+        '''Campo generado automáticamente.
+        '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        '''</remarks>
+        Protected WithEvents lblAgotados As Global.System.Web.UI.WebControls.Label
+
+        '''<summary>
+        '''Control lblCriticos.
+        '''</summary>
+        '''<remarks>
+        '''Campo generado automáticamente.
+        '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        '''</remarks>
+        Protected WithEvents lblCriticos As Global.System.Web.UI.WebControls.Label
+
+        '''<summary>
+        '''Control lblBajos.
+        '''</summary>
+        '''<remarks>
+        '''Campo generado automáticamente.
+        '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        '''</remarks>
+        Protected WithEvents lblBajos As Global.System.Web.UI.WebControls.Label
+
+        '''<summary>
+        '''Control gvAlertasStock.
+        '''</summary>
+        '''<remarks>
+        '''Campo generado automáticamente.
+        '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        '''</remarks>
+        Protected WithEvents gvAlertasStock As Global.System.Web.UI.WebControls.GridView
+
+        '''<summary>
+        '''Control gvMovimientos.
+        '''</summary>
+        '''<remarks>
+        '''Campo generado automáticamente.
+        '''Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        '''</remarks>
+        Protected WithEvents gvMovimientos As Global.System.Web.UI.WebControls.GridView
     End Class
 End Namespace

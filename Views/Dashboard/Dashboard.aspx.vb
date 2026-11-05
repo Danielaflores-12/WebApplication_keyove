@@ -1,14 +1,12 @@
-﻿Imports System.Data
+﻿
+Imports System
+Imports System.Data
+Imports System.Globalization
 
 Namespace Views.Dashboard
 
     Public Class Dashboard
         Inherits System.Web.UI.Page
-
-
-        '==========================================================
-        ' CARGA DE LA PAGINA
-        '==========================================================
 
         Protected Sub Page_Load(
             ByVal sender As Object,
@@ -16,166 +14,95 @@ Namespace Views.Dashboard
         ) Handles Me.Load
 
             If Not IsPostBack Then
-
                 CargarDashboard()
-
             End If
 
         End Sub
-
-
-        '==========================================================
-        ' CARGAR TODO EL DASHBOARD
-        '==========================================================
 
         Private Sub CargarDashboard()
 
             Using conexion As New WebApplication_Keyove.Data.ConexionBD()
 
-
-                '==================================================
-                ' VENTAS DE HOY
-                '==================================================
-
-                Dim consultaVentasHoy As String =
-                    "SELECT COUNT(*) " &
-                    "FROM dbo.Ventas " &
-                    "WHERE dFechaVenta >= CONVERT(date, GETDATE()) " &
-                    "AND dFechaVenta < DATEADD(day, 1, CONVERT(date, GETDATE())) " &
-                    "AND cEstado <> 'ANULADA'"
-
-                Dim resultadoVentasHoy As Object =
-                    conexion.ExecuteScalar(consultaVentasHoy)
-
-                If resultadoVentasHoy Is Nothing OrElse
-                   resultadoVentasHoy Is DBNull.Value Then
-
-                    lblVentasHoy.Text = "0"
-
-                Else
-
-                    lblVentasHoy.Text =
-                        Convert.ToString(resultadoVentasHoy)
-
-                End If
-
-
-                '==================================================
-                ' PRODUCTOS REGISTRADOS
-                '==================================================
-
-                Dim consultaProductos As String =
-                    "SELECT COUNT(*) " &
-                    "FROM dbo.Productos"
-
-                Dim resultadoProductos As Object =
-                    conexion.ExecuteScalar(consultaProductos)
-
-                If resultadoProductos Is Nothing OrElse
-                   resultadoProductos Is DBNull.Value Then
-
-                    lblProductosRegistrados.Text = "0"
-
-                Else
-
-                    lblProductosRegistrados.Text =
-                        Convert.ToString(resultadoProductos)
-
-                End If
-
-
-                '==================================================
-                ' PRODUCTOS CON STOCK BAJO
-                '==================================================
-
-                Dim consultaStockBajo As String =
-                    "SELECT COUNT(*) " &
-                    "FROM dbo.Productos " &
-                    "WHERE iStockActual <= iStockMinimo " &
-                    "AND bEstado = 1"
-
-                Dim resultadoStockBajo As Object =
-                    conexion.ExecuteScalar(consultaStockBajo)
-
-                If resultadoStockBajo Is Nothing OrElse
-                   resultadoStockBajo Is DBNull.Value Then
-
-                    lblStockBajo.Text = "0"
-
-                Else
-
-                    lblStockBajo.Text =
-                        Convert.ToString(resultadoStockBajo)
-
-                End If
-
-
-                '==================================================
-                ' COMPRAS REALIZADAS
-                '==================================================
-
-                Dim consultaCompras As String =
-                    "SELECT COUNT(*) " &
-                    "FROM dbo.Compras " &
-                    "WHERE cEstado <> 'ANULADA'"
-
-                Dim resultadoCompras As Object =
-                    conexion.ExecuteScalar(consultaCompras)
-
-                If resultadoCompras Is Nothing OrElse
-                   resultadoCompras Is DBNull.Value Then
-
-                    lblComprasRealizadas.Text = "0"
-
-                Else
-
-                    lblComprasRealizadas.Text =
-                        Convert.ToString(resultadoCompras)
-
-                End If
-
-
-                '==================================================
-                ' PRODUCTOS MAS VENDIDOS
-                '==================================================
-
-                Dim consultaMasVendidos As String =
-                    "SELECT TOP (5) " &
-                    "p.cNombre AS Producto, " &
-                    "SUM(d.iCantidad) AS CantidadVendida, " &
-                    "SUM(d.nSubTotal) AS TotalVendido " &
-                    "FROM dbo.Detalle_Venta AS d " &
-                    "INNER JOIN dbo.Productos AS p " &
-                    "ON p.iCodProducto = d.iCodProducto " &
-                    "INNER JOIN dbo.Ventas AS v " &
-                    "ON v.iCodVenta = d.iCodVenta " &
-                    "WHERE v.cEstado <> 'ANULADA' " &
-                    "GROUP BY p.iCodProducto, p.cNombre " &
-                    "ORDER BY CantidadVendida DESC, TotalVendido DESC"
-
-
-                gvMasVendidos.DataSource =
+                ' Consultar una sola vez el algoritmo ROP.
+                Dim datosReposicion As DataTable =
                     conexion.ExecuteDataTable(
-                        consultaMasVendidos
+                        "EXEC dbo.sp_AnalizarReposicionStock"
                     )
 
-                gvMasVendidos.DataBind()
-
-
-                '==================================================
-                ' GRAFICO DE VENTAS
-                '==================================================
-
+                CargarIndicadores(conexion, datosReposicion)
                 CargarVentasMensuales(conexion)
+                CargarProductosMasVendidos(conexion)
+                CargarAlertasStock(datosReposicion)
+                CargarMovimientosRecientes(conexion)
 
             End Using
 
         End Sub
 
+        ' ==========================================
+        ' INDICADORES PRINCIPALES
+        ' ==========================================
 
-        '==========================================================
-        ' CARGAR VENTAS DE LOS ULTIMOS 12 MESES
-        '==========================================================
+        Private Sub CargarIndicadores(
+            ByVal conexion As WebApplication_Keyove.Data.ConexionBD,
+            ByVal datosReposicion As DataTable
+        )
+
+            Dim ventasHoy As Decimal = Convert.ToDecimal(
+                conexion.ExecuteScalar(
+                    "SELECT ISNULL(SUM(nTotal), 0) " &
+                    "FROM dbo.Ventas " &
+                    "WHERE dFechaVenta >= CONVERT(date, GETDATE()) " &
+                    "AND dFechaVenta < DATEADD(day, 1, CONVERT(date, GETDATE())) " &
+                    "AND cEstado <> 'ANULADA'"
+                )
+            )
+
+            lblVentasHoy.Text =
+                "S/ " & ventasHoy.ToString("N2")
+
+            lblProductosRegistrados.Text =
+                Convert.ToString(
+                    conexion.ExecuteScalar(
+                        "SELECT COUNT(*) " &
+                        "FROM dbo.Productos " &
+                        "WHERE bEstado = 1"
+                    )
+                )
+
+            ' Productos con recomendación de reposición.
+            Dim productosReponer As Integer = 0
+
+            For Each fila As DataRow In datosReposicion.Rows
+
+                Dim cantidad As Integer =
+                    Convert.ToInt32(
+                        fila("CantidadReponer")
+                    )
+
+                If cantidad > 0 Then
+                    productosReponer += 1
+                End If
+
+            Next
+
+            lblStockBajo.Text =
+                productosReponer.ToString()
+
+            lblComprasRealizadas.Text =
+                Convert.ToString(
+                    conexion.ExecuteScalar(
+                        "SELECT COUNT(*) " &
+                        "FROM dbo.Compras " &
+                        "WHERE cEstado <> 'ANULADA'"
+                    )
+                )
+
+        End Sub
+
+        ' ==========================================
+        ' VENTAS DE LOS ÚLTIMOS 12 MESES
+        ' ==========================================
 
         Private Sub CargarVentasMensuales(
             ByVal conexion As WebApplication_Keyove.Data.ConexionBD
@@ -183,98 +110,36 @@ Namespace Views.Dashboard
 
             Dim consulta As String =
                 "WITH Meses AS (" &
-                "    SELECT DATEFROMPARTS(" &
-                "        YEAR(DATEADD(month, -11, GETDATE()))," &
-                "        MONTH(DATEADD(month, -11, GETDATE()))," &
-                "        1" &
-                "    ) AS FechaMes " &
-                "    UNION ALL " &
-                "    SELECT DATEADD(month, 1, FechaMes) " &
-                "    FROM Meses " &
-                "    WHERE FechaMes < DATEFROMPARTS(" &
-                "        YEAR(GETDATE())," &
-                "        MONTH(GETDATE())," &
-                "        1" &
-                "    )" &
-                "), VentasMensuales AS (" &
-                "    SELECT " &
-                "        DATEFROMPARTS(" &
-                "            YEAR(v.dFechaVenta)," &
-                "            MONTH(v.dFechaVenta)," &
-                "            1" &
-                "        ) AS FechaMes, " &
-                "        SUM(d.nSubTotal) AS TotalVentas " &
-                "    FROM dbo.Ventas AS v " &
-                "    INNER JOIN dbo.Detalle_Venta AS d " &
-                "        ON d.iCodVenta = v.iCodVenta " &
-                "    WHERE v.cEstado <> 'ANULADA' " &
-                "    AND v.dFechaVenta >= DATEADD(" &
-                "        month, -11, " &
-                "        DATEFROMPARTS(" &
-                "            YEAR(GETDATE())," &
-                "            MONTH(GETDATE())," &
-                "            1" &
-                "        )" &
-                "    ) " &
-                "    GROUP BY " &
-                "        YEAR(v.dFechaVenta), " &
-                "        MONTH(v.dFechaVenta) " &
+                " SELECT DATEADD(month, -11, " &
+                " DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) AS FechaMes " &
+                " UNION ALL " &
+                " SELECT DATEADD(month, 1, FechaMes) " &
+                " FROM Meses " &
+                " WHERE FechaMes < DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1) " &
+                "), Totales AS (" &
+                " SELECT DATEFROMPARTS(YEAR(dFechaVenta), MONTH(dFechaVenta), 1) AS FechaMes, " &
+                " SUM(nTotal) AS TotalVentas " &
+                " FROM dbo.Ventas " &
+                " WHERE cEstado <> 'ANULADA' " &
+                " AND dFechaVenta >= DATEADD(month, -11, " &
+                " DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)) " &
+                " GROUP BY YEAR(dFechaVenta), MONTH(dFechaVenta) " &
                 ") " &
-                "SELECT " &
-                "    m.FechaMes, " &
-                "    ISNULL(v.TotalVentas, 0) AS TotalVentas " &
-                "FROM Meses AS m " &
-                "LEFT JOIN VentasMensuales AS v " &
-                "    ON v.FechaMes = m.FechaMes " &
+                "SELECT m.FechaMes, " &
+                "ISNULL(t.TotalVentas, 0) AS TotalVentas " &
+                "FROM Meses m " &
+                "LEFT JOIN Totales t " &
+                "ON m.FechaMes = t.FechaMes " &
                 "ORDER BY m.FechaMes " &
                 "OPTION (MAXRECURSION 12)"
 
-
             Dim tabla As DataTable =
                 conexion.ExecuteDataTable(consulta)
-
-
-            '======================================================
-            ' AGREGAR COLUMNAS PARA EL GRAFICO
-            '======================================================
 
             tabla.Columns.Add(
                 "MesNombre",
                 GetType(String)
             )
-
-            tabla.Columns.Add(
-                "AlturaBarra",
-                GetType(Integer)
-            )
-
-
-            '======================================================
-            ' BUSCAR EL VALOR MAXIMO
-            '======================================================
-
-            Dim maximo As Decimal = 0D
-
-
-            For Each fila As DataRow In tabla.Rows
-
-                Dim total As Decimal =
-                    Convert.ToDecimal(
-                        fila("TotalVentas")
-                    )
-
-                If total > maximo Then
-
-                    maximo = total
-
-                End If
-
-            Next
-
-
-            '======================================================
-            ' PREPARAR DATOS DEL GRAFICO
-            '======================================================
 
             For Each fila As DataRow In tabla.Rows
 
@@ -283,54 +148,13 @@ Namespace Views.Dashboard
                         fila("FechaMes")
                     )
 
-
-                Dim total As Decimal =
-                    Convert.ToDecimal(
-                        fila("TotalVentas")
-                    )
-
-
                 fila("MesNombre") =
-                    ObtenerNombreMes(
-                        fecha.Month
+                    fecha.ToString(
+                        "MMM",
+                        New CultureInfo("es-PE")
                     )
-
-
-                Dim altura As Integer = 4
-
-
-                If maximo > 0D AndAlso total > 0D Then
-
-                    altura =
-                        CInt(
-                            (total / maximo) * 220D
-                        )
-
-
-                    If altura < 4 Then
-
-                        altura = 4
-
-                    End If
-
-
-                    If altura > 220 Then
-
-                        altura = 220
-
-                    End If
-
-                End If
-
-
-                fila("AlturaBarra") = altura
 
             Next
-
-
-            '======================================================
-            ' COMPROBAR SI HAY VENTAS
-            '======================================================
 
             rptGraficoVentas.DataSource = tabla
             rptGraficoVentas.DataBind()
@@ -340,59 +164,207 @@ Namespace Views.Dashboard
 
         End Sub
 
+        ' ==========================================
+        ' PRODUCTOS MÁS VENDIDOS
+        ' ==========================================
 
-        '==========================================================
-        ' OBTENER NOMBRE DEL MES
-        '==========================================================
+        Private Sub CargarProductosMasVendidos(
+            ByVal conexion As WebApplication_Keyove.Data.ConexionBD
+        )
 
-        Private Function ObtenerNombreMes(
-            ByVal numeroMes As Integer
-        ) As String
+            Dim consulta As String =
+                "SELECT TOP (5) " &
+                "p.cNombre AS Producto, " &
+                "SUM(d.iCantidad) AS CantidadVendida, " &
+                "SUM(d.nSubTotal) AS TotalVendido " &
+                "FROM dbo.Detalle_Venta d " &
+                "INNER JOIN dbo.Productos p " &
+                "ON p.iCodProducto = d.iCodProducto " &
+                "INNER JOIN dbo.Ventas v " &
+                "ON v.iCodVenta = d.iCodVenta " &
+                "WHERE v.cEstado <> 'ANULADA' " &
+                "GROUP BY p.iCodProducto, p.cNombre " &
+                "ORDER BY CantidadVendida DESC, TotalVendido DESC"
 
-            Select Case numeroMes
+            gvMasVendidos.DataSource =
+                conexion.ExecuteDataTable(consulta)
 
-                Case 1
-                    Return "Ene"
+            gvMasVendidos.DataBind()
 
-                Case 2
-                    Return "Feb"
+        End Sub
 
-                Case 3
-                    Return "Mar"
+        ' ==========================================
+        ' ALERTAS CENTRALIZADAS CON ALGORITMO ROP
+        ' ==========================================
 
-                Case 4
-                    Return "Abr"
+        Private Sub CargarAlertasStock(
+            ByVal datosReposicion As DataTable
+        )
 
-                Case 5
-                    Return "May"
+            Dim tabla As New DataTable()
 
-                Case 6
-                    Return "Jun"
+            tabla.Columns.Add(
+                "Producto",
+                GetType(String)
+            )
 
-                Case 7
-                    Return "Jul"
+            tabla.Columns.Add(
+                "StockActual",
+                GetType(Integer)
+            )
 
-                Case 8
-                    Return "Ago"
+            tabla.Columns.Add(
+                "StockMinimo",
+                GetType(Integer)
+            )
 
-                Case 9
-                    Return "Sep"
+            tabla.Columns.Add(
+                "CantidadReponer",
+                GetType(Integer)
+            )
 
-                Case 10
-                    Return "Oct"
+            tabla.Columns.Add(
+                "EstadoStock",
+                GetType(String)
+            )
 
-                Case 11
-                    Return "Nov"
+            tabla.Columns.Add(
+                "ClaseEstado",
+                GetType(String)
+            )
 
-                Case 12
-                    Return "Dic"
+            Dim totalAgotados As Integer = 0
+            Dim totalCriticos As Integer = 0
+            Dim totalReposicion As Integer = 0
 
-                Case Else
-                    Return ""
+            For Each fila As DataRow In datosReposicion.Rows
 
-            End Select
+                Dim estado As String =
+                    Convert.ToString(
+                        fila("EstadoStock")
+                    ).Trim().ToUpperInvariant()
 
-        End Function
+                Dim cantidad As Integer =
+                    Convert.ToInt32(
+                        fila("CantidadReponer")
+                    )
+
+                Select Case estado
+
+                    Case "AGOTADO"
+                        totalAgotados += 1
+
+                    Case "CRÍTICO"
+                        totalCriticos += 1
+
+                End Select
+
+                If cantidad > 0 Then
+                    totalReposicion += 1
+                End If
+
+                ' Mostrar solo productos que requieren
+                ' reposición, hasta un máximo de ocho.
+                If cantidad > 0 AndAlso tabla.Rows.Count < 8 Then
+
+                    Dim clase As String
+
+                    Select Case estado
+
+                        Case "AGOTADO"
+                            clase = "kd-badge kd-danger"
+
+                        Case "CRÍTICO"
+                            clase = "kd-badge kd-critical"
+
+                        Case Else
+                            clase = "kd-badge kd-warning"
+
+                    End Select
+
+                    Dim nombreEstado As String
+
+                    Select Case estado
+
+                        Case "AGOTADO"
+                            nombreEstado = "Agotado"
+
+                        Case "CRÍTICO"
+                            nombreEstado = "Crítico"
+
+                        Case "REPOSICIÓN"
+                            nombreEstado = "Reposición"
+
+                        Case "MÍNIMO"
+                            nombreEstado = "Stock mínimo"
+
+                        Case Else
+                            nombreEstado = "Normal"
+
+                    End Select
+
+                    tabla.Rows.Add(
+                        Convert.ToString(
+                            fila("NombreProducto")
+                        ),
+                        Convert.ToInt32(
+                            fila("iStockActual")
+                        ),
+                        Convert.ToInt32(
+                            fila("iStockMinimo")
+                        ),
+                        cantidad,
+                        nombreEstado,
+                        clase
+                    )
+
+                End If
+
+            Next
+
+            gvAlertasStock.DataSource = tabla
+            gvAlertasStock.DataBind()
+
+            lblAgotados.Text =
+                totalAgotados.ToString()
+
+            lblCriticos.Text =
+                totalCriticos.ToString()
+
+            ' El indicador lblBajos mostrará
+            ' los productos que requieren reposición.
+            lblBajos.Text =
+                totalReposicion.ToString()
+
+        End Sub
+
+        ' ==========================================
+        ' MOVIMIENTOS RECIENTES
+        ' ==========================================
+
+        Private Sub CargarMovimientosRecientes(
+            ByVal conexion As WebApplication_Keyove.Data.ConexionBD
+        )
+
+            Dim consulta As String =
+                "SELECT TOP (6) " &
+                "m.dFechaMovimiento AS Fecha, " &
+                "m.cTipoMovimiento AS Tipo, " &
+                "p.cNombre AS Producto, " &
+                "m.iCantidad AS Cantidad, " &
+                "'Usuario ' + CAST(m.iCodUsuario AS varchar(20)) AS Usuario " &
+                "FROM dbo.Movimientos_Inventario m " &
+                "INNER JOIN dbo.Productos p " &
+                "ON p.iCodProducto = m.iCodProducto " &
+                "ORDER BY m.dFechaMovimiento DESC, " &
+                "m.iCodMovimiento DESC"
+
+            gvMovimientos.DataSource =
+                conexion.ExecuteDataTable(consulta)
+
+            gvMovimientos.DataBind()
+
+        End Sub
 
     End Class
 
