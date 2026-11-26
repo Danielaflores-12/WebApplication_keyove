@@ -23,7 +23,7 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
             if(url.endsWith('/ListarProductosCombo')) data=[{v:'1',t:'Martillo',codigo:'M001',stock:5,precioVenta:15}];
             if(url.endsWith('/ListarProveedoresCombo')) data=[{v:'3',t:'Proveedor',codigo:'20123456789'}];
             if(url.endsWith('/ListarUsuariosCombo')) data=[{v:'2',t:'Dueña'}];
-            if(url.endsWith('/MarcasParaCompra')) data=[{v:'Forza',t:'Forza'}];
+            if(url.endsWith('/MarcasParaCompra')) data=[{v:'Forza',t:'Forza'},{v:'ONN',t:'ONN'}];
             if(url.endsWith('/CategoriasParaCompra')) data=[{v:'1',t:'Periféricos'}];
             if(url.endsWith('/ComprobanteYaRegistrado')) data=duplicate;
             if(url.endsWith('/ExtraerComprobante')) data=invoice;
@@ -35,7 +35,7 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
         await page.goto('http://keyove.test/Views/Operaciones/Compras/Compras.aspx');
         await page.waitForFunction(()=>catalogoProductos.length>0);
         const image={name:'factura.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4i8AAAAASUVORK5CYII=','base64')};
-        const apply=async()=>{if(await page.locator('#revisionNumeroOCR').isVisible())await page.locator('#confirmarNumeroOCR').check();await page.getByRole('button',{name:'Aplicar cambios',exact:true}).click();};
+        const apply=()=>page.getByRole('button',{name:'Siguiente',exact:true}).click();
         const register=()=>page.getByRole('button',{name:'Confirmar y registrar compra',exact:true}).click();
         const wait=()=>page.waitForFunction(()=>!guardandoCompra&&!validandoSegundaRevision);
         assert.equal(await page.locator('#segundaRevisionCompra').isVisible(),false);
@@ -51,22 +51,32 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
         await page.getByRole('button',{name:'Ajustar',exact:true}).click();
         assert.equal(await page.locator('#porcentajeZoomOCR').textContent(),'100%');
         assert.equal(await page.locator('.alta-venta').isEditable(),true);
-        await page.locator('.alta-venta').fill('19.90');await page.getByRole('button',{name:'Aplicar cambios',exact:true}).click();
+        assert.equal(await page.locator('#revisionNumeroOCR').count(),0);
+        assert.equal(await page.locator('#previewNumero').inputValue(),'F001-000123');
+        assert.equal(await page.locator('#previewFecha').inputValue(), invoice.datos.fecha_emision);
+        assert.equal(await page.locator('#previewTipo').inputValue(), invoice.datos.tipo_comprobante);
+        assert.equal(await page.locator('#previewProveedor').inputValue(), '3');
+        assert.equal(Number(await page.locator('#previewTotal').inputValue()), invoice.datos.total);
+        assert.equal(Number(await page.locator('.alta-cantidad').inputValue()), invoice.datos.detalles[0].cantidad);
+        assert.equal(Number(await page.locator('.alta-compra').inputValue()), invoice.datos.detalles[0].precio_unitario);
+        await page.locator('.alta-venta').fill('19.90');
+        await page.locator('#previewNumero').fill('');
+        await apply();
         assert.equal(await page.locator('#modalAltasCompra').isVisible(),true);
-        assert.equal(await page.locator('#previewNumero').getAttribute('aria-invalid'),'true','El número propuesto exige confirmación');
+        assert.equal(await page.locator('#previewNumero').getAttribute('aria-invalid'),'true','La serie y el número siguen siendo obligatorios');
+        await page.locator('#previewNumero').fill('F001-000123');
         await apply();
         await page.locator('#segundaRevisionCompra').waitFor({state:'visible'});
-        assert.equal(saved.length,0,'Aplicar cambios no registra la compra');
+        assert.equal(saved.length,0,'Siguiente no registra la compra');
         assert.equal(await page.locator('#modalAltasCompra').isVisible(),false);
         assert.match(await page.locator('#datosSegundaRevision').textContent(),/Proveedor.*20123456789.*F001-000123/);
         assert.match(await page.locator('#productosSegundaRevision').textContent(),/Martillo.*19.90/);
         assert.equal(await page.locator('#bodyDetalleCompra').isVisible(),false);
-        await register();assert.match(await page.locator('#errorSegundaRevision').textContent(),/Marca la confirmación/);assert.equal(saved.length,0);
         await page.getByRole('button',{name:'Volver a editar',exact:true}).click();
         await page.locator('#modalAltasCompra').waitFor({state:'visible'});
         assert.equal(await page.locator('.alta-venta').inputValue(),'19.9');
-        await page.locator('.alta-cantidad').fill('3');await page.locator('#previewSubtotal').fill('30');await page.locator('#previewIgv').fill('5.4');await page.locator('#previewTotal').fill('35.4');await page.locator('#previewObservacion').fill('Revisada dos veces');await apply();
-        assert.equal(await page.locator('#confirmarSegundaRevision').isChecked(),false);
+        await page.locator('.alta-cantidad').fill('3');await page.locator('#previewTotal').fill('35.4');await page.locator('#previewObservacion').fill('Revisada dos veces');await apply();
+        assert.equal(await page.locator('#confirmarSegundaRevision').count(),0);
         assert.equal(await page.locator('#productosSegundaRevision tr td').nth(1).textContent(),'3');
         assert.match(await page.locator('#totalesSegundaRevision').textContent(),/35.40/);
         await page.getByRole('button',{name:'Volver a editar',exact:true}).click();
@@ -79,20 +89,81 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
             assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
             await page.screenshot({path:path.join(root,'Tests/artifacts/segunda-revision-'+width+'.png'),fullPage:true});
         }
-        await page.setViewportSize({width:1280,height:900});await page.locator('#confirmarSegundaRevision').check();
+        await page.setViewportSize({width:1280,height:900});
         duplicate=true;await register();await wait();assert.equal(saved.length,0);assert.match(await page.locator('#errorSegundaRevision').textContent(),/ya está registrado/);
         duplicate=false;await page.evaluate(()=>{registrarSegundaRevisionCompra();registrarSegundaRevisionCompra();});await wait();
         assert.equal(saved.length,1,'Doble confirmación envía una sola solicitud');
         assert.equal(saved[0].detalles[0].precioVenta,19.9);assert.equal(saved[0].detalles[0].iCantidad,3);assert.equal(saved[0].compra.cObservacion,'Revisada dos veces');
+        assert.equal(saved[0].compra.nSubTotal,30);assert.equal(saved[0].compra.nIgv,5.4);
+        assert.equal(saved[0].preciosIncluyenIgv,false);
         assert.equal(await page.locator('#segundaRevisionCompra').isVisible(),true);assert.match(await page.locator('#errorSegundaRevision').textContent(),/Fallo simulado/);
         failSave=false;await register();await wait();assert.equal(saved.length,2);assert.equal(await page.locator('#segundaRevisionCompra').isVisible(),false);
         invoice={success:true,texto_ocr:'4 REGLETAS FORZA',datos:{ruc_emisor:'20600855604',razon_social:'Proveedor nuevo',numero_comprobante:'F001-NUEVA',tipo_comprobante:'FACTURA',fecha_emision:'2026-10-13',subtotal:40,igv:7.2,total:47.2,advertencias:[],detalles:[{descripcion:'REGLETA FORZA FZ-001',nombre:'Regleta',marca:'Forza',modelo:'FZ-001',cantidad:4,precio_unitario:10,importe:40}]}};
         await page.locator('#txtArchivoComprobante').setInputFiles(image);await page.locator('#modalAltasCompra').waitFor({state:'visible'});
-        await page.locator('.alta-categoria').selectOption('1');await page.locator('.alta-venta').fill('20');await apply();
+        assert.equal(await page.locator('.alta-categoria').inputValue(),'1');await page.locator('.alta-venta').fill('20');await apply();
         await page.locator('#segundaRevisionCompra').waitFor({state:'visible'});assert.equal(saved.length,2);
         assert.match(await page.locator('#productosSegundaRevision').textContent(),/Crear producto.*Stock inicial: 4/);
-        await page.locator('#confirmarSegundaRevision').check();await register();await wait();assert.equal(saved.length,3);
+        await register();await wait();assert.equal(saved.length,3);
         assert.equal(saved[2].proveedorNuevo.ruc,'20600855604');assert.equal(saved[2].productosNuevos[0].marca,'Forza');assert.equal(saved[2].productosNuevos[0].precioVenta,20);
+        invoice = {success: true, texto_ocr: 'PEDIDO PE02-00017875', datos: {
+            ruc_emisor: '20600855604', razon_social: 'E & V IMPORTADORA EXPORTADORA E.I.R.L.',
+            tipo_comprobante: 'PEDIDO', numero_comprobante: 'PE02-00017875', fecha_emision: '2026-05-21',
+            subtotal: null, igv: null, total: 1390,
+            detalles: [{descripcion: '4K STREAMING BOX WATCH ONN GOOGLE AZUL',
+                nombre: 'Streaming box', marca: 'ONN', descripcion_detallada: '4K WATCH GOOGLE AZUL',
+                cantidad: 10, precio_unitario: 139, importe: 1390}]
+        }};
+        await page.locator('#txtArchivoComprobante').setInputFiles(image);
+        await page.locator('#modalAltasCompra').waitFor({state: 'visible'});
+        for (const [selector, value] of Object.entries({
+            '#altaRuc': '20600855604', '#altaRazon': 'E & V IMPORTADORA EXPORTADORA E.I.R.L.',
+            '#previewTipo': 'PEDIDO', '#previewNumero': 'PE02-00017875', '#previewFecha': '2026-05-21',
+            '#previewTotal': '1390.00',
+            '.alta-nombre': 'Streaming box', '.alta-marca': 'ONN', '.alta-modelo': '',
+            '.alta-descripcion': '4K WATCH GOOGLE AZUL', '.alta-cantidad': '10', '.alta-compra': '139.00'
+        })) {
+            assert.equal(await page.locator(selector).inputValue(), value, selector);
+        }
+        await page.locator('.alta-categoria').selectOption('1');
+        await page.locator('.alta-venta').fill('160');
+        await apply();
+        await page.locator('#segundaRevisionCompra').waitFor({state:'visible'});
+        assert.deepEqual(await page.locator('#totalesSegundaRevision dt').allTextContents(), ['Total']);
+        
+        await register();
+        await wait();
+        assert.equal(saved.length, 4);
+        assert.equal(saved[3].compra.nSubTotal, 1390);
+        assert.equal(saved[3].compra.nIgv, 0);
+        assert.equal(saved[3].compra.nTotal, 1390);
+        assert.equal(saved[3].preciosIncluyenIgv, false);
+
+        invoice = {success: true, datos: {
+            ruc_emisor: '20123456789', tipo_comprobante: 'BOLETA', numero_comprobante: 'B001-154876',
+            fecha_emision: '2026-07-23', subtotal: null, igv: null, total: null,
+            detalles: [{descripcion: 'MARTILLO', cantidad: 2, precio_unitario: 123, importe: 246}]
+        }};
+        await page.locator('#txtArchivoComprobante').setInputFiles(image);
+        await page.locator('#modalAltasCompra').waitFor({state: 'visible'});
+        assert.deepEqual(await page.locator('.ocr-documento input[type="number"]').evaluateAll(inputs => inputs.map(input => input.id)), ['previewTotal']);
+        assert.equal(await page.locator('#previewTotal').inputValue(), '');
+        await apply();
+        assert.equal(await page.locator('#previewTotal').getAttribute('aria-invalid'), 'true');
+        await page.locator('#previewTotal').fill('250');
+        await apply();
+        assert.match(await page.locator('#previewTotal + small').textContent(), /no cuadra con la suma/);
+        await page.locator('#previewTotal').fill('246');
+        await apply();
+        await page.locator('#segundaRevisionCompra').waitFor({state: 'visible'});
+        assert.deepEqual(await page.locator('#totalesSegundaRevision dt').allTextContents(), ['Total']);
+        
+        await register();
+        await wait();
+        assert.equal(saved.length, 5);
+        assert.equal(saved[4].compra.nSubTotal, 208.47);
+        assert.equal(saved[4].compra.nIgv, 37.53);
+        assert.equal(saved[4].compra.nTotal, 246);
+        assert.equal(saved[4].preciosIncluyenIgv, true);
         await page.locator('#btnCompraManual').click();
         assert.equal(await page.locator('#cargaOCRCompra').isVisible(),false);
         await page.locator('#cboProveedor').selectOption('3');
@@ -103,9 +174,9 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
         await page.getByRole('button',{name:'Agregar producto',exact:true}).click();
         await page.locator('#btnGuardarCompra').click();
         await page.waitForFunction(()=>!guardandoCompra);
-        assert.equal(saved.length,4,'Guarda compra manual sin extraer OCR');
-        assert.equal(saved[3].comprobante,null);
-        assert.equal(saved[3].detalles[0].iCantidad,2);
+        assert.equal(saved.length,6,'Guarda compra manual sin extraer OCR');
+        assert.equal(saved[5].comprobante,null);
+        assert.equal(saved[5].detalles[0].iCantidad,2);
         await page.locator('#btnCompraOCR').click();
         assert.equal(await page.locator('#cargaOCRCompra').isVisible(),true);
         assert.deepEqual(errors,[]);

@@ -14,9 +14,13 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
     Partial Public Class Compra1
         Inherits Global.System.Web.UI.Page
 
-        Protected Sub Page_Load(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles Me.Load
+        Protected Sub Page_PreInit(ByVal sender As Object, ByVal e As Global.System.EventArgs) Handles Me.PreInit
             ExigirAdministradora()
-            DescargarArchivoCompra()
+            If Request.QueryString("resumenCompra") IsNot Nothing Then
+                MostrarResumenCompra()
+            ElseIf Request.QueryString("archivoCompra") IsNot Nothing Then
+                MostrarDocumentoCompra()
+            End If
         End Sub
 
 

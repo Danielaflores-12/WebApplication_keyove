@@ -3,6 +3,8 @@ import unittest
 import tempfile
 import base64
 from pathlib import Path
+from io import BytesIO
+from contextlib import closing
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'servicio_ocr'))
 from extractor import ComprobanteExtractor, importe
@@ -10,8 +12,29 @@ from ocr import OCRService
 from app import app
 from fastapi.testclient import TestClient
 from PIL import Image, ImageDraw, ImageFont
+import pypdfium2
 
 class ExtractorTests(unittest.TestCase):
+    def test_pedido_con_descripcion_multilinea_y_total_sin_desglose(self):
+        text = (
+            'E « V IMPORTADORA\n\nEXPORTADORA E.!l.R.L.\n'
+            'Cal. San Juan de Dios nro 639\nCercado\nRUC:20600855604\n'
+            'PEDIDO\nPEO2 - 00017875\nCLIENTE: CLIENTE DE PRUEBA\n'
+            'D.N.I.: 12345678\nFECHA: 21-05-2026 / 08:37 pm\n'
+            'CANT. DESCRIPCION P.U. TOTAL\n10 4K STREAMING BOX 139.00 1,390.00\n'
+            'UND WATCH ONN GOOGLE\nAZUL (UND X 1)\nTOTAL S/ 1,390.00\nOPERADOR: CAJA'
+        )
+        result = ComprobanteExtractor().extract(text)
+        self.assertEqual((result['tipo_comprobante'], result['numero_comprobante'], result['fecha_emision']),
+                         ('PEDIDO', 'PE02-00017875', '2026-05-21'))
+        self.assertEqual((result['ruc_emisor'], result['razon_social']),
+                         ('20600855604', 'E & V IMPORTADORA EXPORTADORA E.I.R.L.'))
+        self.assertEqual((result['subtotal'], result['igv'], result['total']), (None, None, 1390))
+        detalle, = result['detalles']
+        self.assertEqual((detalle['cantidad'], detalle['precio_unitario'], detalle['importe']), (10, 139, 1390))
+        self.assertEqual((detalle['nombre'], detalle['marca'], detalle['modelo']), ('Streaming box', 'ONN', ''))
+        self.assertIn('GOOGLE AZUL', detalle['descripcion_detallada'])
+
     def test_pedido_sombreado_con_ruc_y_total_contrastados(self):
         text=('PEDIDO PE02-00017675\nRUC:20600895604\nFECHA:21-05-2026\n'
               '10 AKSTREAMING BOX 139.00 1,390.00\nUND WATCH ONN GOOGLE\nAZUL (UND X 1)\n'
@@ -109,6 +132,29 @@ class ExtractorTests(unittest.TestCase):
         self.assertEqual(len(result['detalles']), 1)
         self.assertEqual(result['detalles'][0]['cantidad'], 1)
 
+    def test_codigo_antes_de_cantidad_no_se_convierte_en_stock(self):
+        header = 'BOLETA DE VENTA B001-000123\nCOD [CANT.UM.] DESCRIPCIÓN P/U TOTAL\n'
+        product = 'GOOGLE WATCH ONN 130.00 130.00\nSTICK FHD 2446A TV EXTREME DEVICE\nGAR 3 MESES'
+        totals = '\nOP. GRAVADAS S/ 110.17\nIGV (18%) S/ 19.83\nTOTAL S/ 130.00'
+        for leading in ('20233 [1 UND]', '20233 [1 ]', '20233[1UN]', '20233 1 UND]', '20233 1 ]'):
+            with self.subTest(leading=leading):
+                result = ComprobanteExtractor().extract(header + leading + ' ' + product + totals)
+                line, = result['detalles']
+                self.assertEqual((line['cantidad'], line['precio_unitario'], line['importe']), (1, 130, 130))
+                self.assertEqual(line['descripcion'], 'GOOGLE WATCH ONN STICK FHD 2446A TV EXTREME DEVICE GAR 3 MESES')
+                self.assertFalse(line['requiere_revision'])
+                self.assertEqual((result['subtotal'], result['igv'], result['total']), (110.17, 19.83, 130))
+
+        lectura_inconsistente = header + '20233 GOOGLE WATCH ONN 150.00 130.00' + totals
+        alternativa = '20233 [1 UN] ' + product
+        result = ComprobanteExtractor().extract(lectura_inconsistente + '\n[LECTURA_ALTERNATIVA]\n' + alternativa)
+        self.assertEqual(result['detalles'][0]['cantidad'], 1)
+        self.assertEqual(result['detalles'][0]['precio_unitario'], 130)
+        self.assertEqual(result['total'], 130)
+
+        result = ComprobanteExtractor().extract('20233 UND CABLE 1.00 20,233.00')
+        self.assertEqual(result['detalles'][0]['cantidad'], 20233)
+
     def test_separadores(self):
         for value in ['1,250.50', '1.250,50', '1250,50', '1250.50']:
             self.assertEqual(importe(value), 1250.5)
@@ -128,6 +174,19 @@ class ExtractorTests(unittest.TestCase):
         self.assertIsNone(result['total'])
         self.assertIsNone(result['igv'])
         self.assertIsNone(result['numero_comprobante'])
+
+    def test_total_disperso_o_contrastado_con_igv(self):
+        texto = ('BOLETA ELECTRÓNICA B001-154876\n'
+                 '20469 [2 UND] MEMORIA MICROSD XC 123.00 246.00\n'
+                 'IGV (18%) S/ 37.53')
+        extractor = ComprobanteExtractor()
+        lectura = extractor.extract(texto + '\nT0TAL\nS/\n246.00')
+        self.assertEqual(lectura['total'], 246)
+        self.assertFalse(any(a.startswith('Total propuesto') for a in lectura['advertencias']))
+        lectura = extractor.extract(texto)
+        self.assertEqual(lectura['total'], 246)
+        self.assertTrue(any(a.startswith('Total propuesto') for a in lectura['advertencias']))
+        self.assertIsNone(extractor.extract(texto.replace('37.53', '37.00'))['total'])
 
     def test_boleta_fisica_y_producto_con_numero(self):
         result = ComprobanteExtractor().extract('BOLETA DE VENTA\nN° 001-000345\n2 UND CABLE 14 5.00 10.00')
@@ -164,6 +223,72 @@ class ExtractorTests(unittest.TestCase):
         self.assertTrue(result['detalles'][0]['requiere_revision'])
 
 class ServiceTests(unittest.TestCase):
+    def test_resumen_pdf_usa_datos_de_compra_y_repitiendo_cabecera(self):
+        producto = {'nombre': 'Streaming Box <4K>', 'referencia': 'ONN & Google',
+                    'cantidad': 10, 'precioCompra': 139, 'precioVentaActual': 140,
+                    'importe': 1390, 'stockAnterior': 0, 'stockNuevo': 10}
+        compra = {'id': 54, 'proveedor': 'E & V IMPORTADORA EXPORTADORA E.I.R.L.',
+                  'ruc': '20600855604', 'tipo': 'PEDIDO', 'numero': 'PE02-00017875',
+                  'fecha': '2026-05-21', 'estado': 'REGISTRADA', 'subtotal': 1390, 'igv': 0,
+                  'total': 1390, 'productos': [producto]}
+
+        def texto_pdf():
+            response = self.client.post('/compra/resumen/pdf', json=compra)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.headers['content-type'], 'application/pdf')
+            with closing(pypdfium2.PdfDocument(response.content)) as pdf:
+                paginas = []
+                for page_index in range(len(pdf)):
+                    with closing(pdf[page_index]) as page, closing(page.get_textpage()) as text:
+                        paginas.append(text.get_text_bounded())
+                return paginas
+
+        primera, = texto_pdf()
+        for texto in ('Resumen de compra', compra['proveedor'], compra['numero'], '21/05/2026',
+                      producto['nombre'], producto['referencia'], '0 + 10 = 10', 'S/ 1,390.00'):
+            self.assertIn(texto, primera)
+        self.assertNotIn('IGV', primera)
+        compra.update(tipo='FACTURA', estado='ANULADA', igv='250.20', total='1640.20',
+                      productos=[{**producto, 'nombre': f'Producto {i}'} for i in range(1, 51)])
+        paginas = texto_pdf()
+        self.assertGreater(len(paginas), 1)
+        self.assertIn('Anulada', paginas[0])
+        self.assertIn('Precio venta actual', paginas[1])
+        self.assertIn('Producto 50', paginas[-1])
+        self.assertIn('IGV', paginas[-1])
+        self.assertIn('S/ 1,640.20', paginas[-1])
+
+    def test_reconstruye_tabla_de_pedido_con_descripcion_multilinea(self):
+        import numpy as np
+        words = [('CANT.', 70, 100, 90, 25), ('DESCRIPCION', 183, 100, 190, 25),
+                 ('P.U.', 615, 100, 55, 25), ('TOTAL', 730, 101, 95, 25),
+                 ('10', 104, 157, 34, 23), ('4K', 183, 153, 34, 23),
+                 ('STREAMING', 228, 154, 130, 23), ('BOX', 370, 153, 45, 23),
+                 ('139.00', 580, 158, 95, 23), ('1,390.00', 704, 160, 124, 23),
+                 ('UND', 90, 191, 65, 23), ('WATCH', 183, 190, 75, 23), ('ONN', 268, 191, 54, 23),
+                 ('AZUL', 183, 225, 65, 23), ('TOTAL', 495, 283, 85, 23),
+                 ('1,390.00', 704, 283, 124, 23)]
+        data = {key: [word[i] for word in words] for i, key in enumerate(['text', 'left', 'top', 'width', 'height'])}
+        with patch('ocr.pytesseract.image_to_data', return_value=data):
+            self.assertEqual(OCRService().table_rows(np.zeros((400, 900), dtype=np.uint8)),
+                             ['10 4K STREAMING BOX WATCH ONN AZUL 139.00 1,390.00'])
+
+    def test_convierte_comprobante_a_pdf_con_todas_sus_paginas(self):
+        with BytesIO() as original, Image.new('RGB', (100, 200), 'white') as first, Image.new('RGB', (200, 100), 'blue') as second:
+            first.save(original, 'TIFF', save_all=True, append_images=[second])
+            payload = {'nombreArchivo': 'pedido.tiff', 'contenidoBase64': base64.b64encode(original.getvalue()).decode()}
+        response = self.client.post('/documento/pdf', json=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['content-type'], 'application/pdf')
+        with closing(pypdfium2.PdfDocument(response.content)) as pdf:
+            self.assertEqual(len(pdf), 2)
+            with closing(pdf[0]) as page:
+                self.assertGreater(page.get_height(), page.get_width())
+            with closing(pdf[1]) as page:
+                self.assertGreater(page.get_width(), page.get_height())
+        payload['contenidoBase64'] = 'YQ=='
+        self.assertEqual(self.client.post('/documento/pdf', json=payload).status_code, 422)
+
     def test_columnas_curvadas_y_columna_incompleta(self):
         import numpy as np
         words = [('CANT.',100,50,40,20), ('U.M.',160,50,40,20),
@@ -199,7 +324,7 @@ class ServiceTests(unittest.TestCase):
             img = Image.new('RGB', (1600, 900), 'white')
             draw = ImageDraw.Draw(img)
             font = ImageFont.truetype('C:/Windows/Fonts/arial.ttf', 42)
-            lines = ['FACTURA F001-000123', 'RUC: 20123456789', '13/10/2026', '2 MARTILLO 10.00 20.00', 'SUBTOTAL S/ 20.00', 'IGV S/ 3.60', 'TOTAL S/ 23.60']
+            lines = ['FACTURA F001-000123', 'RUC: 20123456789', '13/10/2026', '2 MARTILLO 10.00 20.00', '4 ALICATE 5.00 20.00', 'SUBTOTAL S/ 40.00', 'IGV S/ 7.20', 'TOTAL S/ 47.20']
             for index, line in enumerate(lines):
                 draw.text((60, 40 + index * 95), line, fill='black', font=font)
             for extension in ('png', 'pdf'):
@@ -208,11 +333,15 @@ class ServiceTests(unittest.TestCase):
                 text = OCRService().extract_text(str(path))
                 result = ComprobanteExtractor().extract(text)
                 self.assertEqual(result['numero_comprobante'], 'F001-000123', text)
-                self.assertEqual(result['total'], 23.6, text)
+                self.assertEqual(result['total'], 47.2, text)
                 self.assertEqual(result['detalles'][0]['cantidad'], 2, text)
                 response = self.client.post('/ocr/extraer', json={'nombreArchivo': path.name, 'contenidoBase64': base64.b64encode(path.read_bytes()).decode()})
                 self.assertEqual(response.status_code, 200, response.text)
-                self.assertEqual(response.json()['datos']['total'], 23.6)
+                datos = response.json()['datos']
+                self.assertEqual([datos[k] for k in ('tipo_comprobante', 'numero_comprobante', 'ruc_emisor', 'fecha_emision', 'subtotal', 'igv', 'total')],
+                                 ['FACTURA', 'F001-000123', '20123456789', '2026-10-13', 40, 7.2, 47.2])
+                self.assertEqual([(d['descripcion'].upper(), d['cantidad'], d['precio_unitario'], d['importe']) for d in datos['detalles']],
+                                 [('MARTILLO', 2, 10, 20), ('ALICATE', 4, 5, 20)])
 
 if __name__ == '__main__':
     unittest.main()

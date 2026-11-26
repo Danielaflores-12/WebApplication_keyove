@@ -42,6 +42,7 @@
       #proveedorAltaCampos[hidden] { display:none; }
       #productosAltaCampos { display:grid; gap:22px; min-width:0; }
       #modalAltasCompra label { display:flex; flex-direction:column; gap:7px; font-weight:600; font-size:13px; min-width:0; }
+      #modalAltasCompra label[hidden] { display:none; }
       #modalAltasCompra .input-control { box-sizing:border-box; width:100%; min-width:0; margin:0; background:#fff; color:#263247; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; font:inherit; font-weight:400; }
       #modalAltasCompra .input-control:focus { outline:2px solid #3776bc; outline-offset:2px; }
       #modalAltasCompra textarea { resize:vertical; }
@@ -185,7 +186,6 @@
       #txtTotalCompra { color:#28538b; font-size:20px; font-weight:700; border-color:#a9c1e0; }
       .compras-resumen > .form-actions { border-top:1px solid #e4eaf2; margin-top:20px; padding-top:18px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
       .compras-resumen .form-check { flex-basis:100%; font-size:13px; color:#526078; }
-      #confirmarOCRContenedor[hidden] { display:none; }
       .compras-historial-titulo { margin:4px 0 20px; }
       #panelComprasRegistradas > .card { border:1px solid #dbe3ef; border-radius:14px; box-shadow:none; padding:22px; }
       @media(max-width:640px) {
@@ -204,10 +204,6 @@
       #segundaRevisionCompra { scroll-margin-top:100px; }
       #segundaRevisionCompra .compras-seccion-titulo { flex-wrap:wrap; }
       #segundaRevisionCompra .ocr-etiqueta { white-space:nowrap; flex-shrink:0; }
-      #revisionNumeroOCR[hidden] { display:none; }
-      #revisionNumeroOCR > span { display:block; margin:5px 0; }
-      #revisionNumeroOCR input { width:auto; }
-      #modalAltasCompra #revisionNumeroOCR label { flex-direction:row; align-items:center; gap:8px; }
       #segundaRevisionCompra[hidden] { display:none; }
       #formularioCompletoCompra.en-segunda-revision > .compras-bloque:not(#segundaRevisionCompra), #formularioCompletoCompra.en-segunda-revision > .compras-carga { display:none; }
       .segunda-datos { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:0 0 22px; }
@@ -329,7 +325,7 @@
     <dialog id="modalAltasCompra" class="compra-dialog" aria-labelledby="tituloAltasCompra">
       <header><h2 id="tituloAltasCompra">Vista previa de compra OCR</h2><button type="button" aria-label="Cerrar" onclick="cerrarModalCompra('modalAltasCompra')">×</button></header>
       <div class="modal-cuerpo">
-        <div class="ocr-presentacion"><p class="alta-intro">Revise y confirme los datos extraídos antes de registrar la compra</p><span id="estadoVistaOCR" class="ocr-etiqueta ocr-revision" role="status">Pendiente de revisión</span></div>
+        <div class="ocr-presentacion"><p class="alta-intro">Ajusta el precio de venta y pulsa Siguiente.</p><span id="estadoVistaOCR" class="ocr-etiqueta ocr-revision" role="status">Datos del comprobante</span></div>
         <div class="ocr-layout"><section class="ocr-edicion" aria-label="Datos de la compra">
         <section class="ocr-documento"><h3>Información del comprobante</h3>
           <div class="ocr-proveedor-cabecera"><h4>Proveedor</h4><span id="estadoProveedorOCR" role="status"></span></div><details class="ocr-cambiar-proveedor"><summary>Elegir otro proveedor del catálogo</summary><label>Proveedor registrado<select id="previewProveedor" class="input-control"></select></label></details>
@@ -340,14 +336,10 @@
           <div class="ocr-campos">
             <label>Fecha de emisión<input id="previewFecha" class="input-control" type="date" /></label>
             <label>Tipo de comprobante<select id="previewTipo" class="input-control"></select></label>
-            <div class="alta-ancho"><label>Serie y número<input id="previewNumero" class="input-control" maxlength="50" list="numeroOCRAlternativas" /></label><datalist id="numeroOCRAlternativas"></datalist><div id="revisionNumeroOCR" class="alta-advertencia" hidden><p>El OCR detectó números distintos. Revisa el número propuesto con la imagen.</p><label><input type="checkbox" id="confirmarNumeroOCR" /> Confirmé el número con el original.</label></div></div>
-            <label>Subtotal (S/)<input id="previewSubtotal" class="input-control" type="number" step="0.01" min="0" /></label>
-            <label>IGV (S/)<input id="previewIgv" class="input-control" type="number" step="0.01" min="0" /></label>
+            <div class="alta-ancho"><label>Serie y número<input id="previewNumero" class="input-control" maxlength="50" list="numeroOCRAlternativas" /></label><datalist id="numeroOCRAlternativas"></datalist></div>
             <label>Total (S/)<input id="previewTotal" class="input-control" type="number" step="0.01" min="0" /></label>
-            <label>Precios del detalle<select id="previewIncluidos" class="input-control"><option value="si">Incluyen IGV</option><option value="no">Sin IGV</option></select><small>Usa precios netos después de descuentos.</small></label>
           </div>
           <label>Observación<textarea id="previewObservacion" class="input-control" rows="2" maxlength="300"></textarea></label>
-          <p id="ayudaImpuestosOCR" class="alta-advertencia" hidden>El OCR no encontró un desglose completo de subtotal e IGV. Revísalos en el documento y complétalos; el total por sí solo no permite identificar el impuesto.</p>
           <p id="estadoDuplicadoOCR" role="status"></p>
         </section>
         <h3>Productos detectados</h3><datalist id="marcasCompraOCR"></datalist>
@@ -355,14 +347,13 @@
         </section><aside class="ocr-original" aria-label="Referencia del comprobante"><h3>Comprobante y lectura OCR</h3><div class="ocr-referencia-tabs" role="tablist" aria-label="Referencia"><button type="button" id="tabDocumentoOCR" role="tab" aria-controls="archivoOriginalOCR" onclick="mostrarReferenciaCompra('documento')">Documento</button><button type="button" id="tabTextoOCR" role="tab" aria-controls="panelTextoOCR" onclick="mostrarReferenciaCompra('texto')">Texto OCR</button></div><div id="controlesZoomOCR" class="ocr-zoom" role="group" aria-label="Zoom del comprobante" hidden><button type="button" id="alejarImagenOCR" class="btn btn-secondary" aria-label="Alejar imagen" onclick="cambiarZoomOCR(-25)">−</button><span id="porcentajeZoomOCR" role="status" aria-live="polite">100%</span><button type="button" id="acercarImagenOCR" class="btn btn-secondary" aria-label="Acercar imagen" onclick="cambiarZoomOCR(25)">+</button><button type="button" class="btn btn-secondary" onclick="ajustarImagenOCR()">Ajustar</button></div><div id="archivoOriginalOCR" role="tabpanel" tabindex="0" aria-labelledby="tabDocumentoOCR"></div><div id="panelTextoOCR" role="tabpanel" aria-labelledby="tabTextoOCR" hidden><p id="origenTextoOCR"></p><pre id="previewTextoOriginal"></pre></div><button type="button" class="btn btn-secondary ocr-reescanear" onclick="volverEscanearCompra()">Volver a escanear</button></aside></div>
         <p id="errorAltasCompra" class="modal-error" role="alert"></p>
       </div>
-      <footer><button type="button" class="btn btn-secondary" onclick="cerrarModalCompra('modalAltasCompra')">Cancelar</button><button type="button" id="confirmarRegistrarOCR" class="btn btn-primary" onclick="registrarDesdeVistaPrevia()">Aplicar cambios</button></footer>
+      <footer><button type="button" class="btn btn-secondary" onclick="cerrarModalCompra('modalAltasCompra')">Cancelar</button><button type="button" id="confirmarRegistrarOCR" class="btn btn-primary" onclick="registrarDesdeVistaPrevia()">Siguiente</button></footer>
     </dialog>
         <section id="segundaRevisionCompra" class="compras-bloque" hidden aria-labelledby="tituloSegundaRevision">
-          <div class="compras-seccion-titulo"><span class="compras-paso">02</span><div><h2 id="tituloSegundaRevision" tabindex="-1">Segunda revisión de la compra</h2><p>Verifica los datos aplicados desde la vista previa antes de registrar.</p></div><span class="ocr-etiqueta ocr-revision">Pendiente de registro</span></div>
+          <div class="compras-seccion-titulo"><span class="compras-paso">02</span><div><h2 id="tituloSegundaRevision" tabindex="-1">Resumen de la compra</h2></div><span class="ocr-etiqueta ocr-revision">Pendiente de registro</span></div>
           <dl id="datosSegundaRevision" class="segunda-datos"></dl>
           <div class="table-container"><table class="table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio compra</th><th>Precio venta</th><th>Importe</th><th>Acción / stock previsto</th></tr></thead><tbody id="productosSegundaRevision"></tbody></table></div>
           <dl id="totalesSegundaRevision" class="segunda-totales"></dl>
-          <label class="segunda-confirmacion"><input type="checkbox" id="confirmarSegundaRevision" /> Verifiqué los datos y autorizo registrar esta compra.</label>
           <p id="errorSegundaRevision" class="modal-error" role="alert"></p>
           <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="prepararAltasCompra()">Volver a editar</button><button type="button" class="btn btn-primary" onclick="registrarSegundaRevisionCompra()">Confirmar y registrar compra</button></div>
         </section>
@@ -525,7 +516,6 @@
 
         <div class="form-actions">
 
-            <label id="confirmarOCRContenedor" class="form-check" hidden><input type="checkbox" id="confirmarOCR" /> Revisé el proveedor, los productos y los importes del documento.</label>
 
             <button type="button"
                     class="btn btn-primary"
