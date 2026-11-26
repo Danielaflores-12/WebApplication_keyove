@@ -117,20 +117,19 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                 Return New With {.success = False, .mensaje = ex.Message}
             End Try
             Dim serializer As New JavaScriptSerializer With {.MaxJsonLength = 16777216}
-            Dim address = System.Configuration.ConfigurationManager.AppSettings("OcrServiceUrl")
-            Dim request = DirectCast(WebRequest.Create(address), HttpWebRequest)
-            request.Method = "POST"
-            request.ContentType = "application/json; charset=utf-8"
-            request.Timeout = 160000
-            request.ReadWriteTimeout = 160000
-            Dim body = Encoding.UTF8.GetBytes(serializer.Serialize(New With {archivo.nombreArchivo, archivo.contenidoBase64}))
-            request.ContentLength = body.Length
+            Dim address As New Uri(System.Configuration.ConfigurationManager.AppSettings("OcrServiceUrl"))
             Try
-                Using stream = request.GetRequestStream()
-                    stream.Write(body, 0, body.Length)
-                End Using
-                Using response = request.GetResponse(), reader As New StreamReader(response.GetResponseStream())
-                    Return serializer.DeserializeObject(reader.ReadToEnd())
+                Using response = EnviarJsonOcr(address, serializer.Serialize(New With {archivo.nombreArchivo, archivo.contenidoBase64})),
+                      reader As New StreamReader(response.GetResponseStream())
+                    Dim resultado = serializer.Deserialize(Of Dictionary(Of String, Object))(reader.ReadToEnd())
+                    Dim datosObjeto As Object = Nothing
+                    If resultado.TryGetValue("datos", datosObjeto) Then
+                        Dim datos = TryCast(datosObjeto, Dictionary(Of String, Object))
+                        If datos IsNot Nothing AndAlso String.IsNullOrWhiteSpace(Convert.ToString(datos("razon_social"))) Then
+                            datos("razon_social") = System.Configuration.ConfigurationManager.AppSettings("OcrProveedor." & Convert.ToString(datos("ruc_emisor")))
+                        End If
+                    End If
+                    Return resultado
                 End Using
             Catch ex As WebException
                 Dim message = "No se pudo conectar al servicio OCR. Inícialo en el servidor y reintenta."
@@ -144,6 +143,72 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                     End Using
                 End If
                 Return New With {.success = False, .mensaje = message}
+            End Try
+        End Function
+
+        Private Shared Function EnviarJsonOcr(address As Uri, json As String, Optional timeout As Integer = 160000) As WebResponse
+            Dim request = DirectCast(WebRequest.Create(address), HttpWebRequest)
+            request.Method = "POST"
+            request.ContentType = "application/json; charset=utf-8"
+            request.Timeout = timeout
+            request.ReadWriteTimeout = timeout
+            Dim body = Encoding.UTF8.GetBytes(json)
+            request.ContentLength = body.Length
+            Using stream = request.GetRequestStream()
+                stream.Write(body, 0, body.Length)
+            End Using
+            Return request.GetResponse()
+        End Function
+
+        Private Shared Function DocumentoPdf(nombre As String, content As Byte(), Optional base64 As String = Nothing) As Byte()
+            If String.Equals(Path.GetExtension(nombre), ".pdf", StringComparison.OrdinalIgnoreCase) Then
+                Return ValidarPdf(content)
+            End If
+            Return SolicitarPdfOcr("../documento/pdf", New With {.nombreArchivo = nombre, .contenidoBase64 = If(base64, Convert.ToBase64String(content))})
+        End Function
+
+        Private Shared Function ValidarPdf(content As Byte()) As Byte()
+            If content.Length < 5 OrElse Encoding.ASCII.GetString(content, 0, 5) <> "%PDF-" Then Throw New ArgumentException("El servicio no devolvió un PDF válido.")
+            Return content
+        End Function
+
+        Private Shared Function SolicitarPdfOcr(ruta As String, datos As Object) As Byte()
+            Dim context = System.Web.HttpContext.Current
+            OcrServiceHost.EnsureRunning(System.Web.Hosting.HostingEnvironment.ApplicationPhysicalPath, context.IsDebuggingEnabled)
+            Dim ocr As New Uri(System.Configuration.ConfigurationManager.AppSettings("OcrServiceUrl"))
+            Dim address As New Uri(ocr, ruta)
+            Dim serializer As New JavaScriptSerializer With {.MaxJsonLength = 16777216}
+            Try
+                Using response = EnviarJsonOcr(address, serializer.Serialize(datos), 15000),
+                      stream = response.GetResponseStream(),
+                      document As New MemoryStream()
+                    If response.ContentType <> "application/pdf" Then Throw New ArgumentException("El servicio no devolvió un comprobante PDF.")
+                    Dim buffer(8191) As Byte
+                    Dim count = stream.Read(buffer, 0, buffer.Length)
+                    While count > 0
+                        If document.Length + count > ModeloComprobante.LIMITE_BYTES Then Throw New ArgumentException("El PDF generado supera los 10 MB.")
+                        document.Write(buffer, 0, count)
+                        count = stream.Read(buffer, 0, buffer.Length)
+                    End While
+                    Return ValidarPdf(document.ToArray())
+                End Using
+            Catch ex As WebException
+                If ex.Response IsNot Nothing Then
+                    Using response = DirectCast(ex.Response, HttpWebResponse)
+                        If response.StatusCode = HttpStatusCode.NotFound Then
+                            Throw New ArgumentException("El servicio OCR que está en ejecución no admite esta operación PDF. Detén el OCR anterior e inicia el de la carpeta actualizada (servicio_ocr/start.bat).", ex)
+                        End If
+                        If If(response.ContentType, "").StartsWith("application/json", StringComparison.OrdinalIgnoreCase) Then
+                            Using reader As New StreamReader(response.GetResponseStream())
+                                Dim message = TryCast(serializer.DeserializeObject(reader.ReadToEnd()), Dictionary(Of String, Object))
+                                If message IsNot Nothing AndAlso message.ContainsKey("detail") AndAlso TypeOf message("detail") Is String Then
+                                    Throw New ArgumentException(CStr(message("detail")), ex)
+                                End If
+                            End Using
+                        End If
+                    End Using
+                End If
+                Throw New ArgumentException("No se pudo generar el PDF. Verifica el servicio OCR y vuelve a intentar.", ex)
             End Try
         End Function
 
@@ -189,7 +254,11 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                 Next
                 If Math.Abs(suma - If(preciosIncluyenIgv, compra.nTotal, compra.nSubTotal)) > 0.02D Then Throw New ArgumentException("La suma de los productos no coincide con el comprobante. Revisa las líneas y si los precios incluyen IGV.")
                 Dim content As Byte() = Nothing
-                If comprobante IsNot Nothing Then content = LeerArchivo(comprobante)
+                Dim nombrePdf As String = Nothing
+                If comprobante IsNot Nothing Then
+                    content = DocumentoPdf(comprobante.nombreArchivo, LeerArchivo(comprobante), comprobante.contenidoBase64)
+                    nombrePdf = Path.ChangeExtension(Path.GetFileName(comprobante.nombreArchivo), ".pdf")
+                End If
                 Dim tabla As New DataTable()
                 tabla.Columns.Add("iCodProducto", GetType(Integer))
                 tabla.Columns.Add("iCantidad", GetType(Integer))
@@ -209,8 +278,8 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
                     New SqlParameter("@bPreciosIncluyenIgv", SqlDbType.Bit) With {.Value = preciosIncluyenIgv},
                     New SqlParameter("@Detalles", SqlDbType.Structured) With {.TypeName = "dbo.TipoDetalleCompra", .Value = tabla},
                     New SqlParameter("@cObservacion", SqlDbType.NVarChar, 300) With {.Value = If(CType(compra.cObservacion, Object), DBNull.Value)},
-                    New SqlParameter("@cNombreArchivo", SqlDbType.NVarChar, 255) With {.Value = If(comprobante Is Nothing, DBNull.Value, CType(Path.GetFileName(comprobante.nombreArchivo), Object))},
-                    New SqlParameter("@cTipoMime", SqlDbType.NVarChar, 100) With {.Value = If(comprobante Is Nothing, DBNull.Value, CType(MimeArchivo(comprobante.nombreArchivo), Object))},
+                    New SqlParameter("@cNombreArchivo", SqlDbType.NVarChar, 255) With {.Value = If(CType(nombrePdf, Object), DBNull.Value)},
+                    New SqlParameter("@cTipoMime", SqlDbType.NVarChar, 100) With {.Value = If(comprobante Is Nothing, DBNull.Value, CType("application/pdf", Object))},
                     New SqlParameter("@cTextoOcr", SqlDbType.NVarChar, -1) With {.Value = If(comprobante Is Nothing, DBNull.Value, If(CType(comprobante.textoOcr, Object), DBNull.Value))},
                     New SqlParameter("@cRucEmisor", SqlDbType.NVarChar, 20) With {.Value = If(comprobante Is Nothing, DBNull.Value, If(CType(comprobante.rucEmisor, Object), DBNull.Value))},
                     New SqlParameter("@imgComprobante", SqlDbType.VarBinary, -1) With {.Value = If(CType(content, Object), DBNull.Value)}}
@@ -230,31 +299,93 @@ Namespace WebApplication_Keyove.Views.Operaciones.Compras
             End Try
         End Function
 
-        Private Shared Function MimeArchivo(nombre As String) As String
-            Select Case Path.GetExtension(nombre).ToLowerInvariant()
-                Case ".pdf" : Return "application/pdf"
-                Case ".png" : Return "image/png"
-                Case ".jpg", ".jpeg" : Return "image/jpeg"
-                Case ".bmp" : Return "image/bmp"
-                Case Else : Return "image/tiff"
-            End Select
-        End Function
-
-        Private Sub DescargarArchivoCompra()
+        Private Sub MostrarDocumentoCompra()
             Dim id As Integer
-            If Not Integer.TryParse(Request.QueryString("archivoCompra"), id) Then Return
+            If Not Integer.TryParse(Request.QueryString("archivoCompra"), id) OrElse id <= 0 Then
+                Throw New System.Web.HttpException(404, "La compra no existe.")
+            End If
             Using db As New ConexionBD()
                 Dim tabla = db.ExecuteDataTable("SELECT TOP (1) cNombreArchivo, imgComprobante FROM Comprobantes_OCR WHERE iCodCompra=@id ORDER BY iCodComprobante DESC", New List(Of SqlParameter) From {New SqlParameter("@id", id)})
                 If tabla.Rows.Count = 0 OrElse IsDBNull(tabla.Rows(0)("imgComprobante")) Then
                     Throw New System.Web.HttpException(404, "Esta compra no tiene un archivo digital guardado.")
                 End If
-                Response.Clear()
-                Response.ContentType = "application/octet-stream"
-                Response.AddHeader("X-Content-Type-Options", "nosniff")
-                Response.AddHeader("Content-Disposition", "attachment; filename*=UTF-8''" & Uri.EscapeDataString(Path.GetFileName(CStr(tabla.Rows(0)("cNombreArchivo")))))
-                Response.BinaryWrite(DirectCast(tabla.Rows(0)("imgComprobante"), Byte()))
-                Response.End()
+                Dim nombre = Path.GetFileName(Convert.ToString(tabla.Rows(0)("cNombreArchivo")))
+                Dim content = DirectCast(tabla.Rows(0)("imgComprobante"), Byte())
+                If content.Length = 0 Then Throw New System.Web.HttpException(404, "El archivo guardado está vacío.")
+                Dim extension = Path.GetExtension(nombre).ToLowerInvariant()
+                If content.Length >= 5 AndAlso Encoding.ASCII.GetString(content, 0, 5) = "%PDF-" Then
+                    EnviarDocumentoAlNavegador(Path.ChangeExtension(If(nombre = "", "comprobante", nombre), ".pdf"), content)
+                    Return
+                End If
+                Dim tipo As String
+                Select Case extension
+                    Case ".jpg", ".jpeg" : tipo = "image/jpeg"
+                    Case ".png" : tipo = "image/png"
+                    Case ".bmp" : tipo = "image/bmp"
+                    Case ".tif", ".tiff" : tipo = "image/tiff"
+                    Case Else : Throw New System.Web.HttpException(415, "El formato del comprobante guardado no es válido.")
+                End Select
+                EnviarDocumentoAlNavegador(nombre, content, tipo, tipo <> "image/tiff")
             End Using
+        End Sub
+
+        Private Sub MostrarResumenCompra()
+            Dim id As Integer
+            If Not Integer.TryParse(Request.QueryString("resumenCompra"), id) OrElse id <= 0 Then
+                Throw New System.Web.HttpException(404, "La compra no existe.")
+            End If
+            Dim compra As Object
+            Using db As New ConexionBD()
+                Dim cabecera = db.ExecuteDataTable(
+                    "SELECT c.cTipoComprobante, c.cNumeroComprobante, c.dFechaCompra, c.cEstado, c.cObservacion, " &
+                    "c.nSubTotal, c.nIgv, c.nTotal, p.cRuc, p.cRazonSocial FROM Compras c " &
+                    "INNER JOIN Proveedores p ON p.iCodProveedor=c.iCodProveedor WHERE c.iCodCompra=@id",
+                    New List(Of SqlParameter) From {New SqlParameter("@id", id)})
+                If cabecera.Rows.Count = 0 Then Throw New System.Web.HttpException(404, "La compra no existe.")
+                Dim productos = db.ExecuteDataTable(
+                    "SELECT p.cNombre, p.cCodigo, p.cMarca, p.cModelo, p.nPrecioVenta, d.iCantidad, d.nPrecioCompra, d.nSubTotal, " &
+                    "m.iStockAnterior, m.iStockNuevo FROM Detalle_Compra d INNER JOIN Productos p ON p.iCodProducto=d.iCodProducto " &
+                    "OUTER APPLY (SELECT TOP (1) mi.iStockAnterior, mi.iStockNuevo FROM Movimientos_Inventario mi " &
+                    "WHERE mi.iCodCompra=d.iCodCompra AND mi.iCodProducto=d.iCodProducto AND mi.cTipoMovimiento='ENTRADA' " &
+                    "AND mi.iCantidad=d.iCantidad ORDER BY mi.iCodMovimiento) m WHERE d.iCodCompra=@id ORDER BY d.iCodDetalleCompra",
+                    New List(Of SqlParameter) From {New SqlParameter("@id", id)})
+                Dim fila = cabecera.Rows(0)
+                compra = New With {
+                    .id = id,
+                    .proveedor = Convert.ToString(fila("cRazonSocial")),
+                    .ruc = Convert.ToString(fila("cRuc")),
+                    .tipo = Convert.ToString(fila("cTipoComprobante")),
+                    .numero = Convert.ToString(fila("cNumeroComprobante")),
+                    .fecha = Convert.ToDateTime(fila("dFechaCompra")).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    .estado = Convert.ToString(fila("cEstado")),
+                    .observacion = Convert.ToString(fila("cObservacion")),
+                    .subtotal = Convert.ToDecimal(fila("nSubTotal")),
+                    .igv = Convert.ToDecimal(fila("nIgv")),
+                    .total = Convert.ToDecimal(fila("nTotal")),
+                    .productos = productos.AsEnumerable().Select(Function(p) New With {
+                        .nombre = Convert.ToString(p("cNombre")),
+                        .referencia = String.Join(" · ", {Convert.ToString(p("cMarca")), Convert.ToString(p("cModelo")), Convert.ToString(p("cCodigo"))}.Where(Function(s) Not String.IsNullOrWhiteSpace(s))),
+                        .cantidad = Convert.ToInt32(p("iCantidad")),
+                        .precioCompra = Convert.ToDecimal(p("nPrecioCompra")),
+                        .precioVentaActual = p.Field(Of Decimal?)("nPrecioVenta"),
+                        .importe = Convert.ToDecimal(p("nSubTotal")),
+                        .stockAnterior = p.Field(Of Integer?)("iStockAnterior"),
+                        .stockNuevo = p.Field(Of Integer?)("iStockNuevo")
+                    }).ToArray()
+                }
+            End Using
+            EnviarDocumentoAlNavegador("compra-" & id.ToString(CultureInfo.InvariantCulture) & ".pdf", SolicitarPdfOcr("../compra/resumen/pdf", compra))
+        End Sub
+
+        Private Sub EnviarDocumentoAlNavegador(nombre As String, content As Byte(), Optional tipo As String = "application/pdf", Optional mostrar As Boolean = True)
+            Response.Clear()
+            Response.Cache.SetCacheability(System.Web.HttpCacheability.NoCache)
+            Response.Cache.SetNoStore()
+            Response.ContentType = tipo
+            Response.AddHeader("X-Content-Type-Options", "nosniff")
+            Response.AddHeader("Content-Disposition", If(mostrar, "inline", "attachment") & "; filename*=UTF-8''" & Uri.EscapeDataString(nombre))
+            Response.BinaryWrite(content)
+            Response.End()
         End Sub
 
         Private Shared Sub AnularCompraConInventario(id As Integer)

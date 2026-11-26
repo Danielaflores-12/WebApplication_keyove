@@ -32,6 +32,13 @@ Public Class Global_asax
     )
 
         If EsPaginaAspx() Then
+            If Request.HttpMethod = "GET" AndAlso
+               String.Equals(Request.AppRelativeCurrentExecutionFilePath, "~/Views/Operaciones/Compras/Compras.aspx", StringComparison.OrdinalIgnoreCase) AndAlso
+               String.IsNullOrEmpty(Request.PathInfo) AndAlso
+               (Request.QueryString("archivoCompra") IsNot Nothing OrElse Request.QueryString("resumenCompra") IsNot Nothing) Then
+                Context.SetSessionStateBehavior(SessionStateBehavior.ReadOnly)
+                Return
+            End If
             Context.SetSessionStateBehavior(
                 SessionStateBehavior.Required
             )

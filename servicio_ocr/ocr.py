@@ -28,9 +28,19 @@ class OCRService:
                  for i, t in enumerate(data['text']) if t.strip()]
         def key(t):
             return re.sub('[^A-Z]', '', unicodedata.normalize('NFKD', t.upper()))
-        def header(prefix):
-            return next((w for w in words if key(w['text']).startswith(prefix)), None)
-        qty, unit, price, amount = (header(k) for k in ('CANT', 'UM', 'PUNIT', 'IMPORTE'))
+        qty = next((w for w in words if key(w['text']).startswith('CANT')), None)
+        if not qty:
+            return []
+        def header(*labels):
+            return next((w for w in words if w['x'] > qty['x']
+                         and abs(w['y'] - qty['y']) <= qty['h'] * 2
+                         and key(w['text']) in labels), None)
+        unit = header('UM')
+        description_header = header('DESCRIPCION')
+        price = header('PUNIT', 'PU', 'PUNITARIO')
+        amount = header('IMPORTE', 'TOTAL')
+        if not unit and description_header and price and amount:
+            return self._description_rows(words, qty, description_header, price, amount)
         if not all((qty, unit, price, amount)) or not qty['x'] < unit['x'] < price['x'] < amount['x']:
             return []
         if max(w['y'] for w in (qty, unit, price, amount))-min(w['y'] for w in (qty, unit, price, amount)) > qty['h']*4:
@@ -51,6 +61,12 @@ class OCRService:
         if not quantities or not len(quantities) == len(prices) == len(amounts):
             return []
         rows = []
+        code_header = next((w for w in words if key(w['text']) == 'CODIGO'
+                            and w['x'] < qty['x'] and abs(w['y'] - qty['y']) <= 2 * qty['h']), None)
+        codes = column(0, qty['x'], code_header['y'] + code_header['h']) if code_header else []
+        if len(codes) != len(quantities) or any(not w['text'].isdigit() or abs(w['y'] - q['y']) > 2 * q['h']
+                                                 for w, q in zip(codes, quantities)):
+            codes = []
         for i, q in enumerate(quantities):
             description = []
             for w in words:
@@ -62,7 +78,53 @@ class OCRService:
             label = ' '.join(w['text'] for w in sorted(description, key=lambda w:w['x']))
             if not re.search('[a-zA-Z]', label):
                 return []
-            rows.append(f"{q['text']} {label} {prices[i]['text']} {amounts[i]['text']}")
+            code = f" COD: {codes[i]['text']}" if codes else ''
+            rows.append(f"{q['text']} {label}{code} {prices[i]['text']} {amounts[i]['text']}")
+        return rows
+
+    @staticmethod
+    def _description_rows(words, qty, description, price, amount):
+        """Lee tablas CANT. / DESCRIPCIÓN / P.U. / TOTAL con descripciones de varias líneas."""
+        from extractor import importe
+
+        if not qty['x'] < description['x'] < price['x'] < amount['x']:
+            return []
+        height = qty['h']
+        top = max(w['y'] + w['h'] / 2 for w in (qty, description, price, amount)) + height / 2
+        def x(w):
+            return w['x'] + w['w'] / 2
+        def y(w):
+            return w['y'] + w['h'] / 2
+        footer = min((y(w) for w in words if y(w) > top and
+                      re.fullmatch(r'(?:TOTAL|SUBTOTAL|IGV|OPERADOR)[:.]?', w['text'], re.I)), default=float('inf'))
+        left = description['x'] - height / 2
+        middle = (x(price) + x(amount)) / 2
+        amounts = [w for w in words if top < y(w) < footer and re.fullmatch(r'\d[\d.,]*', w['text'])]
+        quantities = sorted((w for w in amounts if qty['x'] - height <= x(w) < left), key=y)
+        rows = []
+        for i, q in enumerate(quantities):
+            prices = [w for w in amounts if price['x'] - height <= x(w) < middle and abs(y(w) - y(q)) <= height]
+            totals = [w for w in amounts if x(w) >= middle and abs(y(w) - y(q)) <= height]
+            if len(prices) != 1 or len(totals) != 1:
+                return []
+            unit_price, total = prices[0]['text'], totals[0]['text']
+            units, value, line_total = importe(q['text'], cantidad=True), importe(unit_price), importe(total)
+            if None in (units, value, line_total) or units <= 0 or abs(units * value - line_total) > .02:
+                return []
+            next_row = y(quantities[i + 1]) - height / 2 if i + 1 < len(quantities) else footer
+            label_words = sorted((w for w in words if left <= x(w) < price['x'] - height
+                                  and y(q) - height / 2 <= y(w) < next_row
+                                  and y(w) <= y(q) + 4 * height
+                                  and re.search(r'\w', w['text'])), key=y)
+            lines = []
+            for w in label_words:
+                if not lines or y(w) - y(lines[-1][0]) > height / 2:
+                    lines.append([])
+                lines[-1].append(w)
+            label = ' '.join(w['text'] for line in lines for w in sorted(line, key=x))
+            if not re.search(r'[A-Za-zÁÉÍÓÚÑáéíóúñ]', label):
+                return []
+            rows.append(f"{q['text']} {label} {unit_price} {total}")
         return rows
 
     def _read(self, gray, psm):
@@ -135,7 +197,7 @@ class OCRService:
             read(original, reconstruct=True)
         result = parser.extract('\n[LECTURA_ALTERNATIVA]\n'.join(variants))
         incomplete = (not result['detalles'] or any(
-            result[key] is None for key in ('numero_comprobante', 'ruc_emisor', 'total')))
+            result[key] is None for key in ('numero_comprobante', 'ruc_emisor', 'fecha_emision', 'total')))
         inconsistent = any(d['requiere_revision'] for d in result['detalles'])
         if result['detalles'] and result['total'] is not None:
             inconsistent |= abs(sum(d['importe'] for d in result['detalles']) - result['total']) > .02
