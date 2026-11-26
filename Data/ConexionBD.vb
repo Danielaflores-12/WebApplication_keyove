@@ -13,7 +13,7 @@ Namespace WebApplication_Keyove.Data
         '==================================================
 
         Private ReadOnly Servidor As String =
-        "localhost\SQLEXPRESS"
+        ".\SQLEXPRESS"
 
         Private ReadOnly BaseDatos As String =
         "DB_keyove_inventario"
@@ -24,7 +24,7 @@ Namespace WebApplication_Keyove.Data
         Private Shared Function ObtenerCadenaConexion() As String
             Dim configurada = System.Configuration.ConfigurationManager.ConnectionStrings("ConexionInventario")
             If configurada IsNot Nothing Then Return configurada.ConnectionString
-            Return "Data Source=localhost\SQLEXPRESS;Initial Catalog=DB_keyove_inventario;Integrated Security=True;MultipleActiveResultSets=True;TrustServerCertificate=True;"
+            Return "Data Source=.\SQLEXPRESS;Initial Catalog=DB_keyove_inventario;Integrated Security=True;MultipleActiveResultSets=True;TrustServerCertificate=True;"
         End Function
 
 

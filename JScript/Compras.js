@@ -1313,3 +1313,27 @@ function ajustarImagenOCR() {
     $('#archivoOriginalOCR').scrollTop(0).scrollLeft(0);
     actualizarControlesZoomOCR();
 }
+
+// El registro manual utiliza el mismo guardado transaccional, sin archivo OCR.
+function modoEntradaCompra(manual) {
+    $('#cargaOCRCompra, #ayudaCargaOCRCompra').prop('hidden',manual);
+    $('#formularioCompletoCompra').toggleClass('compra-manual',manual);
+    $('#productosManualesCompra').prop('hidden',!manual);
+    $('#indicacionCompraManual').prop('hidden',!manual);
+    $('#btnCompraManual').attr('aria-pressed',String(manual)).toggleClass('btn-primary',manual).toggleClass('btn-secondary',!manual);
+    $('#btnCompraOCR').attr('aria-pressed',String(!manual)).toggleClass('btn-primary',!manual).toggleClass('btn-secondary',manual);
+}
+function iniciarCompraManual() {
+    if (guardandoCompra || extrayendoCompra || proveedorGuardando || proveedorCargando) return;
+    var tieneArchivo=comprobanteOCRPendiente || $('#txtArchivoComprobante').val();
+    if (tieneArchivo && !confirm('Se limpiarán los datos del comprobante OCR para iniciar una compra manual. ¿Continuar?')) return;
+    if (tieneArchivo || $('#txtIdCompra').val()) limpiarFormulario();
+    modoEntradaCompra(true);
+    if (!$('#txtFechaCompra').val()) $('#txtFechaCompra').val(fechaCompraInput(new Date()));
+    $('#cboProveedor').trigger('focus');
+}
+function mostrarCargaOCRCompra() {
+    if (guardandoCompra || extrayendoCompra || proveedorGuardando || proveedorCargando) return;
+    modoEntradaCompra(false);
+    $('#txtArchivoComprobante').trigger('focus');
+}

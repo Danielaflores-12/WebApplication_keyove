@@ -1,19 +1,22 @@
-<<<<<<< Updated upstream
-﻿<%@ Page Language="vb"
-=======
 
 <%@ Page Language="vb"
->>>>>>> Stashed changes
     AutoEventWireup="false"
     MasterPageFile="~/Views/Master/Site.Master"
     CodeBehind="Ventas.aspx.vb"
     Inherits="WebApplication_keyove.WebApplication_Keyove.Views.Operaciones.Ventas.Venta1" %>
 
-<asp:Content ID="ContentVentas" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
+<asp:Content ID="ContentVentas"
+    ContentPlaceHolderID="ContentPlaceHolder1"
+    runat="server">
 
-    <link href="<%= ResolveUrl("~/Assets/css/site.css") %>" rel="stylesheet" />
+    <link href="<%= ResolveUrl("~/Assets/css/site.css") %>"
+          rel="stylesheet" />
 
     <style>
+        /* ==========================================
+           PÁGINA DE VENTAS
+        ========================================== */
+
         .ventas-page {
             padding: 24px;
         }
@@ -43,6 +46,10 @@
             flex-wrap: wrap;
         }
 
+        /* ==========================================
+           FILTROS
+        ========================================== */
+
         .ventas-filtros {
             display: flex;
             gap: 12px;
@@ -56,6 +63,16 @@
             flex: 1;
         }
 
+        #contadorVentas {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        /* ==========================================
+           TABLA PRINCIPAL
+        ========================================== */
+
         .ventas-tabla-contenedor {
             overflow-x: auto;
             background: #fff;
@@ -63,102 +80,6 @@
             border: 1px solid #e5e7eb;
         }
 
-<<<<<<< Updated upstream
-        <input type="hidden" id="txtIdVenta" />
-        <input type="hidden" id="txtSubTotal" />
-        <input type="hidden" id="txtIgv" />
-        <input type="hidden" id="txtTotal" />
-
-        <div class="form-grid">
-
-            <div class="form-group">
-
-                <label for="cboUsuario">Usuario</label>
-
-                <select id="cboUsuario"
-                        class="input-control"></select>
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="cboTipoComprobante">Tipo de Comprobante</label>
-
-                <select id="cboTipoComprobante"
-                        class="input-control">
-                    <option value="BOLETA">BOLETA</option>
-                    <option value="FACTURA">FACTURA</option>
-                </select>
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtNumeroComprobante">NÃºmero de Comprobante</label>
-
-                <input type="text"
-                       id="txtNumeroComprobante" readonly placeholder="Se genera al guardar"
-                       class="input-control" />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtDocumentoCliente">Documento del Cliente</label>
-
-                <input type="text"
-                       id="txtDocumentoCliente"
-                       maxlength="11"
-                       class="input-control" />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtNumeroCelular">NÃºmero de Celular</label>
-
-                <input type="text"
-                       id="txtNumeroCelular"
-                       maxlength="9"
-                       class="input-control" />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="cboMetodoPago">MÃ©todo de Pago</label>
-
-                <select id="cboMetodoPago"
-                        class="input-control">
-                    <option value="EFECTIVO">EFECTIVO</option>
-                    <option value="TARJETA">TARJETA</option>
-                    <option value="TRANSFERENCIA">TRANSFERENCIA</option>
-                </select>
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtObservacion">ObservaciÃ³n</label>
-
-                <input type="text"
-                       id="txtObservacion"
-                       class="input-control" />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="cboEstado">Estado</label>
-
-                <select id="cboEstado"
-                        class="input-control">
-                    <option value="REGISTRADA">REGISTRADA</option>
-                    <option value="ANULADA">ANULADA</option>
-                </select>
-
-            </div>
-=======
         #tablaVentas {
             width: 100%;
             border-collapse: collapse;
@@ -192,6 +113,10 @@
             background: #dbeafe;
         }
 
+        /* ==========================================
+           ESTADOS
+        ========================================== */
+
         .venta-estado {
             display: inline-block;
             padding: 4px 9px;
@@ -221,6 +146,10 @@
             font-size: 12px;
             white-space: nowrap;
         }
+
+        /* ==========================================
+           MODAL DE VENTAS
+        ========================================== */
 
         .modal-venta[hidden] {
             display: none !important;
@@ -270,6 +199,10 @@
             padding: 22px;
         }
 
+        /* ==========================================
+           SECCIONES Y FORMULARIOS
+        ========================================== */
+
         .venta-seccion {
             margin-bottom: 24px;
         }
@@ -317,11 +250,24 @@
             grid-column: 1 / -1;
         }
 
+        /* ==========================================
+           PRODUCTOS
+        ========================================== */
+
         .venta-productos-linea {
             display: grid;
-            grid-template-columns: minmax(180px, 2fr) minmax(90px, .7fr) minmax(120px, 1fr) minmax(120px, 1fr) auto;
+            grid-template-columns:
+                minmax(180px, 2fr)
+                minmax(90px, .7fr)
+                minmax(120px, 1fr)
+                minmax(120px, 1fr)
+                auto;
             align-items: end;
             gap: 10px;
+        }
+
+        .venta-detalle-contenedor {
+            overflow-x: auto;
         }
 
         .venta-tabla-detalle {
@@ -342,9 +288,9 @@
             background: #f8fafc;
         }
 
-        .venta-detalle-contenedor {
-            overflow-x: auto;
-        }
+        /* ==========================================
+           TOTALES
+        ========================================== */
 
         .venta-totales {
             display: flex;
@@ -372,6 +318,10 @@
             font-weight: 800;
         }
 
+        /* ==========================================
+           BOTONES DEL MODAL
+        ========================================== */
+
         .modal-venta-pie {
             display: flex;
             justify-content: flex-end;
@@ -389,6 +339,10 @@
             padding: 28px !important;
             color: #64748b;
         }
+
+        /* ==========================================
+           DISEÑO RESPONSIVO
+        ========================================== */
 
         @media (max-width: 800px) {
             .ventas-page {
@@ -432,17 +386,23 @@
         }
     </style>
 
+    <!-- ==========================================
+         CONTENIDO PRINCIPAL
+    ========================================== -->
+
     <div class="ventas-page">
 
         <div class="ventas-header">
             <div>
                 <h2>Gestión de ventas</h2>
                 <div class="ventas-subtitulo">
-                    Registra, consulta y administra las ventas del sistema KEYOVE.
+                    Registra, consulta y administra las ventas
+                    del sistema KEYOVE.
                 </div>
             </div>
 
             <div class="ventas-acciones">
+
                 <button type="button"
                         class="btn btn-primary"
                         onclick="abrirModalVenta('nuevo')">
@@ -466,210 +426,42 @@
                         onclick="listarVentas()">
                     Actualizar
                 </button>
+
             </div>
         </div>
 
+        <!-- FILTROS -->
+
         <div class="ventas-filtros">
+
             <input type="search"
                    id="buscarVentas"
                    class="form-control"
                    placeholder="Buscar por número, usuario o estado..." />
->>>>>>> Stashed changes
 
-            <select id="estadoBusquedaVentas" class="form-control">
+            <select id="estadoBusquedaVentas"
+                    class="form-control">
                 <option value="">Todos los estados</option>
                 <option value="REGISTRADA">Registrada</option>
                 <option value="ANULADA">Anulada</option>
             </select>
-        </div>
-
-<<<<<<< Updated upstream
-        <div class="card-title">
-            Productos de la venta
-        </div>
-
-        <div class="form-grid">
-
-            <div class="form-group">
-
-                <label for="cboProducto">Producto</label>
-
-                <select id="cboProducto"
-                        class="input-control"></select>
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtCantidadVenta">Cantidad</label>
-
-                <input type="number"
-                       id="txtCantidadVenta"
-                       class="input-control"
-                       oninput="actualizarSubtotalLineaVenta()" />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtPrecioVenta">Precio Venta</label>
-
-                <input type="number"
-                       step="0.01"
-                       id="txtPrecioVenta"
-                       class="input-control"
-                       oninput="actualizarSubtotalLineaVenta()" />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtSubtotalLineaVenta">Subtotal de lÃ­nea</label>
-
-                <input type="text"
-                       id="txtSubtotalLineaVenta"
-                       class="input-control"
-                       readonly />
-
-            </div>
 
         </div>
 
-        <div class="form-actions">
-
-            <button type="button"
-                    class="btn btn-primary"
-                    onclick="agregarProductoVenta()">
-                Agregar producto
-            </button>
-
+        <div id="contadorVentas"
+             role="status"
+             aria-live="polite">
+            0 ventas encontradas
         </div>
 
-        <div class="table-container">
+        <!-- TABLA DE VENTAS -->
 
-            <table class="table"
-                   id="tablaDetalleVenta">
-
-=======
         <div class="ventas-tabla-contenedor">
+
             <table id="tablaVentas">
->>>>>>> Stashed changes
                 <thead>
                     <tr>
-<<<<<<< Updated upstream
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio</th>
-                        <th>Subtotal</th>
-                        <th>AcciÃ³n</th>
-                    </tr>
-
-                </thead>
-
-                <tbody id="bodyDetalleVenta">
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-        <div class="form-grid">
-
-            <div class="form-group">
-
-                <label for="txtSubtotalVentaGral">Subtotal general</label>
-
-                <input type="text"
-                       id="txtSubtotalVentaGral"
-                       class="input-control"
-                       readonly />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtIGVVenta">IGV 18%</label>
-
-                <input type="text"
-                       id="txtIGVVenta"
-                       class="input-control"
-                       readonly />
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="txtTotalVenta">Total</label>
-
-                <input type="text"
-                       id="txtTotalVenta"
-                       class="input-control"
-                       readonly />
-
-            </div>
-
-        </div>
-
-        <div class="form-actions">
-
-            <button type="button"
-                    class="btn btn-primary"
-                    onclick="guardarVenta()">
-                Guardar
-            </button>
-
-            <button type="button"
-                    class="btn btn-warning"
-                    onclick="modificarVenta()">
-                Modificar
-            </button>
-
-            <button type="button"
-                    class="btn btn-secondary"
-                    onclick="limpiarFormulario()">
-                Limpiar
-            </button>
-
-        </div>
-
-    </div>
-
-    </section>
-    <section id="panelVentasRegistradas" aria-label="Ventas registradas" hidden>
-    <div class="card">
-        <div class="form-group">
-            <label for="buscarVentas">Buscar ventas</label>
-            <input type="search" id="buscarVentas" class="input-control" placeholder="Comprobante, documento, celular, usuario, fecha o estado" />
-        </div>
-        <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="listarVentas()">Actualizar lista</button>
-        </div>
-        <p id="estadoBusquedaVentas" role="status" aria-live="polite"></p>
-    </div>
-    <div class="card">
-
-        <div class="card-title">
-            Ventas registradas
-        </div>
-
-        <div class="table-container">
-
-            <table class="table"
-                   id="tablaVentas">
-
-                <thead>
-
-                    <tr>
-                        <th>ID</th>
-                        <th>Usuario</th>
-                        <th>Comprobante</th>
-                        <th>NÂ° Comprobante</th>
-                        <th>Documento</th>
-                        <th>Celular</th>
-=======
                         <th>Código</th>
->>>>>>> Stashed changes
                         <th>Fecha</th>
                         <th>Comprobante</th>
                         <th>Número</th>
@@ -682,17 +474,21 @@
 
                 <tbody id="bodyVentas">
                     <tr>
-                        <td colspan="8" class="ventas-vacio">
+                        <td colspan="8"
+                            class="ventas-vacio">
                             Cargando ventas...
                         </td>
                     </tr>
                 </tbody>
             </table>
-        </div>
 
+        </div>
     </div>
 
-    <!-- Modal de registro y edición de venta -->
+    <!-- ==========================================
+         MODAL DE REGISTRO Y EDICIÓN
+    ========================================== -->
+
     <div id="modalVenta"
          class="modal-venta"
          role="dialog"
@@ -702,8 +498,13 @@
 
         <div class="modal-venta-contenido">
 
+            <!-- CABECERA -->
+
             <div class="modal-venta-cabecera">
-                <h3 id="tituloModalVenta">Registrar venta</h3>
+
+                <h3 id="tituloModalVenta">
+                    Registrar venta
+                </h3>
 
                 <button type="button"
                         class="btn btn-secondary"
@@ -711,22 +512,29 @@
                         onclick="cerrarModalVenta()">
                     X
                 </button>
+
             </div>
+
+            <!-- CUERPO -->
 
             <div class="modal-venta-cuerpo">
 
                 <input type="hidden" id="txtIdVenta" />
 
+                <!-- COMPROBANTE -->
+
                 <section class="venta-seccion">
                     <h4>Comprobante electrónico</h4>
 
                     <div class="venta-form-grid">
+
                         <div class="venta-campo">
                             <label for="cboTipoComprobante">
                                 Tipo de comprobante
                             </label>
 
-                            <select id="cboTipoComprobante" class="form-control">
+                            <select id="cboTipoComprobante"
+                                    class="form-control">
                                 <option value="BOLETA">Boleta</option>
                                 <option value="FACTURA">Factura</option>
                             </select>
@@ -740,27 +548,44 @@
                             <input type="text"
                                    id="txtNumeroComprobante"
                                    class="form-control"
+                                   placeholder="Se genera al guardar"
                                    readonly="readonly" />
                         </div>
 
                         <div class="venta-campo">
-                            <label for="cboEstado">Estado</label>
+                            <label for="cboEstado">
+                                Estado
+                            </label>
 
-                            <select id="cboEstado" class="form-control">
-                                <option value="REGISTRADA">Registrada</option>
+                            <select id="cboEstado"
+                                    class="form-control"
+                                    disabled="disabled">
+                                <option value="REGISTRADA">
+                                    Registrada
+                                </option>
                             </select>
                         </div>
+
                     </div>
                 </section>
+
+                <!-- DATOS DE VENTA -->
 
                 <section class="venta-seccion">
                     <h4>Datos de la venta</h4>
 
                     <div class="venta-form-grid">
+
                         <div class="venta-campo">
-                            <label for="cboUsuario">Usuario responsable</label>
-                            <select id="cboUsuario" class="form-control">
-                                <option value="">Seleccione un usuario</option>
+                            <label for="cboUsuario">
+                                Usuario responsable
+                            </label>
+
+                            <select id="cboUsuario"
+                                    class="form-control">
+                                <option value="">
+                                    Seleccione un usuario
+                                </option>
                             </select>
                         </div>
 
@@ -772,7 +597,8 @@
                             <input type="text"
                                    id="txtDocumentoCliente"
                                    class="form-control"
-                                   maxlength="15"
+                                   maxlength="11"
+                                   inputmode="numeric"
                                    placeholder="DNI o RUC" />
                         </div>
 
@@ -784,47 +610,65 @@
                             <input type="tel"
                                    id="txtNumeroCelular"
                                    class="form-control"
-                                   maxlength="15"
+                                   maxlength="9"
+                                   inputmode="numeric"
                                    placeholder="Celular del cliente" />
                         </div>
 
                         <div class="venta-campo">
-                            <label for="cboMetodoPago">Método de pago</label>
+                            <label for="cboMetodoPago">
+                                Método de pago
+                            </label>
 
-                            <select id="cboMetodoPago" class="form-control">
+                            <select id="cboMetodoPago"
+                                    class="form-control">
                                 <option value="EFECTIVO">Efectivo</option>
-                                <option value="YAPE">Yape</option>
-                                <option value="PLIN">Plin</option>
-                                <option value="TRANSFERENCIA">Transferencia</option>
+                                <option value="TARJETA">Tarjeta</option>
+                                <option value="TRANSFERENCIA">
+                                    Transferencia
+                                </option>
                             </select>
                         </div>
 
                         <div class="venta-campo venta-campo-completo">
-                            <label for="txtObservacion">Observaciones</label>
+                            <label for="txtObservacion">
+                                Observaciones
+                            </label>
 
                             <textarea id="txtObservacion"
                                       class="form-control"
                                       rows="2"
-                                      maxlength="500"
+                                      maxlength="300"
                                       placeholder="Observaciones de la venta (opcional)"></textarea>
                         </div>
+
                     </div>
                 </section>
+
+                <!-- PRODUCTOS -->
 
                 <section class="venta-seccion">
                     <h4>Productos de la venta</h4>
 
                     <div class="venta-productos-linea">
-                        <div class="venta-campo">
-                            <label for="cboProducto">Producto</label>
 
-                            <select id="cboProducto" class="form-control">
-                                <option value="">Seleccione un producto</option>
+                        <div class="venta-campo">
+                            <label for="cboProducto">
+                                Producto
+                            </label>
+
+                            <select id="cboProducto"
+                                    class="form-control">
+                                <option value="">
+                                    Seleccione un producto
+                                </option>
                             </select>
                         </div>
 
                         <div class="venta-campo">
-                            <label for="txtCantidadVenta">Cantidad</label>
+                            <label for="txtCantidadVenta">
+                                Cantidad
+                            </label>
 
                             <input type="number"
                                    id="txtCantidadVenta"
@@ -835,7 +679,9 @@
                         </div>
 
                         <div class="venta-campo">
-                            <label for="txtPrecioVenta">Precio unitario</label>
+                            <label for="txtPrecioVenta">
+                                Precio unitario
+                            </label>
 
                             <input type="number"
                                    id="txtPrecioVenta"
@@ -846,7 +692,9 @@
                         </div>
 
                         <div class="venta-campo">
-                            <label for="txtSubtotalLineaVenta">Subtotal</label>
+                            <label for="txtSubtotalLineaVenta">
+                                Subtotal
+                            </label>
 
                             <input type="text"
                                    id="txtSubtotalLineaVenta"
@@ -863,10 +711,15 @@
                                 Agregar
                             </button>
                         </div>
+
                     </div>
 
+                    <!-- TABLA DE DETALLE -->
+
                     <div class="venta-detalle-contenedor">
-                        <table class="venta-tabla-detalle">
+
+                        <table id="tablaDetalleVenta"
+                               class="venta-tabla-detalle">
                             <thead>
                                 <tr>
                                     <th>Producto</th>
@@ -880,42 +733,65 @@
 
                             <tbody id="bodyDetalleVenta">
                                 <tr>
-                                    <td colspan="6" class="ventas-vacio">
+                                    <td colspan="6"
+                                        class="ventas-vacio">
                                         Agrega productos para registrar la venta.
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+
                     </div>
+
+                    <!-- TOTALES -->
 
                     <div class="venta-totales">
                         <div class="venta-totales-contenido">
+
                             <div class="venta-total-linea">
                                 <span>Subtotal:</span>
-                                <strong id="txtSubtotalVentaGral">S/ 0.00</strong>
+                                <strong id="txtSubtotalVentaGral">
+                                    S/ 0.00
+                                </strong>
                             </div>
 
                             <div class="venta-total-linea">
-                                <span>IGV (18%):</span>
-                                <strong id="txtIGVVenta">S/ 0.00</strong>
+                                <span>IGV incluido (18 %):</span>
+                                <strong id="txtIGVVenta">
+                                    S/ 0.00
+                                </strong>
                             </div>
 
                             <div class="venta-total-linea venta-total-final">
                                 <span>Total:</span>
-                                <strong id="txtTotalVenta">S/ 0.00</strong>
+                                <strong id="txtTotalVenta">
+                                    S/ 0.00
+                                </strong>
                             </div>
+
                         </div>
                     </div>
 
-                    <input type="hidden" id="txtSubTotal" value="0" />
-                    <input type="hidden" id="txtIgv" value="0" />
-                    <input type="hidden" id="txtTotal" value="0" />
+                    <input type="hidden"
+                           id="txtSubTotal"
+                           value="0" />
+
+                    <input type="hidden"
+                           id="txtIgv"
+                           value="0" />
+
+                    <input type="hidden"
+                           id="txtTotal"
+                           value="0" />
 
                 </section>
 
             </div>
 
+            <!-- BOTONES DEL MODAL -->
+
             <div class="modal-venta-pie">
+
                 <button type="button"
                         class="btn btn-light"
                         onclick="limpiarFormulario()">
@@ -942,10 +818,14 @@
                         onclick="cerrarModalVenta()">
                     Cerrar
                 </button>
+
             </div>
 
         </div>
     </div>
 
-    <script src="<%= ResolveUrl("~/JScript/Ventas.js") %>?v=2"></script>
+    <!-- JAVASCRIPT -->
+
+    <script src="<%= ResolveUrl("~/JScript/Ventas.js") %>?v=3"></script>
+
 </asp:Content>

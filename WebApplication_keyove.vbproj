@@ -152,6 +152,13 @@
     <Compile Include="Helpers\ValidacionHelper.vb" />
     <Compile Include="Helpers\ComprobanteHelper.vb" />
     <Compile Include="Helpers\OcrServiceHost.vb" />
+    <Compile Include="Views\Inventario\Alertas_Stock\Alertas_Stock.aspx.designer.vb">
+      <DependentUpon>Alertas_Stock.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Inventario\Alertas_Stock\Alertas_Stock.aspx.vb">
+      <DependentUpon>Alertas_Stock.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Views\Operaciones\Compras\ComprasAltas.vb">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
